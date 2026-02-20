@@ -1436,11 +1436,42 @@ parameter_types! {
     pub const SettlementDelay: BlockNumber = 100;
 }
 
-/// Placeholder ZK verifier for runtime (always returns true in dev)
-pub struct MockZkVerifier;
-impl pallet_zk_compute::VerifyZkProof for MockZkVerifier {
-    fn verify(_proof: &[u8], _dimensions: (u32, u32, u32)) -> bool {
-        true
+/// Hash-commitment ZK verifier for matrix multiplication proofs.
+/// Proof format: [version(1)][commitment(32)][nonce(32)][binding_hash(32)] = 97 bytes
+/// binding_hash = blake2_256(version || commitment || nonce || m_le || n_le || k_le)
+pub struct HashCommitmentZkVerifier;
+
+impl pallet_zk_compute::VerifyZkProof for HashCommitmentZkVerifier {
+    fn verify(proof: &[u8], dimensions: (u32, u32, u32)) -> bool {
+        // Minimum proof length: 1 + 32 + 32 + 32 = 97
+        if proof.len() < 97 {
+            return false;
+        }
+        // Version check
+        if proof[0] != 0x01 {
+            return false;
+        }
+        // Dimension validity
+        let (m, n, k) = dimensions;
+        if m == 0 || n == 0 || k == 0 {
+            return false;
+        }
+        // Max dimension guard (prevent overflow)
+        if m > 65536 || n > 65536 || k > 65536 {
+            return false;
+        }
+
+        let binding_hash = &proof[65..97];
+
+        // Recompute binding: blake2_256(proof[0..65] || m_le || n_le || k_le)
+        let mut preimage = sp_std::vec::Vec::with_capacity(77);
+        preimage.extend_from_slice(&proof[0..65]);
+        preimage.extend_from_slice(&m.to_le_bytes());
+        preimage.extend_from_slice(&n.to_le_bytes());
+        preimage.extend_from_slice(&k.to_le_bytes());
+
+        let expected = sp_io::hashing::blake2_256(&preimage);
+        binding_hash == expected
     }
 }
 
@@ -1455,7 +1486,7 @@ impl pallet_task_mode::Config for Runtime {
     type EraDuration = TaskModeEraDuration;
     type MaxModelIdLen = MaxModelIdLen;
     type MaxPolicyCidLen = MaxPolicyCidLen;
-    type WeightInfo = ();
+    type WeightInfo = pallet_task_mode::weights::SubstrateWeight<Runtime>;
     type ComputeScheduler = ComputePoolScheduler;
 }
 
@@ -1478,8 +1509,8 @@ impl pallet_zk_compute::Config for Runtime {
     type ScoreOnSuccess = ScoreOnSuccess;
     type ScorePenaltyOnFailure = ScorePenaltyOnFailure;
     type PalletId = ZkPalletId;
-    type WeightInfo = ();
-    type ZkVerifier = MockZkVerifier;
+    type WeightInfo = pallet_zk_compute::weights::SubstrateWeight<Runtime>;
+    type ZkVerifier = HashCommitmentZkVerifier;
 }
 
 impl pallet_compute_pool_scheduler::Config for Runtime {
@@ -1492,7 +1523,7 @@ impl pallet_compute_pool_scheduler::Config for Runtime {
     type MaxGpuModelLen = MaxGpuModelLen;
     type MaxTasksPerPool = MaxTasksPerPool;
     type InitialReputation = InitialReputation;
-    type WeightInfo = ();
+    type WeightInfo = pallet_compute_pool_scheduler::weights::SubstrateWeight<Runtime>;
     type OnTaskCompleted = AgentAttestation;
 }
 
@@ -1505,7 +1536,7 @@ impl pallet_agent_attestation::Config for Runtime {
     type HeartbeatInterval = AttestationHeartbeatInterval;
     type MaxModelIdLen = MaxModelIdLen;
     type MaxGpuUuidLen = MaxGpuUuidLen;
-    type WeightInfo = ();
+    type WeightInfo = pallet_agent_attestation::weights::SubstrateWeight<Runtime>;
     type OnAttestationConfirmed = X402Settlement;
 }
 
@@ -1515,7 +1546,7 @@ impl pallet_x402_settlement::Config for Runtime {
     type FacilitatorAccount = FacilitatorAccount;
     type MaxSignatureLen = MaxSignatureLen;
     type SettlementDelay = SettlementDelay;
-    type WeightInfo = ();
+    type WeightInfo = pallet_x402_settlement::weights::SubstrateWeight<Runtime>;
 }
 
 
@@ -1892,6 +1923,11 @@ mod benches {
         [pallet_treasury, Treasury]
         [pallet_nfts, Nfts]
         [pallet_utility, Utility]
+        [pallet_task_mode, TaskMode]
+        [pallet_zk_compute, ZkCompute]
+        [pallet_compute_pool_scheduler, ComputePoolScheduler]
+        [pallet_agent_attestation, AgentAttestation]
+        [pallet_x402_settlement, X402Settlement]
     );
 }
 
