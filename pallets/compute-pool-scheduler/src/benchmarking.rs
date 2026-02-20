@@ -21,7 +21,7 @@ fn create_pool<T: Config>(owner: &T::AccountId) -> PoolId {
         gpu_model,
         16_384u32,
         true,
-        80u32,
+        130u32,
         1000u32.into(),
     ).expect("register_pool failed");
     NextPoolId::<T>::get().saturating_sub(1)
@@ -71,7 +71,7 @@ benchmarks! {
         let gpu_model: BoundedVec<u8, T::MaxGpuModelLen> = b"RTX4090".to_vec().try_into().unwrap();
         let gpu_memory = 16_384u32;
         let has_nvlink = true;
-        let nvlink_efficiency = 80u32;
+        let nvlink_efficiency = 130u32;
         let price: BalanceOf<T> = 1000u32.into();
     }: _(RawOrigin::Signed(caller), gpu_model, gpu_memory, has_nvlink, nvlink_efficiency, price)
 
@@ -82,7 +82,7 @@ benchmarks! {
         let gpu_model: BoundedVec<u8, T::MaxGpuModelLen> = b"A100".to_vec().try_into().unwrap();
         let gpu_memory = 32_768u32;
         let has_nvlink = true;
-        let nvlink_efficiency = 90u32;
+        let nvlink_efficiency = 135u32;
         let price: BalanceOf<T> = 1200u32.into();
     }: _(RawOrigin::Signed(caller), pool_id, gpu_model, gpu_memory, has_nvlink, nvlink_efficiency, price)
 
@@ -141,4 +141,13 @@ benchmarks! {
             }
         });
     }: _(RawOrigin::Signed(user), task_id)
+
+    on_initialize {
+        use frame_support::traits::Hooks;
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let _pool_id = create_pool::<T>(&owner);
+        frame_system::Pallet::<T>::set_block_number(100u32.into());
+    }: {
+        <Pallet::<T> as Hooks<frame_system::pallet_prelude::BlockNumberFor<T>>>::on_initialize(100u32.into());
+    }
 }

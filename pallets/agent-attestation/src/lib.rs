@@ -14,7 +14,9 @@ mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use frame_support::traits::StorageVersion;
     use frame_support::{
+        traits::EnsureOrigin,
         dispatch::DispatchResult,
         pallet_prelude::*,
         traits::{Currency, ReservableCurrency},
@@ -110,9 +112,15 @@ pub mod pallet {
             AccountId = Self::AccountId,
             Balance = BalanceOf<Self>
         >;
+
+        /// Origin that can confirm attestations
+        type AdminOrigin: EnsureOrigin<Self::RuntimeOrigin>;
     }
 
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
     #[pallet::pallet]
+    #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
     // ---- Storage ----
@@ -190,6 +198,23 @@ pub mod pallet {
     }
 
     // ---- Hooks ----
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub _phantom: sp_std::marker::PhantomData<T>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self { _phantom: Default::default() }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {}
+    }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
@@ -368,7 +393,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             attestation_id: u64,
         ) -> DispatchResult {
-            let _who = ensure_signed(origin)?;
+            T::AdminOrigin::ensure_origin(origin)?;
 
             Attestations::<T>::try_mutate(attestation_id, |maybe_att| -> DispatchResult {
                 let att = maybe_att.as_mut().ok_or(Error::<T>::AttestationNotFound)?;

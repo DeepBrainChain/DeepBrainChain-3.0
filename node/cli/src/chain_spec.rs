@@ -400,6 +400,11 @@ pub fn dev_testnet_genesis(
         },
         evm_chain_id: EVMChainIdConfig { chain_id: 19850818u64 },
         base_fee: BaseFeeConfig::new(DefaultBaseFeePerGas::get(), DefaultElasticity::get()),
+        task_mode: Default::default(),
+        zk_compute: Default::default(),
+        compute_pool_scheduler: Default::default(),
+        agent_attestation: Default::default(),
+        x402_settlement: Default::default(),
     }
 }
 
@@ -536,6 +541,11 @@ pub fn testnet_genesis(
         evm: Default::default(),
         evm_chain_id: EVMChainIdConfig { chain_id: 19850818u64 },
         base_fee: BaseFeeConfig::new(DefaultBaseFeePerGas::get(), DefaultElasticity::get()),
+        task_mode: Default::default(),
+        zk_compute: Default::default(),
+        compute_pool_scheduler: Default::default(),
+        agent_attestation: Default::default(),
+        x402_settlement: Default::default(),
     }
 }
 
@@ -819,6 +829,11 @@ pub fn mainnet_genesis(
         evm: Default::default(),
         evm_chain_id: EVMChainIdConfig { chain_id: 19880818u64 },
         base_fee: BaseFeeConfig::new(DefaultBaseFeePerGas::get(), DefaultElasticity::get()),
+        task_mode: Default::default(),
+        zk_compute: Default::default(),
+        compute_pool_scheduler: Default::default(),
+        agent_attestation: Default::default(),
+        x402_settlement: Default::default(),
     }
 }
 

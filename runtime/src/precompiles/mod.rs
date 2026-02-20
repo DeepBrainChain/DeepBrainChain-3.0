@@ -27,6 +27,18 @@ use machine_info::MachineInfo;
 mod agent_task;
 use agent_task::AgentTask;
 
+mod zk_compute;
+use zk_compute::ZkComputePrecompile;
+
+mod compute_pool;
+use compute_pool::ComputePoolPrecompile;
+
+mod attestation;
+use attestation::AttestationPrecompile;
+
+mod x402_settlement;
+use x402_settlement::X402SettlementPrecompile;
+
 const LOG_TARGET: &str = "evm";
 
 pub struct DBCPrecompiles<T>(PhantomData<T>);
@@ -38,7 +50,7 @@ where
     pub fn new() -> Self {
         Self(Default::default())
     }
-    pub fn used_addresses() -> [H160; 13] {
+    pub fn used_addresses() -> [H160; 17] {
         [
             hash(1),
             hash(2),
@@ -53,6 +65,10 @@ where
             hash(2050),
             hash(2051),
             hash(2096), // AgentTask precompile (0x0830)
+            hash(2097), // ZkCompute precompile
+            hash(2098), // ComputePool precompile
+            hash(2099), // Attestation precompile
+            hash(2100), // X402Settlement precompile
         ]
     }
 }
@@ -65,6 +81,10 @@ where
     MachineInfo<T>: Precompile,
     DLCPrice<T>: Precompile,
     AgentTask<T>: Precompile,
+    ZkComputePrecompile<T>: Precompile,
+    ComputePoolPrecompile<T>: Precompile,
+    AttestationPrecompile<T>: Precompile,
+    X402SettlementPrecompile<T>: Precompile,
 {
     fn execute(&self, handle: &mut impl PrecompileHandle) -> Option<PrecompileResult> {
         let address = handle.code_address();
@@ -123,6 +143,10 @@ where
             a if a == hash(2050) => Some(DLCPrice::<T>::execute(handle)),
             a if a == hash(2051) => Some(MachineInfo::<T>::execute(handle)),
             a if a == hash(2096) => Some(AgentTask::<T>::execute(handle)),
+            a if a == hash(2097) => Some(ZkComputePrecompile::<T>::execute(handle)),
+            a if a == hash(2098) => Some(ComputePoolPrecompile::<T>::execute(handle)),
+            a if a == hash(2099) => Some(AttestationPrecompile::<T>::execute(handle)),
+            a if a == hash(2100) => Some(X402SettlementPrecompile::<T>::execute(handle)),
 
             _ => None,
         }

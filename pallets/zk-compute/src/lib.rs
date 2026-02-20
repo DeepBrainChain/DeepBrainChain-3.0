@@ -22,6 +22,7 @@ pub trait VerifyZkProof {
 
 #[frame_support::pallet]
 pub mod pallet {
+    use frame_support::traits::StorageVersion;
 	use super::*;
 	use crate::weights::WeightInfo;
 	use frame_support::{
@@ -119,7 +120,10 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 	}
 
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
 	#[pallet::pallet]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
@@ -202,6 +206,24 @@ pub mod pallet {
 		InsufficientMinerScore,
 		BalanceTransferFailed,
 	}
+
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub _phantom: sp_std::marker::PhantomData<T>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self { _phantom: Default::default() }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {}
+    }
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -418,3 +440,5 @@ pub mod pallet {
 		}
 	}
 }
+
+

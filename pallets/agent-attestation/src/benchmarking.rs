@@ -2,6 +2,7 @@
 
 use super::*;
 use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
+use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_core::H256;
 

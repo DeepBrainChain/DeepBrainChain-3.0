@@ -1,14 +1,17 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
+use frame_benchmarking::vec;
 use crate::Pallet as TaskMode;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
+use codec::Encode;
+use sp_std::vec::Vec;
 
 fn setup_task_definition<T: Config>(admin: T::AccountId) -> u64 {
     let task_id = NextTaskId::<T>::get();
-    let _ = TaskMode::<T>::create_task_definition(
+    TaskMode::<T>::create_task_definition(
         RawOrigin::Signed(admin).into(),
         vec![1u8; 8],
         vec![1u8; 4],
@@ -16,8 +19,21 @@ fn setup_task_definition<T: Config>(admin: T::AccountId) -> u64 {
         200,
         10_000,
         vec![2u8; 16],
-    );
+    ).expect("setup: create_task_definition failed");
     task_id
+}
+
+/// Seed the DBC price oracle so that get_dbc_price() returns Some(_).
+fn seed_dbc_price<T: Config>() {
+    use frame_support::storage::unhashed;
+    use frame_support::sp_io::hashing::twox_128;
+    let mut key = Vec::new();
+    key.extend_from_slice(&twox_128(b"DBCPriceOCW"));
+    key.extend_from_slice(&twox_128(b"AvgPrice"));
+    // Price = 1_000_000 means 1 USD per DBC.
+    // This makes DBC amounts small and predictable.
+    let price: u64 = 1_000_000u64;
+    unhashed::put_raw(&key, &price.encode());
 }
 
 frame_benchmarking::v1::benchmarks! {
@@ -44,8 +60,9 @@ frame_benchmarking::v1::benchmarks! {
         let customer: T::AccountId = whitelisted_caller();
         let miner: T::AccountId = frame_benchmarking::v1::account("miner", 0, 0);
         frame_system::Pallet::<T>::set_block_number(1u32.into());
+        seed_dbc_price::<T>();
         let task_id = setup_task_definition::<T>(customer.clone());
-        let _ = T::Currency::deposit_creating(&customer, 1_000_000_000u128);
+        let _ = T::Currency::deposit_creating(&customer, 1_000_000_000_000_000_000u128);
     }: _(RawOrigin::Signed(customer), task_id, miner.clone(), 1_000u64, 1_000u64)
     verify {
         assert_eq!(NextOrderId::<T>::get(), 1);
@@ -57,9 +74,12 @@ frame_benchmarking::v1::benchmarks! {
         let customer: T::AccountId = whitelisted_caller();
         let miner: T::AccountId = frame_benchmarking::v1::account("miner", 0, 0);
         frame_system::Pallet::<T>::set_block_number(1u32.into());
+        seed_dbc_price::<T>();
         let task_id = setup_task_definition::<T>(customer.clone());
-        let _ = T::Currency::deposit_creating(&customer, 1_000_000_000u128);
-        let _ = TaskMode::<T>::create_task_order(RawOrigin::Signed(customer).into(), task_id, miner.clone(), 1_000, 1_000);
+        let _ = T::Currency::deposit_creating(&customer, 1_000_000_000_000_000_000u128);
+        TaskMode::<T>::create_task_order(
+            RawOrigin::Signed(customer).into(), task_id, miner.clone(), 1_000, 1_000
+        ).expect("setup: create_task_order failed");
     }: _(RawOrigin::Signed(miner), 0u64, [7u8; 32])
     verify {
         let order = TaskOrders::<T>::get(0).unwrap();
@@ -70,10 +90,15 @@ frame_benchmarking::v1::benchmarks! {
         let customer: T::AccountId = whitelisted_caller();
         let miner: T::AccountId = frame_benchmarking::v1::account("miner", 0, 0);
         frame_system::Pallet::<T>::set_block_number(1u32.into());
+        seed_dbc_price::<T>();
         let task_id = setup_task_definition::<T>(customer.clone());
-        let _ = T::Currency::deposit_creating(&customer, 1_000_000_000u128);
-        let _ = TaskMode::<T>::create_task_order(RawOrigin::Signed(customer.clone()).into(), task_id, miner.clone(), 1_000, 1_000);
-        let _ = TaskMode::<T>::mark_order_completed(RawOrigin::Signed(miner).into(), 0, [7u8; 32]);
+        let _ = T::Currency::deposit_creating(&customer, 1_000_000_000_000_000_000u128);
+        TaskMode::<T>::create_task_order(
+            RawOrigin::Signed(customer.clone()).into(), task_id, miner.clone(), 1_000, 1_000
+        ).expect("setup: create_task_order failed");
+        TaskMode::<T>::mark_order_completed(
+            RawOrigin::Signed(miner).into(), 0, [7u8; 32]
+        ).expect("setup: mark_order_completed failed");
     }: _(RawOrigin::Signed(customer), 0u64, Some([8u8; 32]))
     verify {
         let order = TaskOrders::<T>::get(0).unwrap();

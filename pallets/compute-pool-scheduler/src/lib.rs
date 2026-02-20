@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
+pub mod weights;
 
 use frame_support::{
     traits::Currency,
@@ -21,47 +22,13 @@ mod benchmarking;
 pub type PoolId = u64;
 pub type TaskId = u64;
 
-pub trait WeightInfo {
-    fn register_pool() -> Weight;
-    fn update_pool_config() -> Weight;
-    fn deregister_pool() -> Weight;
-    fn submit_task() -> Weight;
-    fn submit_proof() -> Weight;
-    fn claim_reward() -> Weight;
-    fn dispute_verification() -> Weight;
-    fn on_initialize() -> Weight;
-}
 
-impl WeightInfo for () {
-    fn register_pool() -> Weight {
-        Weight::from_parts(30_000, 0)
-    }
-    fn update_pool_config() -> Weight {
-        Weight::from_parts(20_000, 0)
-    }
-    fn deregister_pool() -> Weight {
-        Weight::from_parts(20_000, 0)
-    }
-    fn submit_task() -> Weight {
-        Weight::from_parts(50_000, 0)
-    }
-    fn submit_proof() -> Weight {
-        Weight::from_parts(50_000, 0)
-    }
-    fn claim_reward() -> Weight {
-        Weight::from_parts(40_000, 0)
-    }
-    fn dispute_verification() -> Weight {
-        Weight::from_parts(40_000, 0)
-    }
-    fn on_initialize() -> Weight {
-        Weight::from_parts(50_000, 0)
-    }
-}
 
 #[frame_support::pallet]
 pub mod pallet {
+    use frame_support::traits::StorageVersion;
     use super::*;
+    use crate::weights::WeightInfo;
     use codec::{Decode, Encode, MaxEncodedLen};
     use frame_support::{
         dispatch::DispatchResult,
@@ -200,7 +167,10 @@ pub mod pallet {
         type OnTaskCompleted: dbc_support::traits::TaskCompletionHandler<AccountId = Self::AccountId>;
     }
 
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
     #[pallet::pallet]
+    #[pallet::storage_version(STORAGE_VERSION)]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
@@ -306,6 +276,23 @@ pub mod pallet {
         ActiveTasksExist,
         InsufficientBalance,
         ArithmeticOverflow,
+    }
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub _phantom: sp_std::marker::PhantomData<T>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self { _phantom: Default::default() }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {}
     }
 
     #[pallet::hooks]

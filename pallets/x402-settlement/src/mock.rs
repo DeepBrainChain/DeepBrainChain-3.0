@@ -86,6 +86,7 @@ impl crate::pallet::Config for Test {
     type MaxSignatureLen = MaxSignatureLen;
     type SettlementDelay = SettlementDelay;
     type WeightInfo = ();
+    type AdminOrigin = frame_system::EnsureSigned<AccountId>;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {

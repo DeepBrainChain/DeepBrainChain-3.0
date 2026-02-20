@@ -13,6 +13,7 @@ pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use frame_support::traits::StorageVersion;
     use dbc_support::traits::DbcPrice;
     use frame_support::{
         dispatch::DispatchResult,
@@ -113,7 +114,10 @@ pub mod pallet {
         >;
     }
 
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
     #[pallet::pallet]
+    #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
@@ -184,6 +188,24 @@ pub mod pallet {
         PriceOracleUnavailable,
         ArithmeticOverflow,
         NotAuthorized,
+    }
+
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub _phantom: sp_std::marker::PhantomData<T>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self { _phantom: Default::default() }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {}
     }
 
     #[pallet::call]

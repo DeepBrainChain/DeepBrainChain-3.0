@@ -304,6 +304,11 @@ runtime-benchmarks = [
   "frame-system-benchmarking/runtime-benchmarks",
   "pallet-evm/runtime-benchmarks",
   "pallet-ethereum/runtime-benchmarks",
+  "pallet-task-mode/runtime-benchmarks",
+  "pallet-zk-compute/runtime-benchmarks",
+  "pallet-compute-pool-scheduler/runtime-benchmarks",
+  "pallet-agent-attestation/runtime-benchmarks",
+  "pallet-x402-settlement/runtime-benchmarks",
 ]
 
 try-runtime = [

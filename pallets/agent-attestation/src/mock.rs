@@ -109,6 +109,7 @@ impl crate::Config for Test {
     type MaxModelIdLen = MaxModelIdLen;
     type MaxGpuUuidLen = MaxGpuUuidLen;
     type WeightInfo = ();
+    type AdminOrigin = frame_system::EnsureSigned<AccountId>;
     type OnAttestationConfirmed = MockAttestationSettler;
 }
 
