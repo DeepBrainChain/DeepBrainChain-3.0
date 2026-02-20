@@ -16,6 +16,8 @@ mod tests {
         Percent,
     };
     use std::cell::RefCell;
+    use codec;
+    use sp_io;
 
     use dbc_support::traits::DbcPrice;
 
@@ -38,6 +40,7 @@ mod tests {
             ComputePoolScheduler: pallet_compute_pool_scheduler,
             AgentAttestation: pallet_agent_attestation,
             X402Settlement: pallet_x402_settlement,
+            ZkCompute: pallet_zk_compute,
         }
     );
 
@@ -81,6 +84,29 @@ mod tests {
         pub const FacilitatorAccount: AccountId = 100;
         pub const MaxSignatureLen: u32 = 256;
         pub const SettlementDelay: BlockNumber = 10;
+        pub const PaymentIntentTTL: BlockNumber = 100;
+
+        // ZkCompute parameters
+        pub const MaxProofSize: u32 = 4096;
+        pub const MaxVerificationKeySize: u32 = 2048;
+        pub const MaxPublicInputsSize: u32 = 1024;
+        pub const MaxPendingTasks: u32 = 1000;
+        pub const MaxVerifiedTasks: u32 = 10000;
+        pub const MaxPendingPerMiner: u32 = 10;
+        pub const BaseReward: Balance = 1_000;
+        pub const SubmissionDeposit: Balance = 500;
+        pub const VerificationTimeout: BlockNumber = 100;
+        pub const InitialMinerScore: u32 = 100;
+        pub const MinMinerScoreToSubmit: u32 = 10;
+        pub const MaxMinerScore: u32 = 1000;
+        pub const ScoreOnSuccess: u32 = 5;
+        pub const ScorePenaltyOnFailure: u32 = 10;
+        pub const ZkPalletId: frame_support::PalletId = frame_support::PalletId(*b"zkcomput");
+
+        // P1 additions
+        pub const MaxModelsPerAgent: u32 = 10;
+        pub const MinPoolStake: Balance = 100;
+        pub const StakeSlashPercent: u32 = 10;
     }
 
     // ================================================================
@@ -121,6 +147,22 @@ mod tests {
         fn get_dlc_amount_by_value(_value: u64) -> Option<Self::Balance> {
             None
         }
+    }
+
+    // ================================================================
+    // Mock ZK Verifier (always returns true for testing)
+    // ================================================================
+    pub struct MockZkVerifier;
+    impl pallet_zk_compute::VerifyZkProof for MockZkVerifier {
+        fn verify(_proof: &[u8], _dims: (u32, u32, u32)) -> bool {
+            true
+        }
+    }
+
+    // SendTransactionTypes for ZK OCW
+    impl frame_system::offchain::SendTransactionTypes<pallet_zk_compute::Call<Test>> for Test {
+        type Extrinsic = UncheckedExtrinsic;
+        type OverarchingCall = RuntimeCall;
     }
 
     // ================================================================
@@ -199,6 +241,8 @@ mod tests {
         type MaxTasksPerPool = MaxTasksPerPool;
         type InitialReputation = InitialReputation;
         type WeightInfo = ();
+        type MinPoolStake = MinPoolStake;
+        type StakeSlashPercent = StakeSlashPercent;
         // REAL: ComputePoolScheduler -> AgentAttestation
         type OnTaskCompleted = AgentAttestation;
     }
@@ -214,8 +258,33 @@ mod tests {
         type MaxModelIdLen = MaxModelIdLen;
         type MaxGpuUuidLen = MaxGpuUuidLen;
         type WeightInfo = ();
+        type MaxModelsPerAgent = MaxModelsPerAgent;
+        type AdminOrigin = frame_system::EnsureSigned<AccountId>;
         // REAL: AgentAttestation -> X402Settlement
         type OnAttestationConfirmed = X402Settlement;
+    }
+
+    impl pallet_zk_compute::Config for Test {
+        type RuntimeEvent = RuntimeEvent;
+        type Currency = Balances;
+        type TaskId = u64;
+        type ZkVerifier = MockZkVerifier;
+        type MaxProofSize = MaxProofSize;
+        type MaxVerificationKeySize = MaxVerificationKeySize;
+        type MaxPublicInputsSize = MaxPublicInputsSize;
+        type MaxPendingTasks = MaxPendingTasks;
+        type MaxVerifiedTasks = MaxVerifiedTasks;
+        type MaxPendingPerMiner = MaxPendingPerMiner;
+        type BaseReward = BaseReward;
+        type SubmissionDeposit = SubmissionDeposit;
+        type VerificationTimeout = VerificationTimeout;
+        type InitialMinerScore = InitialMinerScore;
+        type MinMinerScoreToSubmit = MinMinerScoreToSubmit;
+        type MaxMinerScore = MaxMinerScore;
+        type ScoreOnSuccess = ScoreOnSuccess;
+        type ScorePenaltyOnFailure = ScorePenaltyOnFailure;
+        type PalletId = ZkPalletId;
+        type WeightInfo = ();
     }
 
     impl pallet_x402_settlement::Config for Test {
@@ -224,6 +293,8 @@ mod tests {
         type FacilitatorAccount = FacilitatorAccount;
         type MaxSignatureLen = MaxSignatureLen;
         type SettlementDelay = SettlementDelay;
+        type PaymentIntentTTL = PaymentIntentTTL;
+        type AdminOrigin = frame_system::EnsureSigned<AccountId>;
         type WeightInfo = ();
     }
 
@@ -254,6 +325,10 @@ mod tests {
             System::set_block_number(1);
             MockDbcPriceProvider::set_price(Some(2_000_000));
             MockDbcPriceProvider::set_multiplier(Some(10));
+            // Fund ZK pallet account
+            use sp_runtime::traits::AccountIdConversion;
+            let zk_account: AccountId = ZkPalletId::get().into_account_truncating();
+            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(&zk_account, 1_000_000);
         });
         ext
     }
@@ -589,7 +664,7 @@ mod tests {
             assert_eq!(challenged_att.challenger, Some(challenger));
 
             // ----- Resolve challenge: attester is guilty (slash) -----
-            let attester_balance_before = pallet_balances::Pallet::<Test>::free_balance(attester);
+            let _attester_balance_before = pallet_balances::Pallet::<Test>::free_balance(attester);
             let attester_reserved_before = pallet_balances::Pallet::<Test>::reserved_balance(attester);
 
             assert!(pallet_agent_attestation::Pallet::<Test>::resolve_challenge(
@@ -651,5 +726,364 @@ mod tests {
 
             println!("PASS: attestation_challenge_flow - slash and defend paths verified");
         });
+    
     }
+    // ================================================================
+    // Test 4: Pool staking integration (P1-4)
+    // ================================================================
+    #[test]
+    fn pool_staking_integration() {
+        new_test_ext().execute_with(|| {
+            let pool_owner: AccountId = 2;
+            let staker: AccountId = 1;
+            let staker2: AccountId = 3;
+
+            // Register pool
+            let gpu_model: frame_support::BoundedVec<u8, MaxGpuModelLen> =
+                b"A100".to_vec().try_into().unwrap();
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::register_pool(
+                RuntimeOrigin::signed(pool_owner),
+                gpu_model,
+                80, false, 100, 10,
+            ).is_ok());
+
+            // Stake to pool
+            let stake_amount: Balance = 5_000;
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::stake_to_pool(
+                RuntimeOrigin::signed(staker),
+                0, stake_amount,
+            ).is_ok());
+
+            // Verify stake recorded
+            assert_eq!(
+                pallet_compute_pool_scheduler::PoolStakes::<Test>::get(0, staker),
+                stake_amount
+            );
+            assert_eq!(
+                pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0),
+                stake_amount
+            );
+
+            // Second staker
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::stake_to_pool(
+                RuntimeOrigin::signed(staker2),
+                0, 3_000,
+            ).is_ok());
+            assert_eq!(
+                pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0),
+                8_000
+            );
+
+            // Unstake partial
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::unstake_from_pool(
+                RuntimeOrigin::signed(staker),
+                0, 2_000,
+            ).is_ok());
+            assert_eq!(
+                pallet_compute_pool_scheduler::PoolStakes::<Test>::get(0, staker),
+                3_000
+            );
+            assert_eq!(
+                pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0),
+                6_000
+            );
+
+            // Cannot unstake more than staked
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::unstake_from_pool(
+                RuntimeOrigin::signed(staker),
+                0, 10_000,
+            ).is_err());
+
+            println!("PASS: pool_staking_integration");
+        });
+    }
+
+    // ================================================================
+    // Test 5: Agent capability registry (P1-3)
+    // ================================================================
+    #[test]
+    fn agent_capability_registry() {
+        new_test_ext().execute_with(|| {
+            let agent: AccountId = 2;
+
+            // Must register node first
+            assert!(pallet_agent_attestation::Pallet::<Test>::register_node(
+                RuntimeOrigin::signed(agent),
+                b"GPU-CAP-TEST".to_vec(),
+                400,
+            ).is_ok());
+
+            // Register capabilities
+            let models = vec![
+                b"llama-70b".to_vec(),
+                b"gpt-4-turbo".to_vec(),
+                b"mixtral-8x7b".to_vec(),
+            ];
+            assert!(pallet_agent_attestation::Pallet::<Test>::update_capability(
+                RuntimeOrigin::signed(agent),
+                models,
+                4,    // max_concurrent
+                100,  // price_per_token
+                b"us-east".to_vec(),
+            ).is_ok());
+
+            // Verify capability stored
+            let cap = pallet_agent_attestation::AgentCapabilities::<Test>::get(agent).unwrap();
+            assert_eq!(cap.model_ids.len(), 3);
+            assert_eq!(cap.max_concurrent, 4);
+
+            // Verify model provider index
+            let model_key: frame_support::BoundedVec<u8, MaxModelIdLen> =
+                b"llama-70b".to_vec().try_into().unwrap();
+            assert!(pallet_agent_attestation::ModelProviders::<Test>::get(&model_key, agent));
+
+            // Update capabilities (should clean old index)
+            let new_models = vec![b"claude-3-opus".to_vec()];
+            assert!(pallet_agent_attestation::Pallet::<Test>::update_capability(
+                RuntimeOrigin::signed(agent),
+                new_models,
+                8, 200, b"eu-west".to_vec(),
+            ).is_ok());
+
+            // Old model should be removed from index
+            assert!(!pallet_agent_attestation::ModelProviders::<Test>::get(&model_key, agent));
+
+            // New model should be in index
+            let new_key: frame_support::BoundedVec<u8, MaxModelIdLen> =
+                b"claude-3-opus".to_vec().try_into().unwrap();
+            assert!(pallet_agent_attestation::ModelProviders::<Test>::get(&new_key, agent));
+
+            // Non-registered node cannot update capability
+            assert!(pallet_agent_attestation::Pallet::<Test>::update_capability(
+                RuntimeOrigin::signed(4), // not registered
+                vec![b"test".to_vec()],
+                1, 10, b"us".to_vec(),
+            ).is_err());
+
+            println!("PASS: agent_capability_registry");
+        });
+    }
+
+    // ================================================================
+    // Test 6: Payment intent expiry (P1-2)
+    // ================================================================
+    #[test]
+    fn payment_intent_expiry() {
+        new_test_ext().execute_with(|| {
+            let merchant: AccountId = 1;
+            let miner: AccountId = 2;
+            let facilitator: AccountId = 100;
+
+            // Create valid facilitator signature
+            let amount: Balance = 500;
+            let nonce: u64 = 1;
+            let replay_fingerprint = H256::from_low_u64_be(42);
+
+            let mut message = Vec::new();
+            codec::Encode::encode_to(&merchant, &mut message);
+            codec::Encode::encode_to(&miner, &mut message);
+            codec::Encode::encode_to(&amount, &mut message);
+            codec::Encode::encode_to(&nonce, &mut message);
+            codec::Encode::encode_to(&replay_fingerprint, &mut message);
+            codec::Encode::encode_to(&facilitator, &mut message);
+            let hash = sp_io::hashing::blake2_256(&message);
+            let sig: Vec<u8> = hash.to_vec();
+
+            // Submit payment intent
+            let balance_before = pallet_balances::Pallet::<Test>::free_balance(merchant);
+            assert!(pallet_x402_settlement::Pallet::<Test>::submit_payment_intent(
+                RuntimeOrigin::signed(merchant),
+                miner, amount, nonce, replay_fingerprint, sig,
+            ).is_ok());
+
+            // Verify funds reserved
+            let reserved = pallet_balances::Pallet::<Test>::reserved_balance(merchant);
+            assert_eq!(reserved, amount);
+
+            // Verify intent has expires_at
+            let intent = pallet_x402_settlement::pallet::PaymentIntents::<Test>::get(0).unwrap();
+            assert_eq!(intent.expires_at, 1 + PaymentIntentTTL::get()); // block 1 + TTL
+
+            // Advance to just before expiry - intent should still be Pending
+            run_to_block(1 + PaymentIntentTTL::get() - 1);
+            // Run on_initialize for the current block
+            <pallet_x402_settlement::Pallet<Test> as frame_support::traits::Hooks<BlockNumber>>::on_initialize(
+                System::block_number()
+            );
+            let intent = pallet_x402_settlement::pallet::PaymentIntents::<Test>::get(0).unwrap();
+            assert!(matches!(
+                intent.status,
+                pallet_x402_settlement::pallet::PaymentIntentStatus::Pending
+            ));
+
+            // Advance past expiry
+            run_to_block(1 + PaymentIntentTTL::get() + 1);
+            <pallet_x402_settlement::Pallet<Test> as frame_support::traits::Hooks<BlockNumber>>::on_initialize(
+                System::block_number()
+            );
+
+            // Intent should now be Failed (expired)
+            let expired_intent = pallet_x402_settlement::pallet::PaymentIntents::<Test>::get(0).unwrap();
+            assert!(matches!(
+                expired_intent.status,
+                pallet_x402_settlement::pallet::PaymentIntentStatus::Failed
+            ));
+
+            // Funds should be unreserved
+            let reserved_after = pallet_balances::Pallet::<Test>::reserved_balance(merchant);
+            assert_eq!(reserved_after, 0);
+            let balance_after = pallet_balances::Pallet::<Test>::free_balance(merchant);
+            assert_eq!(balance_after, balance_before);
+
+            println!("PASS: payment_intent_expiry");
+        });
+    }
+
+    // ================================================================
+    // Test 7: X402 full settlement with valid signature (P1-2)
+    // ================================================================
+    #[test]
+    fn x402_full_settlement_with_signature() {
+        new_test_ext().execute_with(|| {
+            let merchant: AccountId = 1;
+            let miner: AccountId = 2;
+            let facilitator: AccountId = 100;
+
+            // Build valid signature
+            let amount: Balance = 1_000;
+            let nonce: u64 = 1;
+            let replay_fingerprint = H256::from_low_u64_be(99);
+            let mut message = Vec::new();
+            codec::Encode::encode_to(&merchant, &mut message);
+            codec::Encode::encode_to(&miner, &mut message);
+            codec::Encode::encode_to(&amount, &mut message);
+            codec::Encode::encode_to(&nonce, &mut message);
+            codec::Encode::encode_to(&replay_fingerprint, &mut message);
+            codec::Encode::encode_to(&facilitator, &mut message);
+            let hash = sp_io::hashing::blake2_256(&message);
+            let sig: Vec<u8> = hash.to_vec();
+
+            // Submit intent
+            assert!(pallet_x402_settlement::Pallet::<Test>::submit_payment_intent(
+                RuntimeOrigin::signed(merchant),
+                miner, amount, nonce, replay_fingerprint, sig,
+            ).is_ok());
+
+            // Verify settlement (facilitator only)
+            assert!(pallet_x402_settlement::Pallet::<Test>::verify_settlement(
+                RuntimeOrigin::signed(facilitator),
+                0,
+            ).is_ok());
+
+            let verified = pallet_x402_settlement::pallet::PaymentIntents::<Test>::get(0).unwrap();
+            assert!(matches!(
+                verified.status,
+                pallet_x402_settlement::pallet::PaymentIntentStatus::Verified
+            ));
+
+            // Advance past settlement delay
+            run_to_block(1 + SettlementDelay::get() + 1);
+
+            // Finalize settlement
+            let miner_balance_before = pallet_balances::Pallet::<Test>::free_balance(miner);
+            assert!(pallet_x402_settlement::Pallet::<Test>::finalize_settlement(
+                RuntimeOrigin::signed(merchant),
+                0,
+            ).is_ok());
+
+            let settled = pallet_x402_settlement::pallet::PaymentIntents::<Test>::get(0).unwrap();
+            assert!(matches!(
+                settled.status,
+                pallet_x402_settlement::pallet::PaymentIntentStatus::Settled
+            ));
+
+            // Miner should have received funds
+            let miner_balance_after = pallet_balances::Pallet::<Test>::free_balance(miner);
+            assert!(miner_balance_after > miner_balance_before);
+
+            // Invalid signature should fail
+            let bad_sig: Vec<u8> = vec![0u8; 32];
+            assert!(pallet_x402_settlement::Pallet::<Test>::submit_payment_intent(
+                RuntimeOrigin::signed(merchant),
+                miner, amount, 2, H256::from_low_u64_be(100), bad_sig,
+            ).is_err());
+
+            println!("PASS: x402_full_settlement_with_signature");
+        });
+    }
+
+    // ================================================================
+    // Test 8: OCW verification unsigned (P1-1)
+    // ================================================================
+    #[test]
+    fn ocw_unsigned_verification() {
+        new_test_ext().execute_with(|| {
+            let miner: AccountId = 2;
+
+            // Fund the pallet account for slash operations
+            let pallet_account = pallet_zk_compute::Pallet::<Test>::account_id();
+            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(&pallet_account, 1_000_000);
+
+            // Submit a ZK proof
+            assert!(pallet_zk_compute::Pallet::<Test>::submit_proof(
+                RuntimeOrigin::signed(miner),
+                b"test-proof".to_vec(),
+                (8, 8, 8), // dimensions
+                120,       // execution_time
+                42,        // request_id
+            ).is_ok());
+
+            // Verify task is pending
+            let task_id = pallet_zk_compute::pallet::NextTaskId::<Test>::get() - 1u64;
+            let task = pallet_zk_compute::Tasks::<Test>::get(task_id).unwrap();
+            assert!(matches!(
+                task.status,
+                pallet_zk_compute::pallet::ZkVerificationStatus::Pending
+            ));
+
+            // Submit unsigned verification (simulating OCW)
+            assert!(pallet_zk_compute::Pallet::<Test>::submit_verification_unsigned(
+                RuntimeOrigin::none(),
+                task_id,
+                true, // verified
+            ).is_ok());
+
+            // Task should now be Verified
+            let verified_task = pallet_zk_compute::Tasks::<Test>::get(task_id).unwrap();
+            assert!(matches!(
+                verified_task.status,
+                pallet_zk_compute::pallet::ZkVerificationStatus::Verified
+            ));
+
+            // Score should be increased
+            let score = pallet_zk_compute::MinerScores::<Test>::get(miner);
+            assert!(score.unwrap_or(0) > 0, "Score should be positive after successful verification");
+
+            // Give miner more funds for second submission
+            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(&miner, 1_000_000);
+            // Submit another proof and fail verification
+            assert!(pallet_zk_compute::Pallet::<Test>::submit_proof(
+                RuntimeOrigin::signed(miner),
+                b"bad-proof".to_vec(),
+                (4, 4, 4), 120, 43,
+            ).is_ok());
+
+            let task_id2 = pallet_zk_compute::pallet::NextTaskId::<Test>::get() - 1u64;
+
+            assert!(pallet_zk_compute::Pallet::<Test>::submit_verification_unsigned(
+                RuntimeOrigin::none(),
+                task_id2,
+                false, // failed verification
+            ).is_ok());
+
+            let failed_task = pallet_zk_compute::Tasks::<Test>::get(task_id2).unwrap();
+            assert!(matches!(
+                failed_task.status,
+                pallet_zk_compute::pallet::ZkVerificationStatus::Failed
+            ));
+
+            println!("PASS: ocw_unsigned_verification");
+        });
+    }
+
 }

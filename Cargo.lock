@@ -2017,6 +2017,7 @@ dependencies = [
  "pallet-compute-pool-scheduler",
  "pallet-task-mode",
  "pallet-x402-settlement",
+ "pallet-zk-compute",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

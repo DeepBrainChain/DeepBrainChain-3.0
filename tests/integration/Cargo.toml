@@ -26,3 +26,4 @@ pallet-task-mode = { path = "../../pallets/task-mode", features = ["std"] }
 pallet-compute-pool-scheduler = { path = "../../pallets/compute-pool-scheduler", features = ["std"] }
 pallet-agent-attestation = { path = "../../pallets/agent-attestation", features = ["std"] }
 pallet-x402-settlement = { path = "../../pallets/x402-settlement", features = ["std"] }
+pallet-zk-compute = { path = "../../pallets/zk-compute", features = ["std"] }
