@@ -79,6 +79,11 @@ impl VerifyZkProof for MockZkVerifier {
 	}
 }
 
+impl frame_system::offchain::SendTransactionTypes<crate::Call<Test>> for Test {
+    type Extrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+    type OverarchingCall = RuntimeCall;
+}
+
 impl pallet_zk_compute::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;

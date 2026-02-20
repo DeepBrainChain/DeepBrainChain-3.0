@@ -24,6 +24,10 @@ pub trait VerifyZkProof {
 pub mod pallet {
     use frame_support::traits::StorageVersion;
 	use super::*;
+	use frame_system::offchain::SubmitTransaction;
+	use sp_runtime::transaction_validity::{
+		InvalidTransaction, TransactionSource, TransactionValidity, ValidTransaction,
+	};
 	use crate::weights::WeightInfo;
 	use frame_support::{
 		dispatch::DispatchResult,
@@ -71,7 +75,7 @@ pub mod pallet {
 	}
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + frame_system::offchain::SendTransactionTypes<Call<Self>> {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		type Currency: ReservableCurrency<Self::AccountId>;
@@ -121,6 +125,7 @@ pub mod pallet {
 	}
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	const UNSIGNED_TXS_PRIORITY: u64 = 100;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -166,6 +171,7 @@ pub mod pallet {
 			nonce: u64,
 			dimensions: (u32, u32, u32),
 		},
+		ProofVerifiedByOcw { task_id: T::TaskId, verified: bool },
 		ProofVerified {
 			task_id: T::TaskId,
 			verifier: T::AccountId,
@@ -224,6 +230,13 @@ pub mod pallet {
     impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
         fn build(&self) {}
     }
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn offchain_worker(_block_number: BlockNumberFor<T>) {
+			let _ = Self::ocw_verify_pending_tasks();
+		}
+	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -377,9 +390,92 @@ pub mod pallet {
 			});
 			Ok(())
 		}
+		/// Submit ZK verification result from off-chain worker (unsigned transaction)
+		#[pallet::call_index(3)]
+		#[pallet::weight(T::WeightInfo::verify_task())]
+		#[transactional]
+		pub fn submit_verification_unsigned(
+			origin: OriginFor<T>,
+			task_id: T::TaskId,
+			verified: bool,
+		) -> DispatchResult {
+			ensure_none(origin)?;
+			let mut task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
+			ensure!(task.status == ZkVerificationStatus::Pending, Error::<T>::InvalidTaskStatus);
+
+			task.status = if verified {
+				ZkVerificationStatus::Verified
+			} else {
+				ZkVerificationStatus::Failed
+			};
+			Tasks::<T>::insert(task_id, &task);
+
+			Self::remove_from_pending(task_id);
+			let miner_pending = MinerPendingCount::<T>::get(&task.miner);
+			MinerPendingCount::<T>::insert(&task.miner, miner_pending.saturating_sub(1));
+
+			if verified {
+				let _ = VerifiedTasks::<T>::try_mutate(|history| {
+					history.try_push(task_id)
+				});
+				Self::increase_score(&task.miner);
+			} else {
+				Self::decrease_score(&task.miner);
+				let _ = T::Currency::repatriate_reserved(
+					&task.miner,
+					&Self::account_id(),
+					task.submission_deposit,
+					BalanceStatus::Free,
+				);
+			}
+
+			Self::deposit_event(Event::ProofVerifiedByOcw {
+				task_id,
+				verified,
+			});
+
+			Ok(())
+		}
+	}
+
+
+	#[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T> {
+		type Call = Call<T>;
+
+		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+			match call {
+				Call::submit_verification_unsigned { .. } => {
+					ValidTransaction::with_tag_prefix("zk-verify")
+						.priority(UNSIGNED_TXS_PRIORITY)
+						.longevity(5)
+						.propagate(true)
+						.build()
+				},
+				_ => InvalidTransaction::Call.into(),
+			}
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
+		fn ocw_verify_pending_tasks() -> Result<(), Error<T>> {
+			let pending = PendingTasks::<T>::get();
+			for task_id in pending.iter() {
+				if let Some(task) = Tasks::<T>::get(task_id) {
+					if task.status != ZkVerificationStatus::Pending {
+						continue;
+					}
+					let verified = T::ZkVerifier::verify(task.proof.as_ref(), task.dimensions);
+					let call = Call::submit_verification_unsigned {
+						task_id: *task_id,
+						verified,
+					};
+					let _ = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+				}
+			}
+			Ok(())
+		}
+
 		pub fn account_id() -> T::AccountId {
 			T::PalletId::get().into_account_truncating()
 		}
