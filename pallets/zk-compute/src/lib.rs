@@ -392,7 +392,7 @@ pub mod pallet {
 		}
 		/// Submit ZK verification result from off-chain worker (unsigned transaction)
 		#[pallet::call_index(3)]
-		#[pallet::weight(T::WeightInfo::verify_task())]
+		#[pallet::weight(T::WeightInfo::submit_verification_unsigned())]
 		#[transactional]
 		pub fn submit_verification_unsigned(
 			origin: OriginFor<T>,

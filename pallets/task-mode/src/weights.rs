@@ -16,7 +16,7 @@
 // --pallet
 // pallet_task_mode
 // --extrinsic
-// create_task_definition,update_task_definition,create_task_order,mark_order_completed
+// *
 // --steps
 // 20
 // --repeat
@@ -54,8 +54,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `4`
 		//  Estimated: `1493`
-		// Minimum execution time: 15_468_000 picoseconds.
-		Weight::from_parts(15_932_000, 1493)
+		// Minimum execution time: 15_396_000 picoseconds.
+		Weight::from_parts(17_427_000, 1493)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
@@ -65,8 +65,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `188`
 		//  Estimated: `5104`
-		// Minimum execution time: 18_688_000 picoseconds.
-		Weight::from_parts(19_149_000, 5104)
+		// Minimum execution time: 18_626_000 picoseconds.
+		Weight::from_parts(19_054_000, 5104)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -82,8 +82,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `329`
 		//  Estimated: `5104`
-		// Minimum execution time: 49_504_000 picoseconds.
-		Weight::from_parts(50_277_000, 5104)
+		// Minimum execution time: 50_083_000 picoseconds.
+		Weight::from_parts(51_233_000, 5104)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
@@ -93,28 +93,29 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `283`
 		//  Estimated: `3687`
-		// Minimum execution time: 18_066_000 picoseconds.
-		Weight::from_parts(18_525_000, 3687)
+		// Minimum execution time: 18_580_000 picoseconds.
+		Weight::from_parts(21_283_000, 3687)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-
 	/// Storage: TaskMode TaskOrders (r:1 w:1)
 	/// Proof: TaskMode TaskOrders (max_values: None, max_size: Some(222), added: 2697, mode: MaxEncodedLen)
 	/// Storage: TaskMode TaskDefinitions (r:1 w:0)
 	/// Proof: TaskMode TaskDefinitions (max_values: None, max_size: Some(1639), added: 4114, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
 	/// Storage: TaskMode EraStats (r:1 w:1)
-	/// Proof: TaskMode EraStats (max_values: None, max_size: Some(76), added: 2551, mode: MaxEncodedLen)
+	/// Proof: TaskMode EraStats (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
 	/// Storage: TaskMode MinerTaskStats (r:1 w:1)
 	/// Proof: TaskMode MinerTaskStats (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	fn settle_task_order() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `500` (estimated)
+		//  Measured:  `567`
 		//  Estimated: `5104`
-		// Minimum execution time: 60_000_000 picoseconds (estimated from create_task_order + balance ops).
-		Weight::from_parts(60_000_000, 5104)
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		// Minimum execution time: 89_316_000 picoseconds.
+		Weight::from_parts(91_481_000, 5104)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 }
 
@@ -128,8 +129,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `4`
 		//  Estimated: `1493`
-		// Minimum execution time: 15_468_000 picoseconds.
-		Weight::from_parts(15_932_000, 1493)
+		// Minimum execution time: 15_396_000 picoseconds.
+		Weight::from_parts(17_427_000, 1493)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
@@ -139,8 +140,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `188`
 		//  Estimated: `5104`
-		// Minimum execution time: 18_688_000 picoseconds.
-		Weight::from_parts(19_149_000, 5104)
+		// Minimum execution time: 18_626_000 picoseconds.
+		Weight::from_parts(19_054_000, 5104)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
@@ -156,8 +157,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `329`
 		//  Estimated: `5104`
-		// Minimum execution time: 49_504_000 picoseconds.
-		Weight::from_parts(50_277_000, 5104)
+		// Minimum execution time: 50_083_000 picoseconds.
+		Weight::from_parts(51_233_000, 5104)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
@@ -167,27 +168,28 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `283`
 		//  Estimated: `3687`
-		// Minimum execution time: 18_066_000 picoseconds.
-		Weight::from_parts(18_525_000, 3687)
+		// Minimum execution time: 18_580_000 picoseconds.
+		Weight::from_parts(21_283_000, 3687)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-
 	/// Storage: TaskMode TaskOrders (r:1 w:1)
 	/// Proof: TaskMode TaskOrders (max_values: None, max_size: Some(222), added: 2697, mode: MaxEncodedLen)
 	/// Storage: TaskMode TaskDefinitions (r:1 w:0)
 	/// Proof: TaskMode TaskDefinitions (max_values: None, max_size: Some(1639), added: 4114, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
 	/// Storage: TaskMode EraStats (r:1 w:1)
-	/// Proof: TaskMode EraStats (max_values: None, max_size: Some(76), added: 2551, mode: MaxEncodedLen)
+	/// Proof: TaskMode EraStats (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
 	/// Storage: TaskMode MinerTaskStats (r:1 w:1)
 	/// Proof: TaskMode MinerTaskStats (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	fn settle_task_order() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `500` (estimated)
+		//  Measured:  `567`
 		//  Estimated: `5104`
-		// Minimum execution time: 60_000_000 picoseconds (estimated from create_task_order + balance ops).
-		Weight::from_parts(60_000_000, 5104)
-			.saturating_add(RocksDbWeight::get().reads(4_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+		// Minimum execution time: 89_316_000 picoseconds.
+		Weight::from_parts(91_481_000, 5104)
+			.saturating_add(RocksDbWeight::get().reads(5_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
 	}
 }

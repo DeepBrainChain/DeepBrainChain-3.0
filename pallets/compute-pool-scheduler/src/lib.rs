@@ -722,7 +722,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(7)]
-        #[pallet::weight(T::WeightInfo::register_pool())]
+        #[pallet::weight(T::WeightInfo::stake_to_pool())]
         pub fn stake_to_pool(
             origin: OriginFor<T>,
             pool_id: PoolId,
@@ -738,7 +738,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(8)]
-        #[pallet::weight(T::WeightInfo::register_pool())]
+        #[pallet::weight(T::WeightInfo::unstake_from_pool())]
         pub fn unstake_from_pool(
             origin: OriginFor<T>,
             pool_id: PoolId,

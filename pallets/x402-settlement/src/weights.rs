@@ -16,7 +16,7 @@
 // --pallet
 // pallet_x402_settlement
 // --extrinsic
-// submit_payment_intent,verify_settlement,fail_payment_intent
+// *
 // --steps
 // 20
 // --repeat
@@ -38,8 +38,8 @@ use core::marker::PhantomData;
 pub trait WeightInfo {
 	fn submit_payment_intent() -> Weight;
 	fn verify_settlement() -> Weight;
-	fn fail_payment_intent() -> Weight;
 	fn finalize_settlement() -> Weight;
+	fn fail_payment_intent() -> Weight;
 }
 
 /// Weights for `pallet_x402_settlement` using the Substrate node and recommended hardware.
@@ -52,52 +52,53 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: X402Settlement NextIntentId (r:1 w:1)
 	/// Proof: X402Settlement NextIntentId (max_values: Some(1), max_size: Some(8), added: 503, mode: MaxEncodedLen)
 	/// Storage: X402Settlement PaymentIntents (r:0 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
 	fn submit_payment_intent() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `114`
 		//  Estimated: `3522`
-		// Minimum execution time: 44_645_000 picoseconds.
-		Weight::from_parts(45_589_000, 3522)
+		// Minimum execution time: 45_860_000 picoseconds.
+		Weight::from_parts(48_495_000, 3522)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
 	fn verify_settlement() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `377`
-		//  Estimated: `3762`
-		// Minimum execution time: 21_957_000 picoseconds.
-		Weight::from_parts(22_326_000, 3762)
+		//  Measured:  `405`
+		//  Estimated: `3766`
+		// Minimum execution time: 22_523_000 picoseconds.
+		Weight::from_parts(23_198_000, 3766)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
-	fn fail_payment_intent() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `377`
-		//  Estimated: `3762`
-		// Minimum execution time: 37_841_000 picoseconds.
-		Weight::from_parts(38_352_000, 3762)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
-	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
 	/// Storage: X402Settlement SettlementReceipts (r:0 w:1)
-	/// Proof: X402Settlement SettlementReceipts (max_values: None, max_size: Some(137), added: 2612, mode: MaxEncodedLen)
+	/// Proof: X402Settlement SettlementReceipts (max_values: None, max_size: Some(152), added: 2627, mode: MaxEncodedLen)
 	fn finalize_settlement() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `377` (estimated)
-		//  Estimated: `3762`
-		// Minimum execution time: 55_000_000 picoseconds (estimated from verify_settlement + balance transfer).
-		Weight::from_parts(55_000_000, 3762)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `449`
+		//  Estimated: `3766`
+		// Minimum execution time: 56_206_000 picoseconds.
+		Weight::from_parts(58_299_000, 3766)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
-
+	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
+	fn fail_payment_intent() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `405`
+		//  Estimated: `3766`
+		// Minimum execution time: 37_732_000 picoseconds.
+		Weight::from_parts(38_434_000, 3766)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -109,50 +110,51 @@ impl WeightInfo for () {
 	/// Storage: X402Settlement NextIntentId (r:1 w:1)
 	/// Proof: X402Settlement NextIntentId (max_values: Some(1), max_size: Some(8), added: 503, mode: MaxEncodedLen)
 	/// Storage: X402Settlement PaymentIntents (r:0 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
 	fn submit_payment_intent() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `114`
 		//  Estimated: `3522`
-		// Minimum execution time: 44_645_000 picoseconds.
-		Weight::from_parts(45_589_000, 3522)
+		// Minimum execution time: 45_860_000 picoseconds.
+		Weight::from_parts(48_495_000, 3522)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
 	}
 	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
 	fn verify_settlement() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `377`
-		//  Estimated: `3762`
-		// Minimum execution time: 21_957_000 picoseconds.
-		Weight::from_parts(22_326_000, 3762)
+		//  Measured:  `405`
+		//  Estimated: `3766`
+		// Minimum execution time: 22_523_000 picoseconds.
+		Weight::from_parts(23_198_000, 3766)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
-	fn fail_payment_intent() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `377`
-		//  Estimated: `3762`
-		// Minimum execution time: 37_841_000 picoseconds.
-		Weight::from_parts(38_352_000, 3762)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
-	}
-	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
-	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(297), added: 2772, mode: MaxEncodedLen)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
 	/// Storage: X402Settlement SettlementReceipts (r:0 w:1)
-	/// Proof: X402Settlement SettlementReceipts (max_values: None, max_size: Some(137), added: 2612, mode: MaxEncodedLen)
+	/// Proof: X402Settlement SettlementReceipts (max_values: None, max_size: Some(152), added: 2627, mode: MaxEncodedLen)
 	fn finalize_settlement() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `377` (estimated)
-		//  Estimated: `3762`
-		// Minimum execution time: 55_000_000 picoseconds (estimated from verify_settlement + balance transfer).
-		Weight::from_parts(55_000_000, 3762)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+		//  Measured:  `449`
+		//  Estimated: `3766`
+		// Minimum execution time: 56_206_000 picoseconds.
+		Weight::from_parts(58_299_000, 3766)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
-
+	/// Storage: X402Settlement PaymentIntents (r:1 w:1)
+	/// Proof: X402Settlement PaymentIntents (max_values: None, max_size: Some(301), added: 2776, mode: MaxEncodedLen)
+	fn fail_payment_intent() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `405`
+		//  Estimated: `3766`
+		// Minimum execution time: 37_732_000 picoseconds.
+		Weight::from_parts(38_434_000, 3766)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
 }

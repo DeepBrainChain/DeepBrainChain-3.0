@@ -36,6 +36,8 @@ frame_benchmarking::v1::benchmarks! {
         let verifier: T::AccountId = frame_benchmarking::v1::account("verifier", 0, 0);
         frame_system::Pallet::<T>::set_block_number(1u32.into());
         let task_id = setup_pending_task::<T>(miner);
+        // Fund the pallet account so repatriate_reserved can succeed
+        let _ = T::Currency::deposit_creating(&ZkCompute::<T>::account_id(), T::SubmissionDeposit::get() + T::BaseReward::get());
     }: _(RawOrigin::Signed(verifier), task_id)
     verify {
         let task = Tasks::<T>::get(task_id).unwrap();
@@ -44,14 +46,38 @@ frame_benchmarking::v1::benchmarks! {
 
     claim_reward {
         let miner: T::AccountId = whitelisted_caller();
-        let verifier: T::AccountId = frame_benchmarking::v1::account("verifier", 0, 0);
         frame_system::Pallet::<T>::set_block_number(1u32.into());
         let task_id = setup_pending_task::<T>(miner.clone());
         let _ = T::Currency::deposit_creating(&ZkCompute::<T>::account_id(), T::BaseReward::get() + T::SubmissionDeposit::get());
-        let _ = ZkCompute::<T>::verify_task(RawOrigin::Signed(verifier).into(), task_id);
+
+        // Directly set task to Verified (ZkVerifier mock always returns false)
+        Tasks::<T>::mutate(task_id, |maybe_task| {
+            if let Some(task) = maybe_task.as_mut() {
+                task.status = ZkVerificationStatus::Verified;
+                task.reward_claimed = false;
+            }
+        });
     }: _(RawOrigin::Signed(miner), task_id)
     verify {
         let task = Tasks::<T>::get(task_id).unwrap();
         assert!(task.reward_claimed);
     }
+
+    submit_verification_unsigned {
+        let miner: T::AccountId = whitelisted_caller();
+        let verifier: T::AccountId = frame_benchmarking::v1::account("verifier", 0, 0);
+        frame_system::Pallet::<T>::set_block_number(1u32.into());
+        let task_id = setup_pending_task::<T>(miner.clone());
+    }: {
+        ZkCompute::<T>::submit_verification_unsigned(
+            frame_system::RawOrigin::None.into(),
+            task_id,
+            true,
+        ).expect("submit_verification_unsigned failed");
+    }
+    verify {
+        let task = Tasks::<T>::get(task_id).unwrap();
+        assert!(matches!(task.status, ZkVerificationStatus::Verified));
+    }
+
 }

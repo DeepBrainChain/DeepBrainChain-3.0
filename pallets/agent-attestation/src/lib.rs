@@ -519,7 +519,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(6)]
-        #[pallet::weight(T::WeightInfo::register_node())]
+        #[pallet::weight(T::WeightInfo::update_capability())]
         pub fn update_capability(
             origin: OriginFor<T>,
             model_ids: Vec<Vec<u8>>,

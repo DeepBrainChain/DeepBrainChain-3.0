@@ -39,6 +39,7 @@ pub trait WeightInfo {
 	fn submit_proof() -> Weight;
 	fn verify_task() -> Weight;
 	fn claim_reward() -> Weight;
+	fn submit_verification_unsigned() -> Weight;
 }
 
 /// Weights for `pallet_zk_compute` using the Substrate node and recommended hardware.
@@ -60,10 +61,42 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `180`
 		//  Estimated: `9487`
-		// Minimum execution time: 53_875_000 picoseconds.
-		Weight::from_parts(55_423_000, 9487)
+		// Minimum execution time: 53_847_000 picoseconds.
+		Weight::from_parts(54_680_000, 9487)
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+	/// Storage: ZkCompute Tasks (r:1 w:1)
+	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
+	/// Storage: ZkCompute PendingTasks (r:1 w:1)
+	/// Proof: ZkCompute PendingTasks (max_values: Some(1), max_size: Some(8002), added: 8497, mode: MaxEncodedLen)
+	/// Storage: ZkCompute MinerPendingCount (r:1 w:1)
+	/// Proof: ZkCompute MinerPendingCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+	/// Storage: ZkCompute MinerScores (r:1 w:1)
+	/// Proof: ZkCompute MinerScores (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	fn verify_task() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `603`
+		//  Estimated: `9487`
+		// Minimum execution time: 84_765_000 picoseconds.
+		Weight::from_parts(85_954_000, 9487)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+	/// Storage: ZkCompute Tasks (r:1 w:1)
+	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	fn claim_reward() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `530`
+		//  Estimated: `7681`
+		// Minimum execution time: 85_543_000 picoseconds.
+		Weight::from_parts(87_036_000, 7681)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: ZkCompute Tasks (r:1 w:1)
 	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
@@ -75,27 +108,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: ZkCompute VerifiedTasks (max_values: Some(1), max_size: Some(80002), added: 80497, mode: MaxEncodedLen)
 	/// Storage: ZkCompute MinerScores (r:1 w:1)
 	/// Proof: ZkCompute MinerScores (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
-	fn verify_task() -> Weight {
+	fn submit_verification_unsigned() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `502`
 		//  Estimated: `81487`
-		// Minimum execution time: 49_731_000 picoseconds.
-		Weight::from_parts(50_708_000, 81487)
+		// Minimum execution time: 47_944_000 picoseconds.
+		Weight::from_parts(49_012_000, 81487)
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
-	}
-	/// Storage: ZkCompute Tasks (r:1 w:1)
-	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
-	/// Storage: System Account (r:1 w:1)
-	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
-	fn claim_reward() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `591`
-		//  Estimated: `7681`
-		// Minimum execution time: 86_018_000 picoseconds.
-		Weight::from_parts(88_100_000, 7681)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 }
 
@@ -117,10 +137,42 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `180`
 		//  Estimated: `9487`
-		// Minimum execution time: 53_875_000 picoseconds.
-		Weight::from_parts(55_423_000, 9487)
+		// Minimum execution time: 53_847_000 picoseconds.
+		Weight::from_parts(54_680_000, 9487)
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(5_u64))
+	}
+	/// Storage: ZkCompute Tasks (r:1 w:1)
+	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
+	/// Storage: ZkCompute PendingTasks (r:1 w:1)
+	/// Proof: ZkCompute PendingTasks (max_values: Some(1), max_size: Some(8002), added: 8497, mode: MaxEncodedLen)
+	/// Storage: ZkCompute MinerPendingCount (r:1 w:1)
+	/// Proof: ZkCompute MinerPendingCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+	/// Storage: ZkCompute MinerScores (r:1 w:1)
+	/// Proof: ZkCompute MinerScores (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	fn verify_task() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `603`
+		//  Estimated: `9487`
+		// Minimum execution time: 84_765_000 picoseconds.
+		Weight::from_parts(85_954_000, 9487)
+			.saturating_add(RocksDbWeight::get().reads(5_u64))
+			.saturating_add(RocksDbWeight::get().writes(5_u64))
+	}
+	/// Storage: ZkCompute Tasks (r:1 w:1)
+	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	fn claim_reward() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `530`
+		//  Estimated: `7681`
+		// Minimum execution time: 85_543_000 picoseconds.
+		Weight::from_parts(87_036_000, 7681)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 	/// Storage: ZkCompute Tasks (r:1 w:1)
 	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
@@ -132,26 +184,13 @@ impl WeightInfo for () {
 	/// Proof: ZkCompute VerifiedTasks (max_values: Some(1), max_size: Some(80002), added: 80497, mode: MaxEncodedLen)
 	/// Storage: ZkCompute MinerScores (r:1 w:1)
 	/// Proof: ZkCompute MinerScores (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
-	fn verify_task() -> Weight {
+	fn submit_verification_unsigned() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `502`
 		//  Estimated: `81487`
-		// Minimum execution time: 49_731_000 picoseconds.
-		Weight::from_parts(50_708_000, 81487)
+		// Minimum execution time: 47_944_000 picoseconds.
+		Weight::from_parts(49_012_000, 81487)
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(5_u64))
-	}
-	/// Storage: ZkCompute Tasks (r:1 w:1)
-	/// Proof: ZkCompute Tasks (max_values: None, max_size: Some(4216), added: 6691, mode: MaxEncodedLen)
-	/// Storage: System Account (r:1 w:1)
-	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
-	fn claim_reward() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `591`
-		//  Estimated: `7681`
-		// Minimum execution time: 86_018_000 picoseconds.
-		Weight::from_parts(88_100_000, 7681)
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 }

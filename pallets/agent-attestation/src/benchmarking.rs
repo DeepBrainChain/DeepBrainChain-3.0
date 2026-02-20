@@ -3,6 +3,7 @@
 use super::*;
 use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::Currency;
+use sp_std::vec;
 use frame_system::RawOrigin;
 use sp_core::H256;
 
@@ -118,4 +119,20 @@ benchmarks! {
             0,
         )?;
     }: _(RawOrigin::Root, 0u64, true)
+
+    update_capability {
+        let caller: T::AccountId = whitelisted_caller();
+        Pallet::<T>::register_node(
+            RawOrigin::Signed(caller.clone()).into(),
+            b"GPU-1234".to_vec(),
+            100u32,
+        )?;
+
+        let model_ids = vec![b"llama-70b".to_vec(), b"gpt-4".to_vec()];
+        let max_concurrent = 4u32;
+        let amount = T::AttestationDeposit::get();
+        let price_per_token = amount;
+        let region = b"us-east".to_vec();
+    }: _(RawOrigin::Signed(caller), model_ids, max_concurrent, price_per_token, region)
+
 }

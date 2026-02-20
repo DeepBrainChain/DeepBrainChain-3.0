@@ -4,7 +4,7 @@ use super::*;
 use frame_benchmarking::vec;
 use crate::Pallet as TaskMode;
 use frame_benchmarking::v1::whitelisted_caller;
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use codec::Encode;
 use sp_std::vec::Vec;
@@ -77,6 +77,7 @@ frame_benchmarking::v1::benchmarks! {
         seed_dbc_price::<T>();
         let task_id = setup_task_definition::<T>(customer.clone());
         let _ = T::Currency::deposit_creating(&customer, 1_000_000_000_000_000_000u128);
+        let _ = T::Currency::deposit_creating(&miner, 1_000_000_000_000_000_000u128);
         TaskMode::<T>::create_task_order(
             RawOrigin::Signed(customer).into(), task_id, miner.clone(), 1_000, 1_000
         ).expect("setup: create_task_order failed");
@@ -93,6 +94,10 @@ frame_benchmarking::v1::benchmarks! {
         seed_dbc_price::<T>();
         let task_id = setup_task_definition::<T>(customer.clone());
         let _ = T::Currency::deposit_creating(&customer, 1_000_000_000_000_000_000u128);
+        let _ = T::Currency::deposit_creating(&miner, 1_000_000_000_000_000_000u128);
+        // Fund treasury account so repatriate_reserved can succeed
+        let treasury = T::TreasuryAccount::get();
+        let _ = T::Currency::deposit_creating(&treasury, 1_000_000_000_000u128);
         TaskMode::<T>::create_task_order(
             RawOrigin::Signed(customer.clone()).into(), task_id, miner.clone(), 1_000, 1_000
         ).expect("setup: create_task_order failed");

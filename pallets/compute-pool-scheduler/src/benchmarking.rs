@@ -150,4 +150,24 @@ benchmarks! {
     }: {
         <Pallet::<T> as Hooks<frame_system::pallet_prelude::BlockNumberFor<T>>>::on_initialize(100u32.into());
     }
+
+    stake_to_pool {
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let pool_id = create_pool::<T>(&owner);
+        let staker: T::AccountId = funded_account::<T>("staker", 1);
+        let amount: BalanceOf<T> = 100u32.into();
+    }: _(RawOrigin::Signed(staker), pool_id, amount)
+
+    unstake_from_pool {
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let pool_id = create_pool::<T>(&owner);
+        let staker: T::AccountId = funded_account::<T>("staker", 1);
+        let amount: BalanceOf<T> = 100u32.into();
+        Pallet::<T>::stake_to_pool(
+            RawOrigin::Signed(staker.clone()).into(),
+            pool_id,
+            amount,
+        ).expect("stake failed");
+    }: _(RawOrigin::Signed(staker), pool_id, amount)
+
 }
