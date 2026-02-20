@@ -50,6 +50,7 @@ pub mod pallet {
         pub created_at: BlockNumberFor<T>,
         pub verified_at: Option<BlockNumberFor<T>>,
         pub settled_at: Option<BlockNumberFor<T>>,
+        pub expires_at: BlockNumberFor<T>,
     }
 
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -79,6 +80,9 @@ pub mod pallet {
 
         #[pallet::constant]
         type SettlementDelay: Get<BlockNumberFor<Self>>;
+
+        #[pallet::constant]
+        type PaymentIntentTTL: Get<BlockNumberFor<Self>>;
 
         type WeightInfo: WeightInfo;
 
@@ -140,6 +144,11 @@ pub mod pallet {
             intent_id: u64,
             reason: DispatchError,
         },
+        PaymentIntentExpired {
+            intent_id: u64,
+            merchant: T::AccountId,
+            amount: BalanceOf<T>,
+        },
     }
 
     #[pallet::error]
@@ -153,6 +162,7 @@ pub mod pallet {
         SettlementDelayNotMet,
         NotAuthorized,
         ArithmeticOverflow,
+        PaymentIntentExpired,
     }
 
 
@@ -172,6 +182,35 @@ pub mod pallet {
     impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
         fn build(&self) {}
     }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(now: BlockNumberFor<T>) -> Weight {
+            let mut expired_count: u32 = 0;
+            let mut intents_to_expire = sp_std::vec::Vec::new();
+            for (id, intent) in PaymentIntents::<T>::iter() {
+                if now >= intent.expires_at && matches!(intent.status, PaymentIntentStatus::Pending) {
+                    intents_to_expire.push((id, intent));
+                }
+            }
+            for (id, intent) in intents_to_expire {
+                T::Currency::unreserve(&intent.merchant, intent.amount);
+                PaymentIntents::<T>::mutate(id, |maybe| {
+                    if let Some(ref mut i) = maybe {
+                        i.status = PaymentIntentStatus::Failed;
+                    }
+                });
+                Self::deposit_event(Event::PaymentIntentExpired {
+                    intent_id: id,
+                    merchant: intent.merchant,
+                    amount: intent.amount,
+                });
+                expired_count += 1;
+            }
+            T::DbWeight::get().reads_writes(expired_count.into(), expired_count.into())
+        }
+    }
+
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -241,6 +280,7 @@ pub mod pallet {
                     created_at: <frame_system::Pallet<T>>::block_number(),
                     verified_at: None,
                     settled_at: None,
+                    expires_at: <frame_system::Pallet<T>>::block_number() + T::PaymentIntentTTL::get(),
                 },
             );
 
@@ -273,6 +313,10 @@ pub mod pallet {
                     matches!(intent.status, PaymentIntentStatus::Pending),
                     Error::<T>::InvalidPaymentIntentStatus
                 );
+                ensure!(
+                    <frame_system::Pallet<T>>::block_number() < intent.expires_at,
+                    Error::<T>::PaymentIntentExpired
+                );
 
                 intent.status = PaymentIntentStatus::Verified;
                 intent.verified_at = Some(<frame_system::Pallet<T>>::block_number());
@@ -300,6 +344,10 @@ pub mod pallet {
             ensure!(
                 matches!(intent.status, PaymentIntentStatus::Verified),
                 Error::<T>::InvalidPaymentIntentStatus
+            );
+            ensure!(
+                <frame_system::Pallet<T>>::block_number() < intent.expires_at,
+                Error::<T>::PaymentIntentExpired
             );
 
             // Check authorization: merchant, miner, or facilitator can finalize
@@ -391,16 +439,32 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         fn verify_facilitator_signature(
-            _merchant: &T::AccountId,
-            _miner: &T::AccountId,
-            _amount: BalanceOf<T>,
-            _nonce: u64,
-            _replay_fingerprint: H256,
+            merchant: &T::AccountId,
+            miner: &T::AccountId,
+            amount: BalanceOf<T>,
+            nonce: u64,
+            replay_fingerprint: H256,
             signature_bytes: &BoundedVec<u8, T::MaxSignatureLen>,
         ) -> bool {
-            // In a real implementation, this would verify the facilitator's signature
-            // For now, we'll simulate verification by checking if the signature is not empty
-            !signature_bytes.is_empty()
+            if signature_bytes.len() < 32 {
+                return false;
+            }
+
+            // Build the message: SCALE-encode all payment parameters + facilitator
+            let facilitator = T::FacilitatorAccount::get();
+            let mut message = Vec::new();
+            merchant.encode_to(&mut message);
+            miner.encode_to(&mut message);
+            amount.encode_to(&mut message);
+            nonce.encode_to(&mut message);
+            replay_fingerprint.encode_to(&mut message);
+            facilitator.encode_to(&mut message);
+
+            // Expected signature = blake2_256(message)
+            let expected = sp_io::hashing::blake2_256(&message);
+
+            // Compare first 32 bytes of signature with expected hash
+            signature_bytes[..32] == expected[..]
         }
 
         pub fn get_payment_intent(intent_id: u64) -> Option<PaymentIntent<T>> {

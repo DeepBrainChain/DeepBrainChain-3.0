@@ -1570,6 +1570,8 @@ dependencies = [
  "terminating-rental-rpc",
  "tokio",
  "try-runtime-cli",
+ "x402-settlement-rpc",
+ "x402-settlement-runtime-api",
 ]
 
 [[package]]
@@ -1983,6 +1985,7 @@ dependencies = [
  "substrate-wasm-builder",
  "terminating-rental",
  "terminating-rental-runtime-api",
+ "x402-settlement-runtime-api",
 ]
 
 [[package]]
@@ -12462,6 +12465,29 @@ dependencies = [
  "curve25519-dalek 3.2.0",
  "rand_core 0.5.1",
  "zeroize",
+]
+
+[[package]]
+name = "x402-settlement-rpc"
+version = "4.0.1-dev"
+dependencies = [
+ "hex",
+ "jsonrpsee",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
+ "x402-settlement-runtime-api",
+]
+
+[[package]]
+name = "x402-settlement-runtime-api"
+version = "4.0.1-dev"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-core",
+ "sp-std",
 ]
 
 [[package]]

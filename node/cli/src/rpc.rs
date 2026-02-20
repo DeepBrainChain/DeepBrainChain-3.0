@@ -66,6 +66,7 @@ where
     C::Api: rent_machine_rpc::RmStorageRuntimeApi<Block, AccountId, BlockNumber, Balance>,
     C::Api: terminating_rental_rpc::IrStorageRuntimeApi<Block, AccountId, Balance, BlockNumber>,
     C::Api: dbc3_runtime_api::Dbc3Api<Block, AccountId, BlockNumber, Balance>,
+    C::Api: x402_settlement_runtime_api::X402SettlementApi<Block, AccountId, u128>,
 {
     use dbc_client_rpc_debug::{Debug, DebugServer};
     use dbc_client_rpc_trace::{Trace, TraceServer};
@@ -86,6 +87,7 @@ where
     use simple_rpc_rpc::{SimpleRpcApiServer, SrStorage};
     use terminating_rental_rpc::{IrRpcApiServer, IrStorage};
     use dbc3_rpc::{Dbc3RpcApiServer, Dbc3Storage};
+    use x402_settlement_rpc::{X402SettlementRpcApiServer, X402Settlement};
 
     let mut io = RpcModule::new(());
     let FullDeps {
@@ -149,6 +151,7 @@ where
     io.merge(RmStorage::new(client.clone()).into_rpc()).ok();
     io.merge(IrStorage::new(client.clone()).into_rpc()).ok();
     io.merge(Dbc3Storage::<_, Block>::new(client.clone()).into_rpc()).ok();
+    io.merge(X402Settlement::<_, Block>::new(client.clone()).into_rpc()).ok();
     io.merge(
         EthFilter::new(
             client.clone(),

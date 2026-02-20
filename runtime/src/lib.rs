@@ -1434,6 +1434,7 @@ parameter_types! {
     pub const FacilitatorAccount: AccountId = AccountId::new([0u8; 32]); // TODO: set real facilitator
     pub const MaxSignatureLen: u32 = 128;
     pub const SettlementDelay: BlockNumber = 100;
+    pub const PaymentIntentTTL: BlockNumber = 14400; // ~24 hours at 6s blocks
 }
 
 /// Hash-commitment ZK verifier for matrix multiplication proofs.
@@ -1548,6 +1549,7 @@ impl pallet_x402_settlement::Config for Runtime {
     type FacilitatorAccount = FacilitatorAccount;
     type MaxSignatureLen = MaxSignatureLen;
     type SettlementDelay = SettlementDelay;
+    type PaymentIntentTTL = PaymentIntentTTL;
     type WeightInfo = pallet_x402_settlement::weights::SubstrateWeight<Runtime>;
 }
 
@@ -2884,6 +2886,32 @@ impl_runtime_apis! {
 
         fn get_miner_score(miner: AccountId) -> u32 {
             pallet_zk_compute::MinerScores::<Runtime>::get(&miner).unwrap_or(0)
+        }
+    }
+
+    impl x402_settlement_runtime_api::X402SettlementApi<Block, AccountId, u128> for Runtime {
+        fn get_payment_intent(intent_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_x402_settlement::PaymentIntents::<Runtime>::get(intent_id).map(|v| v.encode())
+        }
+
+        fn get_settlement_receipt(intent_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_x402_settlement::SettlementReceipts::<Runtime>::get(intent_id).map(|v| v.encode())
+        }
+
+        fn is_nonce_used(account: AccountId, nonce: u64) -> bool {
+            pallet_x402_settlement::NonceUsed::<Runtime>::get((account, nonce))
+        }
+
+        fn get_next_intent_id() -> u64 {
+            pallet_x402_settlement::NextIntentId::<Runtime>::get()
+        }
+
+        fn get_pending_intents_count() -> u64 {
+            pallet_x402_settlement::PaymentIntents::<Runtime>::iter()
+                .filter(|(_, intent)| matches!(intent.status, pallet_x402_settlement::pallet::PaymentIntentStatus::Pending))
+                .count() as u64
         }
     }
 

@@ -1,0 +1,19 @@
+[package]
+name = "x402-settlement-rpc"
+version = { workspace = true }
+authors = { workspace = true }
+edition = "2021"
+
+[dependencies]
+parity-scale-codec = { workspace = true }
+jsonrpsee = { workspace = true, features = ["client-core", "server", "macros"] }
+hex = { workspace = true, features = ["alloc"] }
+x402-settlement-runtime-api = { path = "./runtime-api" }
+
+sp-runtime = { workspace = true }
+sp-api = { workspace = true }
+sp-blockchain = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["sp-api/std", "sp-runtime/std"]

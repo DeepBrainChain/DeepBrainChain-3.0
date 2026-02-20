@@ -1,16 +1,32 @@
 use crate::pallet::PaymentIntentStatus;
 use crate::mock::{new_test_ext, RuntimeOrigin, System, Test, X402Settlement, Balances};
-use frame_support::{assert_noop, assert_ok, traits::Currency};
+use frame_support::{assert_noop, assert_ok, traits::{Currency, Hooks}};
 use sp_core::H256;
+use codec::Encode;
+use sp_core::hashing::blake2_256;
+
+/// Generate a valid facilitator signature for testing.
+fn make_facilitator_sig(merchant: u64, miner: u64, amount: u128, nonce: u64, fingerprint: H256) -> Vec<u8> {
+    let facilitator: u64 = 100; // Must match FacilitatorAccount in mock
+    let mut message = Vec::new();
+    merchant.encode_to(&mut message);
+    miner.encode_to(&mut message);
+    amount.encode_to(&mut message);
+    nonce.encode_to(&mut message);
+    fingerprint.encode_to(&mut message);
+    facilitator.encode_to(&mut message);
+    blake2_256(&message).to_vec()
+}
 
 fn create_default_payment_intent() -> u64 {
+    let sig = make_facilitator_sig(1, 3, 1_000_000, 1, H256::from_low_u64_be(12345));
     assert_ok!(X402Settlement::submit_payment_intent(
         RuntimeOrigin::signed(1),
         3,
         1_000_000,
         1,
         H256::from_low_u64_be(12345),
-        b"fake_signature".to_vec(),
+        sig,
     ));
     0 // First intent ID
 }
@@ -44,6 +60,7 @@ fn submit_payment_intent_fails_with_duplicate_nonce() {
     new_test_ext().execute_with(|| {
         create_default_payment_intent();
 
+        let sig2 = make_facilitator_sig(1, 3, 500_000, 1, H256::from_low_u64_be(67890));
         assert_noop!(
             X402Settlement::submit_payment_intent(
                 RuntimeOrigin::signed(1),
@@ -51,7 +68,7 @@ fn submit_payment_intent_fails_with_duplicate_nonce() {
                 500_000,
                 1, // Same nonce
                 H256::from_low_u64_be(67890),
-                b"fake_signature".to_vec(),
+                sig2,
             ),
             crate::pallet::Error::<Test>::InvalidNonce
         );
@@ -63,6 +80,7 @@ fn submit_payment_intent_fails_with_duplicate_replay_fingerprint() {
     new_test_ext().execute_with(|| {
         create_default_payment_intent();
 
+        let sig2 = make_facilitator_sig(2, 4, 500_000, 1, H256::from_low_u64_be(12345));
         assert_noop!(
             X402Settlement::submit_payment_intent(
                 RuntimeOrigin::signed(2),
@@ -70,7 +88,7 @@ fn submit_payment_intent_fails_with_duplicate_replay_fingerprint() {
                 500_000,
                 1,
                 H256::from_low_u64_be(12345), // Same fingerprint
-                b"fake_signature".to_vec(),
+                sig2,
             ),
             crate::pallet::Error::<Test>::ReplayFingerprintUsed
         );
@@ -84,6 +102,7 @@ fn submit_payment_intent_fails_with_insufficient_balance() {
         let current_balance = Balances::free_balance(&1);
         
         // Try to submit payment intent with amount greater than balance
+        let sig = make_facilitator_sig(1, 3, current_balance + 1, 1, H256::from_low_u64_be(12345));
         assert_noop!(
             X402Settlement::submit_payment_intent(
                 RuntimeOrigin::signed(1),
@@ -91,13 +110,31 @@ fn submit_payment_intent_fails_with_insufficient_balance() {
                 current_balance + 1, // More than available balance
                 1,
                 H256::from_low_u64_be(12345),
-                b"fake_signature".to_vec(),
+                sig,
             ),
             crate::pallet::Error::<Test>::InsufficientBalance
         );
     });
 }
 
+
+
+#[test]
+fn submit_payment_intent_fails_with_invalid_signature() {
+    new_test_ext().execute_with(|| {
+        assert_noop!(
+            X402Settlement::submit_payment_intent(
+                RuntimeOrigin::signed(1),
+                3,
+                1_000_000,
+                1,
+                H256::from_low_u64_be(12345),
+                b"invalid_short".to_vec(), // Too short (< 32 bytes after try_into)
+            ),
+            crate::pallet::Error::<Test>::InvalidFacilitatorSignature
+        );
+    });
+}
 #[test]
 fn verify_settlement_works() {
     new_test_ext().execute_with(|| {
@@ -316,5 +353,18 @@ fn fail_settled_payment_intent_fails() {
             X402Settlement::fail_payment_intent(RuntimeOrigin::signed(100), intent_id),
             crate::pallet::Error::<Test>::InvalidPaymentIntentStatus
         );
+    });
+}
+
+#[test]
+fn payment_intent_expires_on_initialize() {
+    new_test_ext().execute_with(|| {
+        let intent_id = create_default_payment_intent();
+        System::set_block_number(102);
+        X402Settlement::on_initialize(102);
+        let intent = X402Settlement::payment_intent_of(intent_id).expect("intent exists");
+        assert!(matches!(intent.status, PaymentIntentStatus::Failed));
+        assert_eq!(Balances::reserved_balance(1), 0);
+        assert_eq!(Balances::free_balance(1), 1_000_000_000_000);
     });
 }

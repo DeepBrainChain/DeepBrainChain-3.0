@@ -34,6 +34,7 @@ parameter_types! {
     pub const FacilitatorAccount: AccountId = 100;
     pub const MaxSignatureLen: u32 = 256;
     pub const SettlementDelay: BlockNumber = 10;
+    pub const PaymentIntentTTL: BlockNumber = 100;
 }
 
 impl frame_system::Config for Test {
@@ -85,6 +86,7 @@ impl crate::pallet::Config for Test {
     type FacilitatorAccount = FacilitatorAccount;
     type MaxSignatureLen = MaxSignatureLen;
     type SettlementDelay = SettlementDelay;
+    type PaymentIntentTTL = PaymentIntentTTL;
     type WeightInfo = ();
     type AdminOrigin = frame_system::EnsureSigned<AccountId>;
 }

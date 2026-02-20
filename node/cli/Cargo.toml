@@ -106,6 +106,8 @@ dbc3-rpc = { path = "../../pallets/dbc3-rpc" }
 dbc3-runtime-api = { path = "../../pallets/dbc3-rpc/runtime-api" }
 
 simple-rpc-rpc = { path = "../../pallets/simple-rpc/rpc" }
+x402-settlement-rpc = { path = "../../pallets/x402-settlement/rpc" }
+x402-settlement-runtime-api = { path = "../../pallets/x402-settlement/rpc/runtime-api" }
 terminating-rental-rpc = { path = "../../pallets/terminating-rental/rpc" }
 
 dbc-node-common = { path = "../common" }

@@ -48,6 +48,8 @@ members = [
   "pallets/nfts",
   "pallets/eth-precompile-whitelist",
   "pallets/x402-settlement",
+  "pallets/x402-settlement/rpc/runtime-api",
+  "pallets/x402-settlement/rpc",
   "pallets/agent-attestation",
   "runtime/src/precompiles/macro",
   "pallets/dbc3-rpc/runtime-api",
