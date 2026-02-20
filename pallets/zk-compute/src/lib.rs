@@ -445,9 +445,20 @@ pub mod pallet {
 
 		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
 			match call {
-				Call::submit_verification_unsigned { .. } => {
+				Call::submit_verification_unsigned { task_id, .. } => {
+					// Verify task exists and is in Pending status
+					let task = match Tasks::<T>::get(task_id) {
+						Some(t) => t,
+						None => return InvalidTransaction::BadProof.into(),
+					};
+					if task.status != ZkVerificationStatus::Pending {
+						return InvalidTransaction::Stale.into();
+					}
+
 					ValidTransaction::with_tag_prefix("zk-verify")
 						.priority(UNSIGNED_TXS_PRIORITY)
+						// Deduplicate: only one verification per task
+						.and_provides(("zk-verify", *task_id))
 						.longevity(5)
 						.propagate(true)
 						.build()

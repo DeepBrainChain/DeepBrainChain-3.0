@@ -25,7 +25,7 @@ pub mod pallet {
     use sp_std::vec::Vec;
     use sp_core::H256;
     use crate::weights::WeightInfo;
-    use sp_runtime::traits::SaturatedConversion;
+    use sp_runtime::traits::{SaturatedConversion, Saturating};
 
 
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -120,6 +120,11 @@ pub mod pallet {
     pub type SettlementReceipts<T: Config> =
         StorageMap<_, Blake2_128Concat, u64, SettlementReceipt<T::AccountId, BalanceOf<T>>>;
 
+    /// Track pending intent IDs to avoid unbounded iteration in on_initialize
+    #[pallet::storage]
+    pub type PendingIntentIds<T: Config> =
+        StorageValue<_, BoundedVec<u64, ConstU32<10000>>, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -186,28 +191,39 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(now: BlockNumberFor<T>) -> Weight {
-            let mut expired_count: u32 = 0;
-            let mut intents_to_expire = sp_std::vec::Vec::new();
-            for (id, intent) in PaymentIntents::<T>::iter() {
-                if now >= intent.expires_at && matches!(intent.status, PaymentIntentStatus::Pending) {
-                    intents_to_expire.push((id, intent));
+            let mut expired_ids = sp_std::vec::Vec::new();
+            let pending = PendingIntentIds::<T>::get();
+            let total_checked = pending.len() as u64;
+
+            for id in &pending {
+                if let Some(intent) = PaymentIntents::<T>::get(id) {
+                    if now >= intent.expires_at && matches!(intent.status, PaymentIntentStatus::Pending) {
+                        T::Currency::unreserve(&intent.merchant, intent.amount);
+                        PaymentIntents::<T>::mutate(id, |maybe| {
+                            if let Some(ref mut i) = maybe {
+                                i.status = PaymentIntentStatus::Failed;
+                            }
+                        });
+                        Self::deposit_event(Event::PaymentIntentExpired {
+                            intent_id: *id,
+                            merchant: intent.merchant,
+                            amount: intent.amount,
+                        });
+                        expired_ids.push(*id);
+                    }
                 }
             }
-            for (id, intent) in intents_to_expire {
-                T::Currency::unreserve(&intent.merchant, intent.amount);
-                PaymentIntents::<T>::mutate(id, |maybe| {
-                    if let Some(ref mut i) = maybe {
-                        i.status = PaymentIntentStatus::Failed;
-                    }
+
+            // Remove expired intents from pending list
+            if !expired_ids.is_empty() {
+                PendingIntentIds::<T>::mutate(|ids| {
+                    ids.retain(|id| !expired_ids.contains(id));
                 });
-                Self::deposit_event(Event::PaymentIntentExpired {
-                    intent_id: id,
-                    merchant: intent.merchant,
-                    amount: intent.amount,
-                });
-                expired_count += 1;
             }
-            T::DbWeight::get().reads_writes(expired_count.into(), expired_count.into())
+
+            let expired_count = expired_ids.len() as u64;
+            T::DbWeight::get().reads(total_checked.saturating_add(1))
+                .saturating_add(T::DbWeight::get().writes(expired_count.saturating_mul(2).saturating_add(1)))
         }
     }
 
@@ -266,6 +282,7 @@ pub mod pallet {
             NonceUsed::<T>::insert((merchant.clone(), nonce), true);
             ReplayFingerprintUsed::<T>::insert(replay_fingerprint, true);
 
+            let _ = PendingIntentIds::<T>::try_mutate(|ids| ids.try_push(intent_id));
             PaymentIntents::<T>::insert(
                 intent_id,
                 PaymentIntent {
@@ -280,7 +297,7 @@ pub mod pallet {
                     created_at: <frame_system::Pallet<T>>::block_number(),
                     verified_at: None,
                     settled_at: None,
-                    expires_at: <frame_system::Pallet<T>>::block_number() + T::PaymentIntentTTL::get(),
+                    expires_at: <frame_system::Pallet<T>>::block_number().saturating_add(T::PaymentIntentTTL::get()),
                 },
             );
 
@@ -320,6 +337,9 @@ pub mod pallet {
 
                 intent.status = PaymentIntentStatus::Verified;
                 intent.verified_at = Some(<frame_system::Pallet<T>>::block_number());
+
+                // Remove from pending tracking (no longer Pending status)
+                PendingIntentIds::<T>::mutate(|ids| ids.retain(|id| *id != intent_id));
 
                 Ok(())
             })?;
@@ -362,7 +382,7 @@ pub mod pallet {
             let verified_at = intent.verified_at.ok_or(Error::<T>::InvalidPaymentIntentStatus)?;
             let delay_blocks = T::SettlementDelay::get();
             ensure!(
-                current_block >= verified_at + delay_blocks,
+                current_block >= verified_at.saturating_add(delay_blocks),
                 Error::<T>::SettlementDelayNotMet
             );
 
@@ -424,6 +444,9 @@ pub mod pallet {
                 T::Currency::unreserve(&intent.merchant, intent.amount);
 
                 intent.status = PaymentIntentStatus::Failed;
+
+                // Remove from pending tracking
+                PendingIntentIds::<T>::mutate(|ids| ids.retain(|id| *id != intent_id));
 
                 Ok(())
             })?;

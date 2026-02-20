@@ -318,20 +318,34 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(now: BlockNumberFor<T>) -> Weight {
             let mut expired: Vec<TaskId> = Vec::new();
-            for (task_id, task) in Tasks::<T>::iter() {
-                if Self::is_terminal(&task.status) {
-                    continue;
-                }
-                if now > task.submitted_at.saturating_add(T::TaskTimeout::get()) {
-                    expired.push(task_id);
+            let mut reads: u64 = 0;
+
+            // Only iterate active tasks via PoolTasks (bounded per pool by MaxTasksPerPool)
+            // instead of Tasks::iter() which grows unbounded
+            for (_pool_id, task_ids) in PoolTasks::<T>::iter() {
+                for task_id in task_ids.iter() {
+                    reads = reads.saturating_add(1);
+                    if let Some(task) = Tasks::<T>::get(task_id) {
+                        if !Self::is_terminal(&task.status)
+                            && now > task.submitted_at.saturating_add(T::TaskTimeout::get())
+                        {
+                            expired.push(*task_id);
+                        }
+                    }
                 }
             }
 
+            let expired_count = expired.len() as u64;
             for task_id in expired {
                 let _ = Self::mark_task_failed(task_id, true);
             }
 
-            T::WeightInfo::on_initialize()
+            // Return accurate weight based on actual work done
+            T::DbWeight::get().reads(reads.saturating_add(1))
+                .saturating_add(T::DbWeight::get().reads_writes(
+                    expired_count.saturating_mul(5),
+                    expired_count.saturating_mul(5),
+                ))
         }
     }
 
@@ -386,7 +400,8 @@ pub mod pallet {
                 },
             );
             ActiveTaskCount::<T>::insert(pool_id, 0);
-            NextPoolId::<T>::put(pool_id.saturating_add(1));
+            let next_pool_id = pool_id.checked_add(1).ok_or(Error::<T>::ArithmeticOverflow)?;
+            NextPoolId::<T>::put(next_pool_id);
 
             Self::deposit_event(Event::PoolRegistered { pool_id, owner });
             Ok(())
@@ -537,7 +552,8 @@ pub mod pallet {
                     claimed: false,
                 },
             );
-            NextTaskId::<T>::put(task_id.saturating_add(1));
+            let next_task_id = task_id.checked_add(1).ok_or(Error::<T>::ArithmeticOverflow)?;
+            NextTaskId::<T>::put(next_task_id);
             Ok(())
         }
 

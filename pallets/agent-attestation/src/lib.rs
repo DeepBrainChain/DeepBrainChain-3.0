@@ -302,7 +302,7 @@ pub mod pallet {
                 let now = <frame_system::Pallet<T>>::block_number();
 
                 ensure!(
-                    now >= node.last_heartbeat + T::HeartbeatInterval::get(),
+                    now >= node.last_heartbeat.saturating_add(T::HeartbeatInterval::get()),
                     Error::<T>::HeartbeatTooEarly
                 );
 
@@ -346,7 +346,7 @@ pub mod pallet {
             NextAttestationId::<T>::put(next_id);
 
             let now = <frame_system::Pallet<T>>::block_number();
-            let challenge_end = now + T::ChallengeWindow::get();
+            let challenge_end = now.saturating_add(T::ChallengeWindow::get());
 
             Attestations::<T>::insert(
                 id,
@@ -490,7 +490,7 @@ pub mod pallet {
                 if attester_is_guilty {
                     // Slash deposit
                     let slash_percent = T::SlashPercent::get();
-                    let slash_amount = att.deposit * slash_percent.into() / 100u32.into();
+                    let slash_amount = sp_runtime::Perbill::from_percent(slash_percent) * att.deposit;
 
                     // Slash from reserved
                     let _imbalance = T::Currency::slash_reserved(&att.attester, slash_amount);
