@@ -75,6 +75,17 @@ pub mod pallet {
         pub is_active: bool,
     }
 
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[scale_info(skip_type_params(T))]
+    pub struct AgentCapability<T: Config> {
+        pub owner: T::AccountId,
+        pub model_ids: BoundedVec<BoundedVec<u8, T::MaxModelIdLen>, T::MaxModelsPerAgent>,
+        pub max_concurrent: u32,
+        pub price_per_token: BalanceOf<T>,
+        pub region: BoundedVec<u8, ConstU32<16>>,
+        pub updated_at: BlockNumberFor<T>,
+    }
+
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -104,6 +115,9 @@ pub mod pallet {
         /// Max length of GPU UUID
         #[pallet::constant]
         type MaxGpuUuidLen: Get<u32>;
+
+        #[pallet::constant]
+        type MaxModelsPerAgent: Get<u32>;
 
         type WeightInfo: WeightInfo;
 
@@ -144,6 +158,16 @@ pub mod pallet {
     pub type AttesterTaskCount<T: Config> =
         StorageDoubleMap<_, Blake2_128Concat, T::AccountId, Blake2_128Concat, u64, u32, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn agent_capability)]
+    pub type AgentCapabilities<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, AgentCapability<T>>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn model_providers)]
+    pub type ModelProviders<T: Config> =
+        StorageDoubleMap<_, Blake2_128Concat, BoundedVec<u8, T::MaxModelIdLen>, Blake2_128Concat, T::AccountId, bool, ValueQuery>;
+
     // ---- Events ----
 
     #[pallet::event]
@@ -170,6 +194,10 @@ pub mod pallet {
         AttestationConfirmed {
             id: u64,
         },
+        AgentCapabilityUpdated {
+            who: T::AccountId,
+            model_count: u32,
+        },
         AttestationSlashed {
             id: u64,
             attester: T::AccountId,
@@ -195,6 +223,9 @@ pub mod pallet {
         InvalidStatus,
         InsufficientDeposit,
         ArithmeticOverflow,
+        InvalidModelId,
+        TooManyModels,
+        InvalidRegion,
     }
 
     // ---- Hooks ----
@@ -485,6 +516,63 @@ pub mod pallet {
 
                 Ok(())
             })
+        }
+
+        #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::register_node())]
+        pub fn update_capability(
+            origin: OriginFor<T>,
+            model_ids: Vec<Vec<u8>>,
+            max_concurrent: u32,
+            price_per_token: BalanceOf<T>,
+            region: Vec<u8>,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+            ensure!(Nodes::<T>::contains_key(&who), Error::<T>::NodeNotRegistered);
+
+            let bounded_models: BoundedVec<BoundedVec<u8, T::MaxModelIdLen>, T::MaxModelsPerAgent> =
+                model_ids.into_iter()
+                    .map(|m| m.try_into().map_err(|_| Error::<T>::InvalidModelId))
+                    .collect::<Result<Vec<_>, _>>()?
+                    .try_into()
+                    .map_err(|_| Error::<T>::TooManyModels)?;
+
+            let bounded_region: BoundedVec<u8, ConstU32<16>> = region.try_into().map_err(|_| Error::<T>::InvalidRegion)?;
+
+            let old_cap = AgentCapabilities::<T>::get(&who);
+            if let Some(ref old) = old_cap {
+                for model in old.model_ids.iter() {
+                    ModelProviders::<T>::remove(model, &who);
+                }
+            }
+
+            let model_count = bounded_models.len() as u32;
+            for model in bounded_models.iter() {
+                ModelProviders::<T>::insert(model, &who, true);
+            }
+
+            AgentCapabilities::<T>::insert(&who, AgentCapability {
+                owner: who.clone(),
+                model_ids: bounded_models,
+                max_concurrent,
+                price_per_token,
+                region: bounded_region,
+                updated_at: <frame_system::Pallet<T>>::block_number(),
+            });
+
+            Self::deposit_event(Event::AgentCapabilityUpdated { who, model_count });
+            Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn get_providers_for_model(model_id: &BoundedVec<u8, T::MaxModelIdLen>) -> Vec<T::AccountId> {
+            ModelProviders::<T>::iter_prefix(model_id)
+                .filter(|(account, _)| {
+                    Nodes::<T>::get(account).map_or(false, |n| n.is_active)
+                })
+                .map(|(account, _)| account)
+                .collect()
         }
     }
 }

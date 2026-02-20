@@ -71,5 +71,20 @@ sp_api::decl_runtime_apis! {
 
         /// Get miner score (0-based).
         fn get_miner_score(miner: AccountId) -> u32;
+
+        // --- Event Indexer Summary ---
+
+        /// Get a summary of all DBC 3.0 pallet activity.
+        /// Returns SCALE-encoded Dbc3Summary struct.
+        fn get_network_summary() -> Vec<u8>;
+
+        /// Get active node count (nodes with recent heartbeat).
+        fn get_active_node_count() -> u64;
+
+        /// Get total staked amount across all pools.
+        fn get_total_network_stake() -> Balance;
+
+        /// Get all registered node accounts.
+        fn get_registered_nodes() -> Vec<AccountId>;
     }
 }

@@ -185,3 +185,22 @@ fn submit_proof_works() {
         assert_eq!(task.status, TaskStatus::Completed);
     });
 }
+
+fn setup_default_pool() {
+    assert_ok!(ComputePoolScheduler::register_pool(
+        RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+    ));
+}
+
+#[test]
+fn staking_works() {
+    new_test_ext().execute_with(|| {
+        setup_default_pool();
+        assert_ok!(ComputePoolScheduler::stake_to_pool(RuntimeOrigin::signed(2), 0, 5_000));
+        assert_eq!(ComputePoolScheduler::pool_stakes(0, 2), 5_000);
+        assert_eq!(ComputePoolScheduler::total_pool_stake(0), 5_000);
+        assert_ok!(ComputePoolScheduler::unstake_from_pool(RuntimeOrigin::signed(2), 0, 3_000));
+        assert_eq!(ComputePoolScheduler::pool_stakes(0, 2), 2_000);
+        assert_eq!(ComputePoolScheduler::total_pool_stake(0), 2_000);
+    });
+}

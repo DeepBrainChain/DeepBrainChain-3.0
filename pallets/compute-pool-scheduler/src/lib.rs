@@ -159,6 +159,10 @@ pub mod pallet {
         #[pallet::constant]
         type MaxGpuModelLen: Get<u32>;
         #[pallet::constant]
+        type MinPoolStake: Get<BalanceOf<Self>>;
+        #[pallet::constant]
+        type StakeSlashPercent: Get<u32>;
+        #[pallet::constant]
         type MaxTasksPerPool: Get<u32>;
         #[pallet::constant]
         type InitialReputation: Get<u32>;
@@ -236,6 +240,16 @@ pub mod pallet {
         OptionQuery,
     >;
 
+    #[pallet::storage]
+    #[pallet::getter(fn pool_stakes)]
+    pub type PoolStakes<T: Config> =
+        StorageDoubleMap<_, Blake2_128Concat, PoolId, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn total_pool_stake)]
+    pub type TotalPoolStake<T: Config> =
+        StorageMap<_, Blake2_128Concat, PoolId, BalanceOf<T>, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -252,6 +266,9 @@ pub mod pallet {
         VerificationDisputed { task_id: TaskId, user: T::AccountId },
         TaskTimedOut { task_id: TaskId },
         PoolSlashed { pool_id: PoolId, amount: BalanceOf<T> },
+        Staked { who: T::AccountId, pool_id: PoolId, amount: BalanceOf<T> },
+        Unstaked { who: T::AccountId, pool_id: PoolId, amount: BalanceOf<T> },
+        StakeSlashed { pool_id: PoolId, amount: BalanceOf<T> },
     }
 
     #[pallet::error]
@@ -276,6 +293,8 @@ pub mod pallet {
         ActiveTasksExist,
         InsufficientBalance,
         ArithmeticOverflow,
+        InsufficientStake,
+        StakeNotFound,
     }
 
     #[pallet::genesis_config]
@@ -699,6 +718,39 @@ pub mod pallet {
             }
 
             Self::deposit_event(Event::VerificationDisputed { task_id, user: sender });
+            Ok(())
+        }
+
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::register_pool())]
+        pub fn stake_to_pool(
+            origin: OriginFor<T>,
+            pool_id: PoolId,
+            amount: BalanceOf<T>,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+            ensure!(Pools::<T>::contains_key(pool_id), Error::<T>::PoolNotFound);
+            T::Currency::reserve(&who, amount).map_err(|_| Error::<T>::InsufficientBalance)?;
+            PoolStakes::<T>::mutate(pool_id, &who, |stake| *stake = stake.saturating_add(amount));
+            TotalPoolStake::<T>::mutate(pool_id, |total| *total = total.saturating_add(amount));
+            Self::deposit_event(Event::Staked { who, pool_id, amount });
+            Ok(())
+        }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight(T::WeightInfo::register_pool())]
+        pub fn unstake_from_pool(
+            origin: OriginFor<T>,
+            pool_id: PoolId,
+            amount: BalanceOf<T>,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+            let current_stake = PoolStakes::<T>::get(pool_id, &who);
+            ensure!(current_stake >= amount, Error::<T>::StakeNotFound);
+            T::Currency::unreserve(&who, amount);
+            PoolStakes::<T>::mutate(pool_id, &who, |stake| *stake = stake.saturating_sub(amount));
+            TotalPoolStake::<T>::mutate(pool_id, |total| *total = total.saturating_sub(amount));
+            Self::deposit_event(Event::Unstaked { who, pool_id, amount });
             Ok(())
         }
     }

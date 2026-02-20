@@ -37,6 +37,7 @@ parameter_types! {
     pub const HeartbeatInterval: BlockNumber = 100;
     pub const MaxModelIdLen: u32 = 256;
     pub const MaxGpuUuidLen: u32 = 128;
+    pub const MaxModelsPerAgent: u32 = 10;
 }
 
 impl frame_system::Config for Test {
@@ -108,6 +109,7 @@ impl crate::Config for Test {
     type HeartbeatInterval = HeartbeatInterval;
     type MaxModelIdLen = MaxModelIdLen;
     type MaxGpuUuidLen = MaxGpuUuidLen;
+    type MaxModelsPerAgent = MaxModelsPerAgent;
     type WeightInfo = ();
     type AdminOrigin = frame_system::EnsureSigned<AccountId>;
     type OnAttestationConfirmed = MockAttestationSettler;

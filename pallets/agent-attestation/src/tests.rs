@@ -11,6 +11,10 @@ fn model_id() -> Vec<u8> {
     b"gpt-5.3-codex".to_vec()
 }
 
+fn model_id_2() -> Vec<u8> {
+    b"deepseek-r1".to_vec()
+}
+
 #[test]
 fn register_node_works() {
     new_test_ext().execute_with(|| {
@@ -259,5 +263,46 @@ fn resolve_challenge_defend_works() {
         assert!(matches!(att.status, AttestationStatus::Defended));
         let balance_after = Balances::free_balance(1);
         assert_eq!(balance_after - balance_before, 1_000);
+    });
+}
+
+#[test]
+fn update_capability_works() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(AgentAttestation::register_node(
+            RuntimeOrigin::signed(1),
+            gpu_uuid(),
+            120,
+        ));
+
+        assert_ok!(AgentAttestation::update_capability(
+            RuntimeOrigin::signed(1),
+            vec![model_id(), model_id_2()],
+            8,
+            10,
+            b"us-west".to_vec(),
+        ));
+
+        let cap = AgentAttestation::agent_capability(1).expect("capability should exist");
+        assert_eq!(cap.owner, 1);
+        assert_eq!(cap.model_ids.len(), 2);
+        assert_eq!(cap.max_concurrent, 8);
+        assert_eq!(cap.price_per_token, 10);
+
+        let model_bounded: frame_support::BoundedVec<u8, MaxModelIdLen> = model_id().try_into().unwrap();
+        let providers = AgentAttestation::get_providers_for_model(&model_bounded);
+        assert_eq!(providers, vec![1]);
+
+        assert_ok!(AgentAttestation::update_capability(
+            RuntimeOrigin::signed(1),
+            vec![model_id_2()],
+            4,
+            20,
+            b"eu".to_vec(),
+        ));
+
+        let old_model_bounded: frame_support::BoundedVec<u8, MaxModelIdLen> = model_id().try_into().unwrap();
+        let old_providers = AgentAttestation::get_providers_for_model(&old_model_bounded);
+        assert!(old_providers.is_empty());
     });
 }

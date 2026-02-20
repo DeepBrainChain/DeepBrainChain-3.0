@@ -15,6 +15,7 @@ use sp_runtime::traits::Block as BlockT;
 
 pub use dbc3_runtime_api::Dbc3Api as Dbc3RuntimeApi;
 
+
 #[rpc(client, server)]
 pub trait Dbc3RpcApi<BlockHash, AccountId> {
     // === Task Mode ===
@@ -66,6 +67,18 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
 
     #[method(name = "dbc3_getMinerScore")]
     fn get_miner_score(&self, miner: AccountId, at: Option<BlockHash>) -> RpcResult<u32>;
+
+    #[method(name = "dbc3_getNetworkSummary")]
+    fn get_network_summary(&self, at: Option<BlockHash>) -> RpcResult<String>;
+
+    #[method(name = "dbc3_getActiveNodeCount")]
+    fn get_active_node_count(&self, at: Option<BlockHash>) -> RpcResult<u64>;
+
+    #[method(name = "dbc3_getTotalNetworkStake")]
+    fn get_total_network_stake(&self, at: Option<BlockHash>) -> RpcResult<String>;
+
+    #[method(name = "dbc3_getRegisteredNodes")]
+    fn get_registered_nodes(&self, at: Option<BlockHash>) -> RpcResult<Vec<AccountId>>;
 }
 
 pub struct Dbc3Storage<C, M> {
@@ -186,5 +199,33 @@ where
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_miner_score(at_hash, miner).map_err(map_err)
+    }
+
+    fn get_network_summary(&self, at: Option<Block::Hash>) -> RpcResult<String> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        let summary = api.get_network_summary(at_hash).map_err(map_err)?;
+        // Return hex string of SCALE-encoded (active_pools, total_tasks, pending_attestations, pending_intents, next_intent_id)
+        let hex_str: String = summary.iter().map(|b| format!("{:02x}", b)).collect();
+        Ok(format!("0x{}", hex_str))
+    }
+
+    fn get_active_node_count(&self, at: Option<Block::Hash>) -> RpcResult<u64> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_active_node_count(at_hash).map_err(map_err)
+    }
+
+    fn get_total_network_stake(&self, at: Option<Block::Hash>) -> RpcResult<String> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        let stake = api.get_total_network_stake(at_hash).map_err(map_err)?;
+        Ok(format!("{}", stake))
+    }
+
+    fn get_registered_nodes(&self, at: Option<Block::Hash>) -> RpcResult<Vec<AccountId>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_registered_nodes(at_hash).map_err(map_err)
     }
 }

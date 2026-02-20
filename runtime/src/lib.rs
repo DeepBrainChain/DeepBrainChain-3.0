@@ -1406,6 +1406,8 @@ parameter_types! {
     pub const FailureSlash: Balance = 500 * DBCS;
     pub const SchedulerTaskTimeout: BlockNumber = 14400; // ~1 day
     pub const MaxGpuModelLen: u32 = 128;
+    pub const MinPoolStake: u128 = 10_000_000_000_000; // 10,000 DBC
+    pub const StakeSlashPercent: u32 = 10;
     pub const MaxTasksPerPool: u32 = 1000;
     pub const InitialReputation: u32 = 100;
 
@@ -1415,6 +1417,7 @@ parameter_types! {
     pub const SlashPercent: u32 = 50;
     pub const AttestationHeartbeatInterval: BlockNumber = 100;
     pub const MaxGpuUuidLen: u32 = 128;
+    pub const MaxModelsPerAgent: u32 = 10;
 
     // ZK Compute (additional)
     pub const MaxPendingTasks: u32 = 1000;
@@ -1522,6 +1525,8 @@ impl pallet_compute_pool_scheduler::Config for Runtime {
     type FailureSlash = FailureSlash;
     type TaskTimeout = SchedulerTaskTimeout;
     type MaxGpuModelLen = MaxGpuModelLen;
+    type MinPoolStake = MinPoolStake;
+    type StakeSlashPercent = StakeSlashPercent;
     type MaxTasksPerPool = MaxTasksPerPool;
     type InitialReputation = InitialReputation;
     type WeightInfo = pallet_compute_pool_scheduler::weights::SubstrateWeight<Runtime>;
@@ -1538,6 +1543,7 @@ impl pallet_agent_attestation::Config for Runtime {
     type HeartbeatInterval = AttestationHeartbeatInterval;
     type MaxModelIdLen = MaxModelIdLen;
     type MaxGpuUuidLen = MaxGpuUuidLen;
+    type MaxModelsPerAgent = MaxModelsPerAgent;
     type WeightInfo = pallet_agent_attestation::weights::SubstrateWeight<Runtime>;
     type OnAttestationConfirmed = X402Settlement;
 }
@@ -2886,6 +2892,40 @@ impl_runtime_apis! {
 
         fn get_miner_score(miner: AccountId) -> u32 {
             pallet_zk_compute::MinerScores::<Runtime>::get(&miner).unwrap_or(0)
+        }
+
+        fn get_network_summary() -> Vec<u8> {
+            use parity_scale_codec::Encode;
+            let active_pools: u64 = pallet_compute_pool_scheduler::Pools::<Runtime>::iter()
+                .filter(|(_, p)| p.status == pallet_compute_pool_scheduler::PoolStatus::Active)
+                .count() as u64;
+            let total_tasks: u64 = pallet_task_mode::NextOrderId::<Runtime>::get();
+            let pending_attestations: u64 = pallet_agent_attestation::Attestations::<Runtime>::iter()
+                .filter(|(_, a)| a.status == pallet_agent_attestation::AttestationStatus::Pending)
+                .count() as u64;
+            let pending_intents: u64 = pallet_x402_settlement::PaymentIntents::<Runtime>::iter()
+                .filter(|(_, i)| matches!(i.status, pallet_x402_settlement::pallet::PaymentIntentStatus::Pending))
+                .count() as u64;
+            let next_intent_id: u64 = pallet_x402_settlement::NextIntentId::<Runtime>::get();
+            (active_pools, total_tasks, pending_attestations, pending_intents, next_intent_id).encode()
+        }
+
+        fn get_active_node_count() -> u64 {
+            pallet_agent_attestation::Nodes::<Runtime>::iter()
+                .filter(|(_, n)| n.is_active)
+                .count() as u64
+        }
+
+        fn get_total_network_stake() -> Balance {
+            pallet_compute_pool_scheduler::TotalPoolStake::<Runtime>::iter()
+                .map(|(_, stake)| stake)
+                .fold(0u128, |acc, s| acc.saturating_add(s))
+        }
+
+        fn get_registered_nodes() -> Vec<AccountId> {
+            pallet_agent_attestation::Nodes::<Runtime>::iter()
+                .map(|(account, _)| account)
+                .collect()
         }
     }
 

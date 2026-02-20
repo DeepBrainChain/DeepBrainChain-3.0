@@ -37,6 +37,8 @@ parameter_types! {
     pub const FailureSlash: Balance = 50;
     pub const TaskTimeout: BlockNumber = 5;
     pub const MaxGpuModelLen: u32 = 64;
+    pub const MinPoolStake: u128 = 1_000;
+    pub const StakeSlashPercent: u32 = 10;
     pub const MaxTasksPerPool: u32 = 16;
     pub const InitialReputation: u32 = 80;
 }
@@ -110,6 +112,8 @@ impl crate::Config for Test {
     type FailureSlash = FailureSlash;
     type TaskTimeout = TaskTimeout;
     type MaxGpuModelLen = MaxGpuModelLen;
+    type MinPoolStake = MinPoolStake;
+    type StakeSlashPercent = StakeSlashPercent;
     type MaxTasksPerPool = MaxTasksPerPool;
     type InitialReputation = InitialReputation;
     type WeightInfo = ();
