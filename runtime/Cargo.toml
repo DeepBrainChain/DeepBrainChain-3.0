@@ -32,6 +32,7 @@ sp-inherents = { workspace = true }
 dbc-primitives = { path = "../primitives", default-features = false }
 sp-offchain = { workspace = true }
 sp-core = { workspace = true }
+hex-literal = { workspace = true }
 sp-std = { workspace = true }
 sp-api = { workspace = true }
 sp-runtime = { workspace = true }

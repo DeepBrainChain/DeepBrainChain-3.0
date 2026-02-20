@@ -1434,7 +1434,7 @@ parameter_types! {
     pub const ZkPalletId: frame_support::PalletId = frame_support::PalletId(*b"dbc/zkcp");
 
     // X402 Settlement
-    pub const FacilitatorAccount: AccountId = AccountId::new([0u8; 32]); // TODO: set real facilitator
+    pub const FacilitatorAccount: AccountId = AccountId::new(hex_literal::hex!("366cf59a35843e582d973fb216076278722baf544ac8e655c533ec6795291033")); // 5DJ4oyDn2k4RB6fgXcYq3cG2Rb3LFHjTtYmLUJVG1KQz4m7f
     pub const MaxSignatureLen: u32 = 128;
     pub const SettlementDelay: BlockNumber = 100;
     pub const PaymentIntentTTL: BlockNumber = 14400; // ~24 hours at 6s blocks

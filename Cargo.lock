@@ -1896,6 +1896,7 @@ dependencies = [
  "frame-try-runtime",
  "generic-func",
  "hex",
+ "hex-literal 0.3.4",
  "log",
  "maintain-committee",
  "num_enum 0.5.11",
