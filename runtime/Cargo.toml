@@ -109,6 +109,12 @@ rent-machine = { path = "../pallets/rent-machine", default-features = false }
 simple-rpc = { package = "simple-rpc", path = "../pallets/simple-rpc", default-features = false }
 terminating-rental = { path = "../pallets/terminating-rental", default-features = false }
 eth-precompile-whitelist = { path = "../pallets/eth-precompile-whitelist", default-features = false }
+dbc3-runtime-api = { path = "../pallets/dbc3-rpc/runtime-api", default-features = false }
+pallet-task-mode = { path = "../pallets/task-mode", default-features = false }
+pallet-zk-compute = { path = "../pallets/zk-compute", default-features = false }
+pallet-compute-pool-scheduler = { path = "../pallets/compute-pool-scheduler", default-features = false }
+pallet-agent-attestation = { path = "../pallets/agent-attestation", default-features = false }
+pallet-x402-settlement = { path = "../pallets/x402-settlement", default-features = false }
 
 committee-runtime-api = { path = "../pallets/committee/rpc/runtime-api", default-features = false }
 online-committee-runtime-api = { path = "../pallets/online-committee/rpc/runtime-api", default-features = false }
@@ -228,6 +234,12 @@ std = [
   "simple-rpc/std",
   "terminating-rental/std",
   "eth-precompile-whitelist/std",
+    "dbc3-runtime-api/std",
+  "pallet-task-mode/std",
+  "pallet-zk-compute/std",
+  "pallet-compute-pool-scheduler/std",
+  "pallet-agent-attestation/std",
+  "pallet-x402-settlement/std",
 
   "committee-runtime-api/std",
   "online-committee-runtime-api/std",

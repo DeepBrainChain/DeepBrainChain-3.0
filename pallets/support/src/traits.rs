@@ -250,3 +250,76 @@ pub trait GNOps {
         reward_who: Vec<Self::AccountId>,
     ) -> Result<(), ()>;
 }
+
+
+// ============================================================
+// DBC 3.0 Cross-Pallet Integration Traits
+// ============================================================
+
+/// Trait for task-mode to request compute scheduling from the pool scheduler.
+/// Implemented by pallet-compute-pool-scheduler.
+pub trait TaskComputeScheduler {
+    type AccountId;
+    type Balance;
+
+    /// Schedule a compute task on the best available pool.
+    /// Returns (scheduler_task_id, assigned_miner, estimated_cost).
+    fn schedule_compute(
+        user: &Self::AccountId,
+        model_id: &[u8],
+        dimensions: (u32, u32, u32),
+    ) -> Result<(u64, Self::AccountId, Self::Balance), &'static str>;
+
+    /// Check if a scheduled task is completed.
+    fn is_task_completed(scheduler_task_id: u64) -> bool;
+}
+
+/// Trait for scheduler to notify the attestation system when a task completes.
+/// Implemented by pallet-agent-attestation.
+pub trait TaskCompletionHandler {
+    type AccountId;
+
+    /// Called when a compute task is completed with a valid proof.
+    /// Creates an attestation entry automatically.
+    fn on_task_completed(
+        attester: &Self::AccountId,
+        task_id: u64,
+        result_hash: sp_core::H256,
+        model_id: &[u8],
+        input_tokens: u64,
+        output_tokens: u64,
+    ) -> Result<u64, &'static str>;
+}
+
+/// Trait for attestation to trigger settlement after confirmation.
+/// Implemented by pallet-x402-settlement.
+pub trait AttestationSettler {
+    type AccountId;
+    type Balance;
+
+    /// Trigger settlement for a confirmed attestation.
+    /// Moves funds from merchant to miner.
+    fn settle_for_attestation(
+        merchant: &Self::AccountId,
+        miner: &Self::AccountId,
+        amount: Self::Balance,
+        attestation_id: u64,
+    ) -> Result<u64, &'static str>;
+}
+
+/// Trait for task-mode to notify settlement about billing.
+/// Implemented by pallet-task-mode itself (for internal accounting).
+pub trait TaskBillingProvider {
+    type AccountId;
+    type Balance;
+
+    /// Calculate the DBC amount for a given token usage.
+    fn calculate_billing(
+        model_id: &[u8],
+        input_tokens: u64,
+        output_tokens: u64,
+    ) -> Option<Self::Balance>;
+
+    /// Get the burn/miner split for a billing amount.
+    fn get_revenue_split(total: Self::Balance) -> (Self::Balance, Self::Balance);
+}

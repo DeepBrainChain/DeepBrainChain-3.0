@@ -1,0 +1,22 @@
+[package]
+name = "dbc3-runtime-api"
+version = { workspace = true }
+authors = { workspace = true }
+edition = "2021"
+description = "Runtime API for DBC 3.0 pallets (task-mode, compute-pool-scheduler, agent-attestation, x402-settlement, zk-compute)"
+license = "Apache-2.0"
+
+[dependencies]
+parity-scale-codec = { workspace = true }
+sp-api = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+  "parity-scale-codec/std",
+  "sp-api/std",
+  "sp-runtime/std",
+  "sp-std/std",
+]

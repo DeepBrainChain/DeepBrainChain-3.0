@@ -1,0 +1,28 @@
+[package]
+name = "dbc3-integration-tests"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "dbc3_integration_tests"
+path = "src/lib.rs"
+test = true
+
+[dependencies]
+frame-support = { workspace = true, features = ["std"] }
+frame-system = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+sp-core = { workspace = true, features = ["std"] }
+sp-runtime = { workspace = true, features = ["std"] }
+sp-io = { workspace = true, features = ["std"] }
+sp-std = { workspace = true, features = ["std"] }
+codec = { workspace = true, features = ["std", "derive"] }
+scale-info = { workspace = true, features = ["std", "derive"] }
+
+dbc-support = { path = "../../pallets/support", features = ["std"] }
+pallet-task-mode = { path = "../../pallets/task-mode", features = ["std"] }
+pallet-compute-pool-scheduler = { path = "../../pallets/compute-pool-scheduler", features = ["std"] }
+pallet-agent-attestation = { path = "../../pallets/agent-attestation", features = ["std"] }
+pallet-x402-settlement = { path = "../../pallets/x402-settlement", features = ["std"] }

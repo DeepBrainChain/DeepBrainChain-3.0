@@ -1,0 +1,15 @@
+[package]
+name = "dbc3-rpc"
+version = { workspace = true }
+authors = { workspace = true }
+edition = "2021"
+description = "RPC endpoints for DBC 3.0 pallets"
+license = "Apache-2.0"
+
+[dependencies]
+dbc3-runtime-api = { path = "runtime-api" }
+jsonrpsee = { workspace = true, features = ["client-core", "server", "macros"] }
+parity-scale-codec = { workspace = true }
+sp-api = { workspace = true, features = ["std"] }
+sp-blockchain = { workspace = true }
+sp-runtime = { workspace = true, features = ["std"] }

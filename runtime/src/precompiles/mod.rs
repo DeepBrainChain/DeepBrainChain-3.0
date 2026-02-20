@@ -23,6 +23,10 @@ mod machine_info;
 use dlc_price::DLCPrice;
 
 use machine_info::MachineInfo;
+
+mod agent_task;
+use agent_task::AgentTask;
+
 const LOG_TARGET: &str = "evm";
 
 pub struct DBCPrecompiles<T>(PhantomData<T>);
@@ -34,7 +38,7 @@ where
     pub fn new() -> Self {
         Self(Default::default())
     }
-    pub fn used_addresses() -> [H160; 11] {
+    pub fn used_addresses() -> [H160; 13] {
         [
             hash(1),
             hash(2),
@@ -46,7 +50,9 @@ where
             hash(1026),
             hash(2048),
             hash(2049),
+            hash(2050),
             hash(2051),
+            hash(2096), // AgentTask precompile (0x0830)
         ]
     }
 }
@@ -58,6 +64,7 @@ where
     DBCPrice<T>: Precompile,
     MachineInfo<T>: Precompile,
     DLCPrice<T>: Precompile,
+    AgentTask<T>: Precompile,
 {
     fn execute(&self, handle: &mut impl PrecompileHandle) -> Option<PrecompileResult> {
         let address = handle.code_address();
@@ -113,8 +120,9 @@ where
             // DBC specific precompiles
             a if a == hash(2048) => Some(Bridge::<T>::execute(handle)),
             a if a == hash(2049) => Some(DBCPrice::<T>::execute(handle)),
-            a if a == hash(2051) => Some(MachineInfo::<T>::execute(handle)),
             a if a == hash(2050) => Some(DLCPrice::<T>::execute(handle)),
+            a if a == hash(2051) => Some(MachineInfo::<T>::execute(handle)),
+            a if a == hash(2096) => Some(AgentTask::<T>::execute(handle)),
 
             _ => None,
         }

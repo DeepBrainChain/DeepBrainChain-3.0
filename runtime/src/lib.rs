@@ -1383,6 +1383,142 @@ impl dlc_price_ocw::Config for Runtime {
     type RandomnessSource = RandomnessCollectiveFlip;
 }
 
+
+// --- DBC 3.0 New Pallet Parameters ---
+parameter_types! {
+    // Task Mode
+    pub TreasuryPalletAccount: AccountId = sp_runtime::traits::AccountIdConversion::<AccountId>::into_account_truncating(&frame_support::PalletId(*b"py/trsry"));
+    pub const BurnPercentage: sp_runtime::Percent = sp_runtime::Percent::from_percent(15);
+    pub const MinerPayoutPercentage: sp_runtime::Percent = sp_runtime::Percent::from_percent(85);
+    pub const TaskModeRewardPercentage: sp_runtime::Percent = sp_runtime::Percent::from_percent(70);
+    pub TaskModeEraDuration: BlockNumber = 14400; // ~1 day at 6s blocks
+    pub const MaxModelIdLen: u32 = 256;
+    pub const MaxPolicyCidLen: u32 = 1024;
+
+    // ZK Compute
+    pub const MaxProofSize: u32 = 4096;
+    pub const MaxVerificationKeySize: u32 = 4096;
+    pub const MaxPublicInputsSize: u32 = 1024;
+
+    // Compute Pool Scheduler
+    pub const PoolDeposit: Balance = 10_000 * DBCS;
+    pub const TaskDeposit: Balance = 1_000 * DBCS;
+    pub const FailureSlash: Balance = 500 * DBCS;
+    pub const SchedulerTaskTimeout: BlockNumber = 14400; // ~1 day
+    pub const MaxGpuModelLen: u32 = 128;
+    pub const MaxTasksPerPool: u32 = 1000;
+    pub const InitialReputation: u32 = 100;
+
+    // Agent Attestation
+    pub const AttestationDeposit: Balance = 100 * DBCS;
+    pub const ChallengeWindow: BlockNumber = 7200; // ~12 hours
+    pub const SlashPercent: u32 = 50;
+    pub const AttestationHeartbeatInterval: BlockNumber = 100;
+    pub const MaxGpuUuidLen: u32 = 128;
+
+    // ZK Compute (additional)
+    pub const MaxPendingTasks: u32 = 1000;
+    pub const MaxVerifiedTasks: u32 = 10000;
+    pub const MaxPendingPerMiner: u32 = 10;
+    pub const BaseReward: Balance = 100 * DBCS;
+    pub const SubmissionDeposit: Balance = 10 * DBCS;
+    pub const ZkVerificationTimeout: BlockNumber = 1200; // ~2 hours
+    pub const InitialMinerScore: u32 = 50;
+    pub const MinMinerScoreToSubmit: u32 = 10;
+    pub const MaxMinerScore: u32 = 100;
+    pub const ScoreOnSuccess: u32 = 5;
+    pub const ScorePenaltyOnFailure: u32 = 10;
+    pub const ZkPalletId: frame_support::PalletId = frame_support::PalletId(*b"dbc/zkcp");
+
+    // X402 Settlement
+    pub const FacilitatorAccount: AccountId = AccountId::new([0u8; 32]); // TODO: set real facilitator
+    pub const MaxSignatureLen: u32 = 128;
+    pub const SettlementDelay: BlockNumber = 100;
+}
+
+/// Placeholder ZK verifier for runtime (always returns true in dev)
+pub struct MockZkVerifier;
+impl pallet_zk_compute::VerifyZkProof for MockZkVerifier {
+    fn verify(_proof: &[u8], _dimensions: (u32, u32, u32)) -> bool {
+        true
+    }
+}
+
+impl pallet_task_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type DbcPriceProvider = DBCPriceOCW;
+    type TreasuryAccount = TreasuryPalletAccount;
+    type BurnPercentage = BurnPercentage;
+    type MinerPayoutPercentage = MinerPayoutPercentage;
+    type TaskModeRewardPercentage = TaskModeRewardPercentage;
+    type EraDuration = TaskModeEraDuration;
+    type MaxModelIdLen = MaxModelIdLen;
+    type MaxPolicyCidLen = MaxPolicyCidLen;
+    type WeightInfo = ();
+    type ComputeScheduler = ComputePoolScheduler;
+}
+
+impl pallet_zk_compute::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type TaskId = u64;
+    type MaxProofSize = MaxProofSize;
+    type MaxVerificationKeySize = MaxVerificationKeySize;
+    type MaxPublicInputsSize = MaxPublicInputsSize;
+    type MaxPendingTasks = MaxPendingTasks;
+    type MaxVerifiedTasks = MaxVerifiedTasks;
+    type MaxPendingPerMiner = MaxPendingPerMiner;
+    type BaseReward = BaseReward;
+    type SubmissionDeposit = SubmissionDeposit;
+    type VerificationTimeout = ZkVerificationTimeout;
+    type InitialMinerScore = InitialMinerScore;
+    type MinMinerScoreToSubmit = MinMinerScoreToSubmit;
+    type MaxMinerScore = MaxMinerScore;
+    type ScoreOnSuccess = ScoreOnSuccess;
+    type ScorePenaltyOnFailure = ScorePenaltyOnFailure;
+    type PalletId = ZkPalletId;
+    type WeightInfo = ();
+    type ZkVerifier = MockZkVerifier;
+}
+
+impl pallet_compute_pool_scheduler::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type PoolDeposit = PoolDeposit;
+    type TaskDeposit = TaskDeposit;
+    type FailureSlash = FailureSlash;
+    type TaskTimeout = SchedulerTaskTimeout;
+    type MaxGpuModelLen = MaxGpuModelLen;
+    type MaxTasksPerPool = MaxTasksPerPool;
+    type InitialReputation = InitialReputation;
+    type WeightInfo = ();
+    type OnTaskCompleted = AgentAttestation;
+}
+
+impl pallet_agent_attestation::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type AttestationDeposit = AttestationDeposit;
+    type ChallengeWindow = ChallengeWindow;
+    type SlashPercent = SlashPercent;
+    type HeartbeatInterval = AttestationHeartbeatInterval;
+    type MaxModelIdLen = MaxModelIdLen;
+    type MaxGpuUuidLen = MaxGpuUuidLen;
+    type WeightInfo = ();
+    type OnAttestationConfirmed = X402Settlement;
+}
+
+impl pallet_x402_settlement::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type FacilitatorAccount = FacilitatorAccount;
+    type MaxSignatureLen = MaxSignatureLen;
+    type SettlementDelay = SettlementDelay;
+    type WeightInfo = ();
+}
+
+
 impl online_profile::Config for Runtime {
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
@@ -1661,6 +1797,11 @@ construct_runtime!(
         TerminatingRental: terminating_rental = 113,
         EthPrecompileWhitelist: eth_precompile_whitelist = 114,
         DLCPriceOCW: dlc_price_ocw = 115,
+        TaskMode: pallet_task_mode = 116,
+        ZkCompute: pallet_zk_compute = 117,
+        ComputePoolScheduler: pallet_compute_pool_scheduler = 118,
+        AgentAttestation: pallet_agent_attestation = 119,
+        X402Settlement: pallet_x402_settlement = 120,
 
     }
 );
@@ -2627,6 +2768,87 @@ impl_runtime_apis! {
             TerminatingRental::get_machine_rent_id(machine_id)
         }
     }
+
+    impl dbc3_runtime_api::Dbc3Api<Block, AccountId, BlockNumber, Balance> for Runtime {
+        fn get_task_definition(task_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_task_mode::TaskDefinitions::<Runtime>::get(task_id).map(|v| v.encode())
+        }
+
+        fn get_task_order(order_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_task_mode::TaskOrders::<Runtime>::get(order_id).map(|v| v.encode())
+        }
+
+        fn get_era_task_stats(era: u32) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            let stats = pallet_task_mode::EraStats::<Runtime>::get(era);
+            Some(stats.encode())
+        }
+
+        fn get_current_era() -> u32 {
+            let block = frame_system::Pallet::<Runtime>::block_number();
+            pallet_task_mode::Pallet::<Runtime>::block_to_era(block)
+        }
+
+        fn get_compute_pool(pool_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_compute_pool_scheduler::Pools::<Runtime>::get(pool_id).map(|v| v.encode())
+        }
+
+        fn get_active_pools() -> Vec<u64> {
+            pallet_compute_pool_scheduler::Pools::<Runtime>::iter()
+                .filter(|(_, pool)| pool.status == pallet_compute_pool_scheduler::PoolStatus::Active)
+                .map(|(id, _)| id)
+                .collect()
+        }
+
+        fn get_compute_task(task_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_compute_pool_scheduler::Tasks::<Runtime>::get(task_id).map(|v| v.encode())
+        }
+
+        fn get_pool_reputation(pool_id: u64) -> Option<u32> {
+            pallet_compute_pool_scheduler::Pools::<Runtime>::get(pool_id)
+                .map(|pool| pool.reputation)
+        }
+
+        fn get_attestation(attestation_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_agent_attestation::Attestations::<Runtime>::get(attestation_id).map(|v| v.encode())
+        }
+
+        fn get_node_registration(who: AccountId) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_agent_attestation::Nodes::<Runtime>::get(&who).map(|v| v.encode())
+        }
+
+        fn get_pending_attestation_count() -> u64 {
+            pallet_agent_attestation::Attestations::<Runtime>::iter()
+                .filter(|(_, a)| a.status == pallet_agent_attestation::AttestationStatus::Pending)
+                .count() as u64
+        }
+
+        fn get_payment_intent(intent_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_x402_settlement::PaymentIntents::<Runtime>::get(intent_id).map(|v| v.encode())
+        }
+
+        fn get_settlement_receipt(intent_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_x402_settlement::SettlementReceipts::<Runtime>::get(intent_id).map(|v| v.encode())
+        }
+
+        fn get_zk_task(task_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_zk_compute::Tasks::<Runtime>::get(task_id).map(|v| v.encode())
+        }
+
+        fn get_miner_score(miner: AccountId) -> u32 {
+            pallet_zk_compute::MinerScores::<Runtime>::get(&miner).unwrap_or(0)
+        }
+    }
+
 }
 
 #[cfg(test)]

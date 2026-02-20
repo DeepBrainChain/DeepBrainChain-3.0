@@ -1494,6 +1494,8 @@ dependencies = [
  "dbc-primitives-ext",
  "dbc-primitives-rpc-txpool",
  "dbc-runtime",
+ "dbc3-rpc",
+ "dbc3-runtime-api",
  "fc-db",
  "fc-mapping-sync",
  "fc-rpc",
@@ -1874,6 +1876,7 @@ dependencies = [
  "dbc-primitives-rpc-evm-tracing-events",
  "dbc-primitives-rpc-txpool",
  "dbc-support",
+ "dbc3-runtime-api",
  "dlc-price-ocw",
  "eth-precompile-whitelist",
  "ethabi",
@@ -1898,6 +1901,7 @@ dependencies = [
  "online-committee-runtime-api",
  "online-profile",
  "online-profile-runtime-api",
+ "pallet-agent-attestation",
  "pallet-asset-tx-payment",
  "pallet-assets",
  "pallet-authority-discovery",
@@ -1909,6 +1913,7 @@ dependencies = [
  "pallet-bounties",
  "pallet-child-bounties",
  "pallet-collective",
+ "pallet-compute-pool-scheduler",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
  "pallet-election-provider-support-benchmarking",
@@ -1944,12 +1949,15 @@ dependencies = [
  "pallet-staking-reward-curve 4.0.1-dev",
  "pallet-staking-runtime-api",
  "pallet-sudo",
+ "pallet-task-mode",
  "pallet-timestamp",
  "pallet-tips",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
  "pallet-utility",
+ "pallet-x402-settlement",
+ "pallet-zk-compute",
  "parity-scale-codec",
  "rent-machine",
  "rent-machine-runtime-api",
@@ -1990,6 +1998,48 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "dbc3-integration-tests"
+version = "0.1.0"
+dependencies = [
+ "dbc-support",
+ "frame-support",
+ "frame-system",
+ "pallet-agent-attestation",
+ "pallet-balances",
+ "pallet-compute-pool-scheduler",
+ "pallet-task-mode",
+ "pallet-x402-settlement",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "dbc3-rpc"
+version = "4.0.1-dev"
+dependencies = [
+ "dbc3-runtime-api",
+ "jsonrpsee",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
+]
+
+[[package]]
+name = "dbc3-runtime-api"
+version = "4.0.1-dev"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
  "sp-runtime",
  "sp-std",
 ]
@@ -5864,6 +5914,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-agent-attestation"
+version = "0.1.0"
+dependencies = [
+ "dbc-support",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-asset-tx-payment"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.43#5e49f6e44820affccaf517fd22af564f4b495d40"
@@ -6046,6 +6113,23 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-compute-pool-scheduler"
+version = "0.1.0"
+dependencies = [
+ "dbc-support",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -6654,6 +6738,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-task-mode"
+version = "0.1.0"
+dependencies = [
+ "dbc-support",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-timestamp"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.43#5e49f6e44820affccaf517fd22af564f4b495d40"
@@ -6759,6 +6860,39 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-x402-settlement"
+version = "0.1.0"
+dependencies = [
+ "dbc-support",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-zk-compute"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

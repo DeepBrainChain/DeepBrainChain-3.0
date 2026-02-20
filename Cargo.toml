@@ -42,9 +42,17 @@ members = [
   "pallets/terminating-rental/rpc",
   "pallets/terminating-rental/rpc/runtime-api",
   "pallets/council-reward",
+  "pallets/task-mode",
+  "pallets/zk-compute",
+  "pallets/compute-pool-scheduler",
   "pallets/nfts",
   "pallets/eth-precompile-whitelist",
+  "pallets/x402-settlement",
+  "pallets/agent-attestation",
   "runtime/src/precompiles/macro",
+  "pallets/dbc3-rpc/runtime-api",
+    "pallets/dbc3-rpc",
+  "tests/integration",
 
 ]
 
