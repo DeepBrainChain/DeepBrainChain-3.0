@@ -19,11 +19,14 @@ pub use dbc3_runtime_api::Dbc3Api as Dbc3RuntimeApi;
 #[rpc(client, server)]
 pub trait Dbc3RpcApi<BlockHash, AccountId> {
     // === Task Mode ===
-    #[method(name = "dbc3_getTaskDefinition")]
+    #[method(name = "taskMode_getTaskDefinition")]
     fn get_task_definition(&self, task_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
 
-    #[method(name = "dbc3_getTaskOrder")]
+    #[method(name = "taskMode_getTaskOrder")]
     fn get_task_order(&self, order_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+
+    #[method(name = "taskMode_listTaskDefinitions")]
+    fn list_task_definitions(&self, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
 
     #[method(name = "dbc3_getEraTaskStats")]
     fn get_era_task_stats(&self, era: u32, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
@@ -43,6 +46,18 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
 
     #[method(name = "dbc3_getPoolReputation")]
     fn get_pool_reputation(&self, pool_id: u64, at: Option<BlockHash>) -> RpcResult<Option<u32>>;
+
+    #[method(name = "poolScheduler_getPool")]
+    fn get_pool(&self, pool_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+
+    #[method(name = "poolScheduler_getTask")]
+    fn get_task(&self, task_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+
+    #[method(name = "poolScheduler_getPoolScore")]
+    fn get_pool_score(&self, pool_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+
+    #[method(name = "poolScheduler_listActiveTasks")]
+    fn list_active_tasks(&self, pool_id: u64, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
 
     // === Agent Attestation ===
     #[method(name = "dbc3_getAttestation")]
@@ -123,6 +138,12 @@ where
         api.get_task_order(at_hash, order_id).map_err(map_err)
     }
 
+    fn list_task_definitions(&self, at: Option<Block::Hash>) -> RpcResult<Vec<u8>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.list_task_definitions(at_hash).map_err(map_err)
+    }
+
     fn get_era_task_stats(&self, era: u32, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
@@ -157,6 +178,30 @@ where
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_pool_reputation(at_hash, pool_id).map_err(map_err)
+    }
+
+    fn get_pool(&self, pool_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_pool(at_hash, pool_id).map_err(map_err)
+    }
+
+    fn get_task(&self, task_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_task(at_hash, task_id).map_err(map_err)
+    }
+
+    fn get_pool_score(&self, pool_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_pool_score(at_hash, pool_id).map_err(map_err)
+    }
+
+    fn list_active_tasks(&self, pool_id: u64, at: Option<Block::Hash>) -> RpcResult<Vec<u8>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.list_active_tasks(at_hash, pool_id).map_err(map_err)
     }
 
     fn get_attestation(&self, attestation_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {

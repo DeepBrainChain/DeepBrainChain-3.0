@@ -97,7 +97,7 @@ benchmarks! {
         let user: T::AccountId = funded_account::<T>("user", 1);
         let dimensions = TaskDimensions { m: 128, n: 128, k: 128 };
         let priority = TaskPriority::Normal;
-    }: _(RawOrigin::Signed(user), dimensions, priority)
+    }: _(RawOrigin::Signed(user), dimensions, priority, None)
 
     submit_proof {
         let owner: T::AccountId = funded_account::<T>("owner", 0);

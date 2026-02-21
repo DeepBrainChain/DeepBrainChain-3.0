@@ -470,6 +470,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             dimensions: TaskDimensions,
             priority: TaskPriority,
+            preferred_pool_id: Option<PoolId>,
         ) -> DispatchResult {
             let user = ensure_signed(origin)?;
             ensure!(
@@ -495,7 +496,29 @@ pub mod pallet {
             Self::deposit_event(Event::TaskSubmitted { task_id, user: user.clone() });
             Self::deposit_event(Event::TaskStatusChanged { task_id, status: TaskStatus::Pending });
 
-            let (pool_id, score) = Self::select_best_pool_for_task(&task)?;
+            let (pool_id, score) = if let Some(pool_id) = preferred_pool_id {
+                let pool = Pools::<T>::get(pool_id).ok_or(Error::<T>::PoolNotFound)?;
+                ensure!(matches!(pool.status, PoolStatus::Active), Error::<T>::PoolInactive);
+                ensure!(
+                    ActiveTaskCount::<T>::get(pool_id) < T::MaxTasksPerPool::get(),
+                    Error::<T>::TooManyActiveTasks
+                );
+                ensure!(pool.gpu_memory >= task.dimensions.k, Error::<T>::NoAvailablePool);
+
+                let score = Self::calculate_pool_score(
+                    &pool,
+                    pool.price_per_task.unique_saturated_into(),
+                    pool.price_per_task.unique_saturated_into(),
+                );
+                Pools::<T>::mutate(pool_id, |maybe_pool| {
+                    if let Some(pool) = maybe_pool {
+                        pool.score = score.clone();
+                    }
+                });
+                (pool_id, score)
+            } else {
+                Self::select_best_pool_for_task(&task)?
+            };
             let pool = Pools::<T>::get(pool_id).ok_or(Error::<T>::PoolNotFound)?;
             ensure!(
                 ActiveTaskCount::<T>::get(pool_id) < T::MaxTasksPerPool::get(),
@@ -873,7 +896,7 @@ pub mod pallet {
                 PoolId,
                 ComputePool<T::AccountId, BalanceOf<T>, T::MaxGpuModelLen>,
             )> = Vec::new();
-            for (pool_id, pool) in Pools::<T>::iter() {
+            for (pool_id, pool) in Pools::<T>::iter().take(50) {
                 if !matches!(pool.status, PoolStatus::Active) {
                     continue;
                 }
@@ -1016,7 +1039,7 @@ impl<T: Config> dbc_support::traits::TaskComputeScheduler for Pallet<T> {
         let mut best_pool: Option<(PoolId, ComputePool<T::AccountId, BalanceOf<T>, T::MaxGpuModelLen>)> = None;
         let mut best_score = 0u32;
 
-        for (pool_id, pool) in Pools::<T>::iter() {
+        for (pool_id, pool) in Pools::<T>::iter().take(50) {
             if pool.status != PoolStatus::Active {
                 continue;
             }

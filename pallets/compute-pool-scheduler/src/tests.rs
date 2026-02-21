@@ -91,6 +91,7 @@ fn submit_task_works() {
             RuntimeOrigin::signed(2),
             dims(),
             TaskPriority::Normal,
+            None,
         ));
 
         let task = ComputePoolScheduler::tasks(0).unwrap();
@@ -109,6 +110,7 @@ fn submit_task_no_pool_fails() {
                 RuntimeOrigin::signed(2),
                 dims(),
                 TaskPriority::Normal,
+                None,
             ),
             Error::<Test>::NoAvailablePool
         );
@@ -126,6 +128,7 @@ fn submit_task_invalid_dimensions_fails() {
                 RuntimeOrigin::signed(2),
                 TaskDimensions { m: 0, n: 64, k: 64 },
                 TaskPriority::Normal,
+                None,
             ),
             Error::<Test>::InvalidDimensions
         );
@@ -170,6 +173,7 @@ fn submit_proof_works() {
         ));
         assert_ok!(ComputePoolScheduler::submit_task(
             RuntimeOrigin::signed(2), dims(), TaskPriority::Normal,
+            None,
         ));
 
         // Pool owner submits proof

@@ -2826,6 +2826,16 @@ impl_runtime_apis! {
             pallet_task_mode::TaskOrders::<Runtime>::get(order_id).map(|v| v.encode())
         }
 
+        fn list_task_definitions() -> Vec<u8> {
+            use parity_scale_codec::Encode;
+            let max_entries = 100u64;
+            let defs: Vec<(u64, pallet_task_mode::TaskDefinition<Runtime>)> =
+                pallet_task_mode::TaskDefinitions::<Runtime>::iter()
+                    .take(max_entries as usize)
+                    .collect();
+            defs.encode()
+        }
+
         fn get_era_task_stats(era: u32) -> Option<Vec<u8>> {
             use parity_scale_codec::Encode;
             let stats = pallet_task_mode::EraStats::<Runtime>::get(era);
@@ -2857,6 +2867,35 @@ impl_runtime_apis! {
         fn get_pool_reputation(pool_id: u64) -> Option<u32> {
             pallet_compute_pool_scheduler::Pools::<Runtime>::get(pool_id)
                 .map(|pool| pool.reputation)
+        }
+
+        fn get_pool(pool_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_compute_pool_scheduler::Pools::<Runtime>::get(pool_id).map(|v| v.encode())
+        }
+
+        fn get_task(task_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_compute_pool_scheduler::Tasks::<Runtime>::get(task_id).map(|v| v.encode())
+        }
+
+        fn get_pool_score(pool_id: u64) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_compute_pool_scheduler::Pools::<Runtime>::get(pool_id)
+                .map(|pool| pool.score.encode())
+        }
+
+        fn list_active_tasks(pool_id: u64) -> Vec<u8> {
+            use parity_scale_codec::Encode;
+            let active_task_ids: Vec<u64> = pallet_compute_pool_scheduler::PoolTasks::<Runtime>::get(pool_id)
+                .into_iter()
+                .filter(|task_id| {
+                    pallet_compute_pool_scheduler::Tasks::<Runtime>::get(task_id)
+                        .map(|task| !matches!(task.status, pallet_compute_pool_scheduler::TaskStatus::Completed | pallet_compute_pool_scheduler::TaskStatus::Failed))
+                        .unwrap_or(false)
+                })
+                .collect();
+            active_task_ids.encode()
         }
 
         fn get_attestation(attestation_id: u64) -> Option<Vec<u8>> {

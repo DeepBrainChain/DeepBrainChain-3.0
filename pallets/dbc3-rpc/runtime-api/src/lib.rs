@@ -25,6 +25,9 @@ sp_api::decl_runtime_apis! {
         /// Get a task order by ID (SCALE-encoded `TaskOrder`).
         fn get_task_order(order_id: u64) -> Option<Vec<u8>>;
 
+        /// List task definitions from 0..=next_task_id (max 100 entries, SCALE-encoded `Vec<(u64, TaskDefinition)>`).
+        fn list_task_definitions() -> Vec<u8>;
+
         /// Get era task stats (SCALE-encoded `EraTaskStats`).
         fn get_era_task_stats(era: u32) -> Option<Vec<u8>>;
 
@@ -44,6 +47,18 @@ sp_api::decl_runtime_apis! {
 
         /// Get pool reputation score (0-100).
         fn get_pool_reputation(pool_id: u64) -> Option<u32>;
+
+        /// Get a pool by ID (SCALE-encoded `ComputePool`).
+        fn get_pool(pool_id: u64) -> Option<Vec<u8>>;
+
+        /// Get a task by ID (SCALE-encoded `ComputeTask`).
+        fn get_task(task_id: u64) -> Option<Vec<u8>>;
+
+        /// Get a pool score by pool ID (SCALE-encoded `PoolScore`).
+        fn get_pool_score(pool_id: u64) -> Option<Vec<u8>>;
+
+        /// List active task IDs in a pool (SCALE-encoded `Vec<u64>`).
+        fn list_active_tasks(pool_id: u64) -> Vec<u8>;
 
         // ─── Agent Attestation ───────────────────────────────────────
 

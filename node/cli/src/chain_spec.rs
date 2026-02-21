@@ -191,7 +191,15 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         "38d71b8cec5c8d06d3bdc60f1d235612b8544acfe7f26bc0e3bdda12a3996a04",
     );
 
-    let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
+    let endowed_accounts: Vec<AccountId> = vec![
+        root_key.clone(),
+        // 5G1mm2uGN5gpdgEByh56o8rUcrP2ANEADZBKa3fF98k8o9t9
+        array_bytes::hex_n_into_unchecked("aeb455f2d49ca816dd4a93f138915443b4f469ba92bc10eb11c8b8cf59bfcb2f"),
+        // 5Gp9yJDvKdtCReWusHK8qDSVzjZs3SaZLHFMF5BNRKBAXoJf
+        array_bytes::hex_n_into_unchecked("d214650e20befed10b46962245cfc2b3b723452ac50f9909c06b716c2fe4793c"),
+        // 5Ew9thvjcFkX624BNXVrLG3gR2JXiyhJFxhj45gQQUCeH2gu
+        array_bytes::hex_n_into_unchecked("7ef26112cb714815241bf974d7cbbf72c68dcc459dd6018c3396c72ea6f13969"),
+    ];
 
     testnet_genesis(initial_authorities, vec![], root_key, Some(endowed_accounts))
 }
