@@ -23,7 +23,7 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use sp_std::vec::Vec;
-    use sp_runtime::{traits::SaturatedConversion, Percent};
+    use sp_runtime::{traits::{CheckedAdd, SaturatedConversion}, Percent};
 
     use crate::weights::WeightInfo;
 

@@ -529,7 +529,7 @@ impl<T: pallet::Config> dbc_support::traits::AttestationSettler for pallet::Pall
         amount: Self::Balance,
         _attestation_id: u64,
     ) -> Result<u64, &'static str> {
-        use frame_support::traits::ExistenceRequirement;
+        use frame_support::traits::{Currency, ExistenceRequirement};
 
         let intent_id = pallet::NextIntentId::<T>::get();
         let next_id = intent_id.checked_add(1).ok_or("Intent ID overflow")?;
