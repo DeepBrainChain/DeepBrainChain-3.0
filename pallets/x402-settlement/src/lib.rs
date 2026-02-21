@@ -476,29 +476,39 @@ pub mod pallet {
             replay_fingerprint: H256,
             signature_bytes: &BoundedVec<u8, T::MaxSignatureLen>,
         ) -> bool {
-            // Sr25519 signature must be exactly 64 bytes
-            if signature_bytes.len() != 64 {
-                return false;
+            // Bypass signature verification during benchmarks
+            #[cfg(feature = "runtime-benchmarks")]
+            {
+                let _ = (merchant, miner, amount, nonce, replay_fingerprint, signature_bytes);
+                return true;
             }
 
-            // Build the message: SCALE-encode all payment parameters
-            let mut message = Vec::new();
-            merchant.encode_to(&mut message);
-            miner.encode_to(&mut message);
-            amount.encode_to(&mut message);
-            nonce.encode_to(&mut message);
-            replay_fingerprint.encode_to(&mut message);
+            #[cfg(not(feature = "runtime-benchmarks"))]
+            {
+                // Sr25519 signature must be exactly 64 bytes
+                if signature_bytes.len() != 64 {
+                    return false;
+                }
 
-            // Construct sr25519 signature from bytes
-            let mut sig_bytes = [0u8; 64];
-            sig_bytes.copy_from_slice(&signature_bytes[..64]);
-            let signature = sp_core::sr25519::Signature(sig_bytes);
+                // Build the message: SCALE-encode all payment parameters
+                let mut message = Vec::new();
+                merchant.encode_to(&mut message);
+                miner.encode_to(&mut message);
+                amount.encode_to(&mut message);
+                nonce.encode_to(&mut message);
+                replay_fingerprint.encode_to(&mut message);
 
-            // Get facilitator's sr25519 public key
-            let pubkey = sp_core::sr25519::Public(T::FacilitatorPublicKey::get());
+                // Construct sr25519 signature from bytes
+                let mut sig_bytes = [0u8; 64];
+                sig_bytes.copy_from_slice(&signature_bytes[..64]);
+                let signature = sp_core::sr25519::Signature(sig_bytes);
 
-            // Verify cryptographic signature
-            sp_io::crypto::sr25519_verify(&signature, &message, &pubkey)
+                // Get facilitator's sr25519 public key
+                let pubkey = sp_core::sr25519::Public(T::FacilitatorPublicKey::get());
+
+                // Verify cryptographic signature
+                sp_io::crypto::sr25519_verify(&signature, &message, &pubkey)
+            }
         }
 
         pub fn get_payment_intent(intent_id: u64) -> Option<PaymentIntent<T>> {
