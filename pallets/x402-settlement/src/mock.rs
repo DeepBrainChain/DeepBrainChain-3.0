@@ -33,6 +33,10 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
     pub const FacilitatorAccount: AccountId = 100;
     pub const MaxSignatureLen: u32 = 256;
+    pub FacilitatorPublicKeyValue: [u8; 32] = {
+        use sp_core::Pair;
+        sp_core::sr25519::Pair::from_seed(&[1u8; 32]).public().0
+    };
     pub const SettlementDelay: BlockNumber = 10;
     pub const PaymentIntentTTL: BlockNumber = 100;
 }
@@ -85,6 +89,7 @@ impl crate::pallet::Config for Test {
     type Currency = Balances;
     type FacilitatorAccount = FacilitatorAccount;
     type MaxSignatureLen = MaxSignatureLen;
+    type FacilitatorPublicKey = FacilitatorPublicKeyValue;
     type SettlementDelay = SettlementDelay;
     type PaymentIntentTTL = PaymentIntentTTL;
     type WeightInfo = ();

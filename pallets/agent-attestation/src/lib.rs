@@ -226,6 +226,7 @@ pub mod pallet {
         InvalidModelId,
         TooManyModels,
         InvalidRegion,
+        DuplicateAttestation,
     }
 
     // ---- Hooks ----
@@ -331,6 +332,12 @@ pub mod pallet {
             ensure!(
                 Nodes::<T>::contains_key(&attester),
                 Error::<T>::NodeNotRegistered
+            );
+
+            // Prevent duplicate attestations for the same (attester, task_id)
+            ensure!(
+                AttesterTaskCount::<T>::get(&attester, task_id) == 0,
+                Error::<T>::DuplicateAttestation
             );
 
             let deposit = T::AttestationDeposit::get();

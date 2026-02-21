@@ -3,19 +3,17 @@ use crate::mock::{new_test_ext, RuntimeOrigin, System, Test, X402Settlement, Bal
 use frame_support::{assert_noop, assert_ok, traits::{Currency, Hooks}};
 use sp_core::H256;
 use codec::Encode;
-use sp_core::hashing::blake2_256;
-
-/// Generate a valid facilitator signature for testing.
+/// Generate a valid facilitator sr25519 signature for testing.
 fn make_facilitator_sig(merchant: u64, miner: u64, amount: u128, nonce: u64, fingerprint: H256) -> Vec<u8> {
-    let facilitator: u64 = 100; // Must match FacilitatorAccount in mock
+    use sp_core::Pair;
+    let pair = sp_core::sr25519::Pair::from_seed(&[1u8; 32]); // Must match FacilitatorPublicKeyValue in mock
     let mut message = Vec::new();
     merchant.encode_to(&mut message);
     miner.encode_to(&mut message);
     amount.encode_to(&mut message);
     nonce.encode_to(&mut message);
     fingerprint.encode_to(&mut message);
-    facilitator.encode_to(&mut message);
-    blake2_256(&message).to_vec()
+    pair.sign(&message).0.to_vec()
 }
 
 fn create_default_payment_intent() -> u64 {

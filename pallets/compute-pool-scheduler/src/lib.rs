@@ -119,6 +119,8 @@ pub mod pallet {
         pub proof_hash: Option<[u8; 32]>,
         pub verification_result: Option<bool>,
         pub reward_amount: Option<Balance>,
+        /// Whether this task has been disputed (one-time only)
+        pub disputed: bool,
     }
 
     #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -295,6 +297,7 @@ pub mod pallet {
         ArithmeticOverflow,
         InsufficientStake,
         StakeNotFound,
+        DisputeAlreadyFiled,
     }
 
     #[pallet::genesis_config]
@@ -491,6 +494,7 @@ pub mod pallet {
                 proof_hash: None,
                 verification_result: None,
                 reward_amount: None,
+                disputed: false,
             };
             Tasks::<T>::insert(task_id, task.clone());
             Self::deposit_event(Event::TaskSubmitted { task_id, user: user.clone() });
@@ -721,12 +725,15 @@ pub mod pallet {
                 matches!(task.status, TaskStatus::Completed | TaskStatus::Failed),
                 Error::<T>::DisputeNotAllowed
             );
+            // Each task can only be disputed once to prevent infinite loop attacks
+            ensure!(!task.disputed, Error::<T>::DisputeAlreadyFiled);
 
             if task.verification_result == Some(true) {
                 Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
                     let t = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
                     t.status = TaskStatus::Failed;
                     t.verification_result = Some(false);
+                    t.disputed = true;
                     Ok(())
                 })?;
                 Self::update_reputation(task.pool_id, false);
@@ -741,6 +748,7 @@ pub mod pallet {
                     let t = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
                     t.status = TaskStatus::Completed;
                     t.verification_result = Some(true);
+                    t.disputed = true;
                     Ok(())
                 })?;
                 if let Some(amount) = task.reward_amount {
@@ -1079,6 +1087,7 @@ impl<T: Config> dbc_support::traits::TaskComputeScheduler for Pallet<T> {
             proof_hash: None,
             verification_result: None,
             reward_amount: Some(estimated_cost),
+            disputed: false,
         };
 
         Tasks::<T>::insert(task_id, task);

@@ -41,6 +41,7 @@ parameter_types! {
     pub const TreasuryAccount: AccountId = 99;
     pub const MaxModelIdLen: u32 = 256;
     pub const MaxPolicyCidLen: u32 = 1024;
+    pub const OrderTimeout: BlockNumber = 50;
 }
 
 thread_local! {
@@ -134,6 +135,7 @@ impl crate::Config for Test {
     type EraDuration = EraDuration;
     type MaxModelIdLen = MaxModelIdLen;
     type MaxPolicyCidLen = MaxPolicyCidLen;
+    type OrderTimeout = OrderTimeout;
     type WeightInfo = ();
     type ComputeScheduler = MockComputeScheduler;
 }

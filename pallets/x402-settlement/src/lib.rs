@@ -78,6 +78,10 @@ pub mod pallet {
         #[pallet::constant]
         type MaxSignatureLen: Get<u32>;
 
+        /// Sr25519 public key of the facilitator for signature verification
+        #[pallet::constant]
+        type FacilitatorPublicKey: Get<[u8; 32]>;
+
         #[pallet::constant]
         type SettlementDelay: Get<BlockNumberFor<Self>>;
 
@@ -168,6 +172,7 @@ pub mod pallet {
         NotAuthorized,
         ArithmeticOverflow,
         PaymentIntentExpired,
+        TooManyPendingIntents,
     }
 
 
@@ -282,7 +287,9 @@ pub mod pallet {
             NonceUsed::<T>::insert((merchant.clone(), nonce), true);
             ReplayFingerprintUsed::<T>::insert(replay_fingerprint, true);
 
-            let _ = PendingIntentIds::<T>::try_mutate(|ids| ids.try_push(intent_id));
+            PendingIntentIds::<T>::try_mutate(|ids| {
+                ids.try_push(intent_id).map_err(|_| Error::<T>::TooManyPendingIntents)
+            })?;
             PaymentIntents::<T>::insert(
                 intent_id,
                 PaymentIntent {
@@ -469,25 +476,29 @@ pub mod pallet {
             replay_fingerprint: H256,
             signature_bytes: &BoundedVec<u8, T::MaxSignatureLen>,
         ) -> bool {
-            if signature_bytes.len() < 32 {
+            // Sr25519 signature must be exactly 64 bytes
+            if signature_bytes.len() != 64 {
                 return false;
             }
 
-            // Build the message: SCALE-encode all payment parameters + facilitator
-            let facilitator = T::FacilitatorAccount::get();
+            // Build the message: SCALE-encode all payment parameters
             let mut message = Vec::new();
             merchant.encode_to(&mut message);
             miner.encode_to(&mut message);
             amount.encode_to(&mut message);
             nonce.encode_to(&mut message);
             replay_fingerprint.encode_to(&mut message);
-            facilitator.encode_to(&mut message);
 
-            // Expected signature = blake2_256(message)
-            let expected = sp_io::hashing::blake2_256(&message);
+            // Construct sr25519 signature from bytes
+            let mut sig_bytes = [0u8; 64];
+            sig_bytes.copy_from_slice(&signature_bytes[..64]);
+            let signature = sp_core::sr25519::Signature(sig_bytes);
 
-            // Compare first 32 bytes of signature with expected hash
-            signature_bytes[..32] == expected[..]
+            // Get facilitator's sr25519 public key
+            let pubkey = sp_core::sr25519::Public(T::FacilitatorPublicKey::get());
+
+            // Verify cryptographic signature
+            sp_io::crypto::sr25519_verify(&signature, &message, &pubkey)
         }
 
         pub fn get_payment_intent(intent_id: u64) -> Option<PaymentIntent<T>> {
@@ -518,16 +529,14 @@ impl<T: pallet::Config> dbc_support::traits::AttestationSettler for pallet::Pall
         amount: Self::Balance,
         _attestation_id: u64,
     ) -> Result<u64, &'static str> {
-        use frame_support::traits::{BalanceStatus, ReservableCurrency};
+        use frame_support::traits::ExistenceRequirement;
 
         let intent_id = pallet::NextIntentId::<T>::get();
         let next_id = intent_id.checked_add(1).ok_or("Intent ID overflow")?;
         pallet::NextIntentId::<T>::put(next_id);
 
-        T::Currency::reserve(merchant, amount)
-            .map_err(|_| "Failed to reserve merchant funds")?;
-
-        T::Currency::repatriate_reserved(merchant, miner, amount, BalanceStatus::Free)
+        // Direct transfer instead of reserve + repatriate to avoid double-charging
+        T::Currency::transfer(merchant, miner, amount, ExistenceRequirement::KeepAlive)
             .map_err(|_| "Failed to transfer to miner")?;
 
         let now = frame_system::Pallet::<T>::block_number();

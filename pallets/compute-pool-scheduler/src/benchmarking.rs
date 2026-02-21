@@ -49,6 +49,7 @@ fn create_computing_task<T: Config>(owner: &T::AccountId, user: &T::AccountId, p
         proof_hash: None,
         verification_result: None,
         reward_amount: Some(reward),
+        disputed: false,
     });
 
     TaskEscrowStore::<T>::insert(task_id, TaskEscrow {

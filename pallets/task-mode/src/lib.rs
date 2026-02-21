@@ -105,6 +105,10 @@ pub mod pallet {
         #[pallet::constant]
         type MaxPolicyCidLen: Get<u32>;
 
+        /// Maximum blocks an order can stay in InProgress before it can be cancelled
+        #[pallet::constant]
+        type OrderTimeout: Get<BlockNumberFor<Self>>;
+
         type WeightInfo: WeightInfo;
 
         /// Compute scheduler for task execution
@@ -175,6 +179,11 @@ pub mod pallet {
             burned: BalanceOf<T>,
             miner_payout: BalanceOf<T>,
         },
+        TaskOrderExpired {
+            order_id: u64,
+            customer: T::AccountId,
+            refunded: BalanceOf<T>,
+        },
     }
 
     #[pallet::error]
@@ -188,6 +197,7 @@ pub mod pallet {
         PriceOracleUnavailable,
         ArithmeticOverflow,
         NotAuthorized,
+        OrderNotExpired,
     }
 
 
@@ -462,6 +472,45 @@ pub mod pallet {
                 miner_payout: order.miner_payout,
             });
 
+            Ok(())
+        }
+
+        /// Cancel an expired order and refund the customer's reserved funds.
+        /// Anyone can call this for orders that have exceeded the OrderTimeout.
+        #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::settle_task_order())]
+        pub fn cancel_expired_order(
+            origin: OriginFor<T>,
+            order_id: u64,
+        ) -> DispatchResult {
+            ensure_signed(origin)?;
+
+            let mut order = TaskOrders::<T>::get(order_id)
+                .ok_or(Error::<T>::TaskOrderNotFound)?;
+            ensure!(
+                matches!(order.status, TaskOrderStatus::Pending | TaskOrderStatus::InProgress),
+                Error::<T>::InvalidOrderStatus
+            );
+
+            let now = <frame_system::Pallet<T>>::block_number();
+            let deadline = order.created_at
+                .checked_add(&T::OrderTimeout::get())
+                .ok_or(Error::<T>::ArithmeticOverflow)?;
+            ensure!(now > deadline, Error::<T>::OrderNotExpired);
+
+            // Unreserve all funds back to customer
+            T::Currency::unreserve(&order.customer, order.total_dbc_charged);
+
+            let customer = order.customer.clone();
+            let refunded = order.total_dbc_charged;
+            order.status = TaskOrderStatus::Settled;
+            TaskOrders::<T>::insert(order_id, &order);
+
+            Self::deposit_event(Event::TaskOrderExpired {
+                order_id,
+                customer,
+                refunded,
+            });
             Ok(())
         }
     }

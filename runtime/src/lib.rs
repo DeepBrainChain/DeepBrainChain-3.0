@@ -1394,6 +1394,7 @@ parameter_types! {
     pub TaskModeEraDuration: BlockNumber = 14400; // ~1 day at 6s blocks
     pub const MaxModelIdLen: u32 = 256;
     pub const MaxPolicyCidLen: u32 = 1024;
+    pub const TaskModeOrderTimeout: BlockNumber = 14400; // ~24 hours at 6s blocks
 
     // ZK Compute
     pub const MaxProofSize: u32 = 4096;
@@ -1436,6 +1437,7 @@ parameter_types! {
     // X402 Settlement
     pub const FacilitatorAccount: AccountId = AccountId::new(hex_literal::hex!("366cf59a35843e582d973fb216076278722baf544ac8e655c533ec6795291033")); // 5DJ4oyDn2k4RB6fgXcYq3cG2Rb3LFHjTtYmLUJVG1KQz4m7f
     pub const MaxSignatureLen: u32 = 128;
+    pub const FacilitatorPublicKey: [u8; 32] = hex_literal::hex!("366cf59a35843e582d973fb216076278722baf544ac8e655c533ec6795291033");
     pub const SettlementDelay: BlockNumber = 100;
     pub const PaymentIntentTTL: BlockNumber = 14400; // ~24 hours at 6s blocks
 }
@@ -1490,6 +1492,7 @@ impl pallet_task_mode::Config for Runtime {
     type EraDuration = TaskModeEraDuration;
     type MaxModelIdLen = MaxModelIdLen;
     type MaxPolicyCidLen = MaxPolicyCidLen;
+    type OrderTimeout = TaskModeOrderTimeout;
     type WeightInfo = pallet_task_mode::weights::SubstrateWeight<Runtime>;
     type ComputeScheduler = ComputePoolScheduler;
 }
@@ -1554,6 +1557,7 @@ impl pallet_x402_settlement::Config for Runtime {
     type AdminOrigin = frame_system::EnsureSigned<AccountId>;
     type FacilitatorAccount = FacilitatorAccount;
     type MaxSignatureLen = MaxSignatureLen;
+    type FacilitatorPublicKey = FacilitatorPublicKey;
     type SettlementDelay = SettlementDelay;
     type PaymentIntentTTL = PaymentIntentTTL;
     type WeightInfo = pallet_x402_settlement::weights::SubstrateWeight<Runtime>;
