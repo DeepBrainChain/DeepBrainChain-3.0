@@ -41,6 +41,7 @@ pub trait WeightInfo {
 	fn create_task_order() -> Weight;
 	fn mark_order_completed() -> Weight;
 	fn settle_task_order() -> Weight;
+	fn cancel_expired_order() -> Weight;
 }
 
 /// Weights for `pallet_task_mode` using the Substrate node and recommended hardware.
@@ -117,6 +118,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
+	/// Storage: TaskMode TaskOrders (r:1 w:1)
+	/// Proof: TaskMode TaskOrders (max_values: None, max_size: Some(222), added: 2697, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	fn cancel_expired_order() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `283`
+		//  Estimated: `3687`
+		// Minimum execution time: 25_000_000 picoseconds.
+		Weight::from_parts(26_000_000, 3687)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -191,5 +205,18 @@ impl WeightInfo for () {
 		Weight::from_parts(91_481_000, 5104)
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	}
+	/// Storage: TaskMode TaskOrders (r:1 w:1)
+	/// Proof: TaskMode TaskOrders (max_values: None, max_size: Some(222), added: 2697, mode: MaxEncodedLen)
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	fn cancel_expired_order() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `283`
+		//  Estimated: `3687`
+		// Minimum execution time: 25_000_000 picoseconds.
+		Weight::from_parts(26_000_000, 3687)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 }

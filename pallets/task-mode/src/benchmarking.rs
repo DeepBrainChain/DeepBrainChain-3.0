@@ -109,4 +109,23 @@ frame_benchmarking::v1::benchmarks! {
         let order = TaskOrders::<T>::get(0).unwrap();
         assert!(matches!(order.status, TaskOrderStatus::Settled));
     }
+
+    cancel_expired_order {
+        let customer: T::AccountId = whitelisted_caller();
+        let miner: T::AccountId = frame_benchmarking::v1::account("miner", 0, 0);
+        frame_system::Pallet::<T>::set_block_number(1u32.into());
+        seed_dbc_price::<T>();
+        let task_id = setup_task_definition::<T>(customer.clone());
+        let _ = T::Currency::deposit_creating(&customer, 1_000_000_000_000_000_000u128);
+        TaskMode::<T>::create_task_order(
+            RawOrigin::Signed(customer.clone()).into(), task_id, miner.clone(), 1_000, 1_000
+        ).expect("setup: create_task_order failed");
+        // Advance block past OrderTimeout
+        let timeout: frame_system::pallet_prelude::BlockNumberFor<T> = T::OrderTimeout::get();
+        frame_system::Pallet::<T>::set_block_number(timeout + 2u32.into());
+    }: _(RawOrigin::Signed(customer), 0u64)
+    verify {
+        let order = TaskOrders::<T>::get(0).unwrap();
+        assert!(matches!(order.status, TaskOrderStatus::Settled));
+    }
 }

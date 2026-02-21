@@ -478,7 +478,7 @@ pub mod pallet {
         /// Cancel an expired order and refund the customer's reserved funds.
         /// Anyone can call this for orders that have exceeded the OrderTimeout.
         #[pallet::call_index(5)]
-        #[pallet::weight(T::WeightInfo::settle_task_order())]
+        #[pallet::weight(T::WeightInfo::cancel_expired_order())]
         pub fn cancel_expired_order(
             origin: OriginFor<T>,
             order_id: u64,
