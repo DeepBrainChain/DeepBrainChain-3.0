@@ -107,8 +107,26 @@ benchmarks! {
         let task_id = create_computing_task::<T>(&owner, &user, pool_id);
 
         let proof_hash = [1u8; 32];
-        let verification_result = true;
-    }: _(RawOrigin::Signed(owner), task_id, proof_hash, verification_result)
+    }: _(RawOrigin::Signed(owner), task_id, proof_hash)
+
+    verify_proof {
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let pool_id = create_pool::<T>(&owner);
+        let user: T::AccountId = funded_account::<T>("user", 1);
+        let task_id = create_computing_task::<T>(&owner, &user, pool_id);
+
+        // Set task to ProofSubmitted status (as if submit_proof was called)
+        Tasks::<T>::mutate(task_id, |maybe_task| {
+            if let Some(task) = maybe_task.as_mut() {
+                task.proof_hash = Some([1u8; 32]);
+                task.status = TaskStatus::ProofSubmitted;
+            }
+        });
+        ProofSubmittedAt::<T>::insert(task_id, frame_system::Pallet::<T>::block_number());
+
+        // Independent verifier (not the pool owner)
+        let verifier: T::AccountId = funded_account::<T>("verifier", 2);
+    }: _(RawOrigin::Signed(verifier), task_id, true)
 
     claim_reward {
         let owner: T::AccountId = funded_account::<T>("owner", 0);

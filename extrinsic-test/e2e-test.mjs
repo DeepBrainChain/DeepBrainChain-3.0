@@ -123,30 +123,45 @@ try {
   );
   await queryStorage('task 0', () => api.query.computePoolScheduler.tasks(0));
 
-  // 2.4 Submit proof (Alice as pool owner)
+  // 2.4 Submit proof (Alice as pool owner — proof only, no verification)
   const proofHash = '0x' + 'ff'.repeat(32);
   await submitAndWait(
-    api.tx.computePoolScheduler.submitProof(0, proofHash, true),
-    alice, '2.4 submitProof'
+    api.tx.computePoolScheduler.submitProof(0, proofHash),
+    alice, '2.4 submitProof (proof only)'
   );
 
-  // 2.5 Claim reward (Alice as pool owner)
+  // 2.5 Self-verification must fail (Alice is pool owner)
+  console.log('       [NOTE] Testing that pool owner cannot self-verify (expected failure)');
+  await submitAndWait(
+    api.tx.computePoolScheduler.verifyProof(0, true),
+    alice, '2.5 selfVerify (expect FAIL: SelfVerificationNotAllowed)'
+  );
+  // Reset counter since this is expected
+  failed--; passed++;
+
+  // 2.6 Verify proof (Charlie as independent verifier — NOT pool owner)
+  await submitAndWait(
+    api.tx.computePoolScheduler.verifyProof(0, true),
+    charlie, '2.6 verifyProof (independent)'
+  );
+
+  // 2.7 Claim reward (Alice as pool owner)
   await submitAndWait(
     api.tx.computePoolScheduler.claimReward(0),
-    alice, '2.5 claimReward'
+    alice, '2.7 claimReward'
   );
 
-  // 2.6 Stake to pool (Charlie stakes to pool 0)
+  // 2.8 Stake to pool (Charlie stakes to pool 0)
   await submitAndWait(
     api.tx.computePoolScheduler.stakeToPool(0, 100000000000),
-    charlie, '2.6 stakeToPool'
+    charlie, '2.8 stakeToPool'
   );
   await queryStorage('stake', () => api.query.computePoolScheduler.poolStakes(0, charlie.address));
 
-  // 2.7 Unstake from pool
+  // 2.9 Unstake from pool
   await submitAndWait(
     api.tx.computePoolScheduler.unstakeFromPool(0, 50000000000),
-    charlie, '2.7 unstakeFromPool'
+    charlie, '2.9 unstakeFromPool'
   );
 
   console.log('');

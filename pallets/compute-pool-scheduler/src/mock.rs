@@ -41,6 +41,7 @@ parameter_types! {
     pub const StakeSlashPercent: u32 = 10;
     pub const MaxTasksPerPool: u32 = 16;
     pub const InitialReputation: u32 = 80;
+    pub const VerificationTimeout: BlockNumber = 3;
 }
 
 impl frame_system::Config for Test {
@@ -116,6 +117,7 @@ impl crate::Config for Test {
     type StakeSlashPercent = StakeSlashPercent;
     type MaxTasksPerPool = MaxTasksPerPool;
     type InitialReputation = InitialReputation;
+    type VerificationTimeout = VerificationTimeout;
     type WeightInfo = ();
     type OnTaskCompleted = MockTaskCompletionHandler;
 }

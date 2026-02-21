@@ -2,7 +2,7 @@ use crate::{
     mock::*,
     pallet::{Error, PoolStatus, TaskDimensions, TaskPriority, TaskStatus},
 };
-use frame_support::{assert_noop, assert_ok, BoundedVec};
+use frame_support::{assert_noop, assert_ok, traits::Hooks, BoundedVec};
 
 fn gpu_model() -> BoundedVec<u8, <Test as crate::Config>::MaxGpuModelLen> {
     b"RTX-4090".to_vec().try_into().unwrap()
@@ -176,17 +176,120 @@ fn submit_proof_works() {
             None,
         ));
 
-        // Pool owner submits proof
+        // Pool owner submits proof (no verification_result — just proof hash)
         assert_ok!(ComputePoolScheduler::submit_proof(
             RuntimeOrigin::signed(1),
             0,  // task_id
             [42u8; 32],  // proof_hash
-            true,  // verification_result
         ));
 
         let task = ComputePoolScheduler::tasks(0).unwrap();
-        // With verification_result=true, task goes to Completed
+        // Proof submitted but NOT yet verified
+        assert_eq!(task.status, TaskStatus::ProofSubmitted);
+        assert_eq!(task.proof_hash, Some([42u8; 32]));
+        assert_eq!(task.verification_result, None);
+    });
+}
+
+#[test]
+fn verify_proof_works() {
+    new_test_ext().execute_with(|| {
+        // Account 1 = pool owner, Account 2 = task user, Account 3 = independent verifier
+        assert_ok!(ComputePoolScheduler::register_pool(
+            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_task(
+            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(
+            RuntimeOrigin::signed(1), 0, [42u8; 32],
+        ));
+
+        // Independent verifier (account 3) approves the proof
+        assert_ok!(ComputePoolScheduler::verify_proof(
+            RuntimeOrigin::signed(3), 0, true,
+        ));
+
+        let task = ComputePoolScheduler::tasks(0).unwrap();
         assert_eq!(task.status, TaskStatus::Completed);
+        assert_eq!(task.verification_result, Some(true));
+    });
+}
+
+#[test]
+fn verify_proof_reject_works() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ComputePoolScheduler::register_pool(
+            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_task(
+            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(
+            RuntimeOrigin::signed(1), 0, [42u8; 32],
+        ));
+
+        // Independent verifier rejects the proof
+        assert_ok!(ComputePoolScheduler::verify_proof(
+            RuntimeOrigin::signed(3), 0, false,
+        ));
+
+        let task = ComputePoolScheduler::tasks(0).unwrap();
+        assert_eq!(task.status, TaskStatus::Failed);
+        assert_eq!(task.verification_result, Some(false));
+    });
+}
+
+#[test]
+fn self_verification_fails() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ComputePoolScheduler::register_pool(
+            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_task(
+            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(
+            RuntimeOrigin::signed(1), 0, [42u8; 32],
+        ));
+
+        // Pool owner (account 1) tries to verify their own proof — MUST FAIL
+        assert_noop!(
+            ComputePoolScheduler::verify_proof(RuntimeOrigin::signed(1), 0, true),
+            Error::<Test>::SelfVerificationNotAllowed
+        );
+
+        // Task should still be in ProofSubmitted state
+        let task = ComputePoolScheduler::tasks(0).unwrap();
+        assert_eq!(task.status, TaskStatus::ProofSubmitted);
+    });
+}
+
+#[test]
+fn auto_verify_on_timeout() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(ComputePoolScheduler::register_pool(
+            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_task(
+            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(
+            RuntimeOrigin::signed(1), 0, [42u8; 32],
+        ));
+
+        let task = ComputePoolScheduler::tasks(0).unwrap();
+        assert_eq!(task.status, TaskStatus::ProofSubmitted);
+
+        // Advance past VerificationTimeout (3 blocks in mock)
+        run_to_block(5); // block 1 + 3 + 1 = past timeout
+
+        // Trigger on_initialize which should auto-approve
+        ComputePoolScheduler::on_initialize(5);
+
+        let task = ComputePoolScheduler::tasks(0).unwrap();
+        assert_eq!(task.status, TaskStatus::Completed);
+        assert_eq!(task.verification_result, Some(true));
     });
 }
 

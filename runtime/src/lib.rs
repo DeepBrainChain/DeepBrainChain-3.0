@@ -1406,6 +1406,7 @@ parameter_types! {
     pub const TaskDeposit: Balance = 1_000 * DBCS;
     pub const FailureSlash: Balance = 500 * DBCS;
     pub const SchedulerTaskTimeout: BlockNumber = 14400; // ~1 day
+    pub const VerificationTimeout: BlockNumber = 1200; // ~2 hours for independent verification before auto-approve
     pub const MaxGpuModelLen: u32 = 128;
     pub const MinPoolStake: u128 = 10_000_000_000_000; // 10,000 DBC
     pub const StakeSlashPercent: u32 = 10;
@@ -1532,6 +1533,7 @@ impl pallet_compute_pool_scheduler::Config for Runtime {
     type StakeSlashPercent = StakeSlashPercent;
     type MaxTasksPerPool = MaxTasksPerPool;
     type InitialReputation = InitialReputation;
+    type VerificationTimeout = VerificationTimeout;
     type WeightInfo = pallet_compute_pool_scheduler::weights::SubstrateWeight<Runtime>;
     type OnTaskCompleted = AgentAttestation;
 }

@@ -168,6 +168,9 @@ pub mod pallet {
         type MaxTasksPerPool: Get<u32>;
         #[pallet::constant]
         type InitialReputation: Get<u32>;
+        /// Blocks to wait for independent verification before auto-approving a submitted proof
+        #[pallet::constant]
+        type VerificationTimeout: Get<BlockNumberFor<Self>>;
         type WeightInfo: WeightInfo;
         /// Handler to notify when a task is completed
         type OnTaskCompleted: dbc_support::traits::TaskCompletionHandler<AccountId = Self::AccountId>;
@@ -252,6 +255,12 @@ pub mod pallet {
     pub type TotalPoolStake<T: Config> =
         StorageMap<_, Blake2_128Concat, PoolId, BalanceOf<T>, ValueQuery>;
 
+    /// Block number when proof was submitted, used for verification timeout
+    #[pallet::storage]
+    #[pallet::getter(fn proof_submitted_at)]
+    pub type ProofSubmittedAt<T: Config> =
+        StorageMap<_, Blake2_128Concat, TaskId, BlockNumberFor<T>, OptionQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -298,6 +307,10 @@ pub mod pallet {
         InsufficientStake,
         StakeNotFound,
         DisputeAlreadyFiled,
+        /// Pool owner cannot verify their own proof (independent verification required)
+        SelfVerificationNotAllowed,
+        /// Task proof has not been submitted yet
+        ProofNotSubmitted,
     }
 
     #[pallet::genesis_config]
@@ -321,6 +334,7 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(now: BlockNumberFor<T>) -> Weight {
             let mut expired: Vec<TaskId> = Vec::new();
+            let mut auto_verify: Vec<TaskId> = Vec::new();
             let mut reads: u64 = 0;
 
             // Only iterate active tasks via PoolTasks (bounded per pool by MaxTasksPerPool)
@@ -329,9 +343,21 @@ pub mod pallet {
                 for task_id in task_ids.iter() {
                     reads = reads.saturating_add(1);
                     if let Some(task) = Tasks::<T>::get(task_id) {
-                        if !Self::is_terminal(&task.status)
-                            && now > task.submitted_at.saturating_add(T::TaskTimeout::get())
-                        {
+                        if Self::is_terminal(&task.status) {
+                            continue;
+                        }
+                        // Auto-verify: ProofSubmitted tasks past VerificationTimeout
+                        if matches!(task.status, TaskStatus::ProofSubmitted) {
+                            if let Some(proof_at) = ProofSubmittedAt::<T>::get(task_id) {
+                                reads = reads.saturating_add(1);
+                                if now > proof_at.saturating_add(T::VerificationTimeout::get()) {
+                                    auto_verify.push(*task_id);
+                                    continue;
+                                }
+                            }
+                        }
+                        // Total task timeout — fail tasks that exceeded TaskTimeout
+                        if now > task.submitted_at.saturating_add(T::TaskTimeout::get()) {
                             expired.push(*task_id);
                         }
                     }
@@ -339,15 +365,25 @@ pub mod pallet {
             }
 
             let expired_count = expired.len() as u64;
+            let auto_verify_count = auto_verify.len() as u64;
+
+            // Auto-approve proofs that timed out waiting for verification
+            for task_id in auto_verify {
+                if let Some(task) = Tasks::<T>::get(task_id) {
+                    let _ = Self::finalize_verification(task_id, task.pool_id, true);
+                }
+            }
+
             for task_id in expired {
                 let _ = Self::mark_task_failed(task_id, true);
             }
 
             // Return accurate weight based on actual work done
+            let total_processed = expired_count.saturating_add(auto_verify_count);
             T::DbWeight::get().reads(reads.saturating_add(1))
                 .saturating_add(T::DbWeight::get().reads_writes(
-                    expired_count.saturating_mul(5),
-                    expired_count.saturating_mul(5),
+                    total_processed.saturating_mul(5),
+                    total_processed.saturating_mul(5),
                 ))
         }
     }
@@ -584,13 +620,15 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Pool owner submits a proof hash. Does NOT set verification result.
+        /// An independent verifier must call `verify_proof` to approve/reject.
+        /// If no one verifies within `VerificationTimeout`, the proof is auto-approved.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::submit_proof())]
         pub fn submit_proof(
             origin: OriginFor<T>,
             task_id: TaskId,
             proof_hash: [u8; 32],
-            verification_result: bool,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(proof_hash != [0u8; 32], Error::<T>::InvalidProof);
@@ -612,68 +650,37 @@ pub mod pallet {
                 t.status = TaskStatus::ProofSubmitted;
                 Ok(())
             })?;
+            ProofSubmittedAt::<T>::insert(task_id, now);
             Self::deposit_event(Event::ProofSubmitted { task_id, pool_id: task.pool_id });
             Self::deposit_event(Event::TaskStatusChanged {
                 task_id,
                 status: TaskStatus::ProofSubmitted,
             });
 
-            Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
-                let t = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
-                t.status = TaskStatus::Verifying;
-                Ok(())
-            })?;
-            Self::deposit_event(Event::TaskStatusChanged {
-                task_id,
-                status: TaskStatus::Verifying,
-            });
+            Ok(())
+        }
 
-            Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
-                let t = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
-                t.verification_result = Some(verification_result);
-                t.status =
-                    if verification_result { TaskStatus::Completed } else { TaskStatus::Failed };
-                Ok(())
-            })?;
+        /// Independent verification of a submitted proof.
+        /// Anyone EXCEPT the pool owner can call this to approve or reject the proof.
+        /// This prevents pool owners from self-certifying their own work.
+        #[pallet::call_index(9)]
+        #[pallet::weight(T::WeightInfo::verify_proof())]
+        pub fn verify_proof(
+            origin: OriginFor<T>,
+            task_id: TaskId,
+            result: bool,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
 
-            Self::deposit_event(Event::ProofVerified { task_id, result: verification_result });
-            Self::deposit_event(Event::TaskStatusChanged {
-                task_id,
-                status: if verification_result {
-                    TaskStatus::Completed
-                } else {
-                    TaskStatus::Failed
-                },
-            });
+            let task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
+            ensure!(matches!(task.status, TaskStatus::ProofSubmitted), Error::<T>::InvalidTaskState);
+            ensure!(task.proof_hash.is_some(), Error::<T>::ProofNotSubmitted);
 
-            Self::decrement_pool_activity(task.pool_id, task_id);
-            Self::update_reputation(task.pool_id, verification_result);
+            let pool = Pools::<T>::get(task.pool_id).ok_or(Error::<T>::PoolNotFound)?;
+            // KEY SECURITY: pool owner cannot verify their own proof
+            ensure!(pool.owner != sender, Error::<T>::SelfVerificationNotAllowed);
 
-            if verification_result {
-                if let Some(amount) = Tasks::<T>::get(task_id).and_then(|t| t.reward_amount) {
-                    Rewards::<T>::insert(task_id, amount);
-                    Self::deposit_event(Event::RewardAvailable { task_id, amount });
-                }
-
-                // Notify attestation system about task completion
-                let final_task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
-                let pool = Pools::<T>::get(final_task.pool_id).ok_or(Error::<T>::PoolNotFound)?;
-                let result_hash = sp_core::H256::from(proof_hash);
-                
-                // Call the completion handler (ignore errors to not block the flow)
-                let _ = T::OnTaskCompleted::on_task_completed(
-                    &pool.owner,
-                    task_id,
-                    result_hash,
-                    &[], // model_id placeholder
-                    0,   // input_tokens placeholder
-                    0,   // output_tokens placeholder
-                );
-            } else {
-                Self::release_escrow(task_id)?;
-                Self::slash_pool(task.pool_id)?;
-            }
-
+            Self::finalize_verification(task_id, task.pool_id, result)?;
             Ok(())
         }
 
@@ -803,6 +810,67 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        /// Shared logic for finalizing verification (called by verify_proof and auto-verify)
+        fn finalize_verification(task_id: TaskId, pool_id: PoolId, result: bool) -> DispatchResult {
+            let proof_hash = Tasks::<T>::get(task_id)
+                .and_then(|t| t.proof_hash)
+                .ok_or(Error::<T>::ProofNotSubmitted)?;
+
+            Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
+                let t = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
+                t.status = TaskStatus::Verifying;
+                Ok(())
+            })?;
+            Self::deposit_event(Event::TaskStatusChanged {
+                task_id,
+                status: TaskStatus::Verifying,
+            });
+
+            Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
+                let t = maybe_task.as_mut().ok_or(Error::<T>::TaskNotFound)?;
+                t.verification_result = Some(result);
+                t.status = if result { TaskStatus::Completed } else { TaskStatus::Failed };
+                Ok(())
+            })?;
+
+            Self::deposit_event(Event::ProofVerified { task_id, result });
+            Self::deposit_event(Event::TaskStatusChanged {
+                task_id,
+                status: if result { TaskStatus::Completed } else { TaskStatus::Failed },
+            });
+
+            Self::decrement_pool_activity(pool_id, task_id);
+            Self::update_reputation(pool_id, result);
+            ProofSubmittedAt::<T>::remove(task_id);
+
+            if result {
+                if let Some(amount) = Tasks::<T>::get(task_id).and_then(|t| t.reward_amount) {
+                    Rewards::<T>::insert(task_id, amount);
+                    Self::deposit_event(Event::RewardAvailable { task_id, amount });
+                }
+
+                // Notify attestation system about task completion
+                let final_task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
+                let pool = Pools::<T>::get(final_task.pool_id).ok_or(Error::<T>::PoolNotFound)?;
+                let result_hash = sp_core::H256::from(proof_hash);
+
+                // Call the completion handler (ignore errors to not block the flow)
+                let _ = T::OnTaskCompleted::on_task_completed(
+                    &pool.owner,
+                    task_id,
+                    result_hash,
+                    &[], // model_id placeholder
+                    0,   // input_tokens placeholder
+                    0,   // output_tokens placeholder
+                );
+            } else {
+                Self::release_escrow(task_id)?;
+                Self::slash_pool(pool_id)?;
+            }
+
+            Ok(())
+        }
+
         fn ensure_nvlink(has_nvlink: bool, nvlink_efficiency: u32) -> DispatchResult {
             if has_nvlink {
                 ensure!(
@@ -834,6 +902,7 @@ pub mod pallet {
 
             Self::decrement_pool_activity(task.pool_id, task_id);
             Self::update_reputation(task.pool_id, false);
+            ProofSubmittedAt::<T>::remove(task_id);
             Self::release_escrow(task_id)?;
             Self::slash_pool(task.pool_id)?;
             if timed_out {
