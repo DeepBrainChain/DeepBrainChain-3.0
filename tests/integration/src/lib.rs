@@ -418,6 +418,7 @@ mod tests {
                 RuntimeOrigin::signed(customer),
                 dimensions,
                 pallet_compute_pool_scheduler::pallet::TaskPriority::Normal,
+                None,
             ).is_ok());
 
             // Verify task was assigned to the pool
@@ -551,6 +552,7 @@ mod tests {
                 RuntimeOrigin::signed(task_user),
                 dims,
                 pallet_compute_pool_scheduler::pallet::TaskPriority::High,
+                None,
             ).is_ok());
 
             // Verify task assigned to pool
