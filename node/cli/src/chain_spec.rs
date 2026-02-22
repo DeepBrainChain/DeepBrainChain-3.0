@@ -40,9 +40,10 @@ use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public, H160};
 use sp_io::hashing::keccak_256;
 use sp_runtime::{
-    traits::{IdentifyAccount, Verify},
+    traits::{AccountIdConversion, IdentifyAccount, Verify},
     Perbill,
 };
+use frame_support::PalletId;
 use std::str::FromStr;
 
 pub use dbc_primitives::{AccountId, Balance, Signature};
@@ -318,14 +319,19 @@ pub fn dev_testnet_genesis(
     const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
     const STASH: Balance = ENDOWMENT / 1000;
 
+    // Pre-fund ZkCompute pallet account so it can pay rewards
+    let zk_pallet_account: AccountId = PalletId(*b"dbc/zkcp").into_account_truncating();
+
     // We prefund the standard dev accounts
     let evm_accounts = get_evm_accounts(None);
 
+    // Build balances: endowed accounts + pallet accounts
+    let mut balances: Vec<(AccountId, Balance)> = endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
+    balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
+
     GenesisConfig {
         system: SystemConfig { code: wasm_binary_unwrap().to_vec() },
-        balances: BalancesConfig {
-            balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
-        },
+        balances: BalancesConfig { balances },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
             keys: initial_authorities
@@ -481,11 +487,15 @@ pub fn testnet_genesis(
     const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
     const STASH: Balance = ENDOWMENT / 1000;
 
+    // Pre-fund ZkCompute pallet account so it can pay rewards
+    let zk_pallet_account: AccountId = PalletId(*b"dbc/zkcp").into_account_truncating();
+
+    let mut balances: Vec<(AccountId, Balance)> = endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
+    balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
+
     GenesisConfig {
         system: SystemConfig { code: wasm_binary_unwrap().to_vec() },
-        balances: BalancesConfig {
-            balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
-        },
+        balances: BalancesConfig { balances },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
             keys: initial_authorities
@@ -769,11 +779,15 @@ pub fn mainnet_genesis(
     const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
     const STASH: Balance = ENDOWMENT / 1000;
 
+    // Pre-fund ZkCompute pallet account so it can pay rewards
+    let zk_pallet_account: AccountId = PalletId(*b"dbc/zkcp").into_account_truncating();
+
+    let mut balances: Vec<(AccountId, Balance)> = endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
+    balances.push((zk_pallet_account, 10_000_000 * DOLLARS)); // 10M DBC for ZK rewards pool
+
     GenesisConfig {
         system: SystemConfig { code: wasm_binary_unwrap().to_vec() },
-        balances: BalancesConfig {
-            balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
-        },
+        balances: BalancesConfig { balances },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
             keys: initial_authorities

@@ -1436,10 +1436,12 @@ parameter_types! {
     pub const ZkPalletId: frame_support::PalletId = frame_support::PalletId(*b"dbc/zkcp");
 
     // X402 Settlement
+    // TODO(production): Replace FacilitatorAccount/PublicKey with a securely generated production key.
+    // Current key is from seed [1u8; 32] — suitable for testnet only.
     pub const FacilitatorAccount: AccountId = AccountId::new(hex_literal::hex!("189dac29296d31814dc8c56cf3d36a0543372bba7538fa322a4aebfebc39e056")); // sr25519 from seed [1u8; 32]
     pub const MaxSignatureLen: u32 = 128;
     pub const FacilitatorPublicKey: [u8; 32] = hex_literal::hex!("189dac29296d31814dc8c56cf3d36a0543372bba7538fa322a4aebfebc39e056");
-    pub const SettlementDelay: BlockNumber = 5; // 5 blocks (~30s) for dev, increase for production
+    pub const SettlementDelay: BlockNumber = 600; // ~1 hour at 6s blocks
     pub const PaymentIntentTTL: BlockNumber = 14400; // ~24 hours at 6s blocks
 }
 
