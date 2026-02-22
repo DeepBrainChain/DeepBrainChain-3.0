@@ -295,11 +295,16 @@ try {
   );
 
   // 5.3 Finalize settlement (SettlementDelay = 600 blocks)
-  // Use engine.createBlock to fast-forward past the settlement delay
+  // Use raw JSON-RPC engine_createBlock to fast-forward past the settlement delay
   const settlementBlocks = 610; // > 600 SettlementDelay
-  console.log(`       Fast-forwarding ${settlementBlocks} blocks via engine.createBlock...`);
+  console.log(`       Fast-forwarding ${settlementBlocks} blocks via engine_createBlock...`);
+  const rpcUrl = 'http://127.0.0.1:9944';
   for (let i = 0; i < settlementBlocks; i++) {
-    await api.rpc.engine.createBlock(true /* empty */, false /* finalize */);
+    await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: i + 1, method: 'engine_createBlock', params: [true, false, null] }),
+    });
   }
   const currentBlock = (await api.rpc.chain.getHeader()).number.toNumber();
   console.log(`       Current block: ${currentBlock}`);
