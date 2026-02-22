@@ -23,6 +23,7 @@ coins-bip39 = { workspace = true }
 k256 = { workspace = true }
 
 # Substrate
+frame-support = { workspace = true, features = ["std"] }
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
 frame-system = { workspace = true }
