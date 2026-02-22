@@ -167,7 +167,7 @@ benchmarks! {
         )?;
     }: _(RawOrigin::Signed(challenger), 0u64)
 
-    resolve_benchmark_challenge {
+    resolve_benchmark {
         let attester: T::AccountId = whitelisted_caller();
         let challenger: T::AccountId = account("challenger", 0, 0);
         Pallet::<T>::register_node(
@@ -189,7 +189,7 @@ benchmarks! {
         )?;
     }: _(RawOrigin::Root, 0u64, true)
 
-    update_benchmark_claim {
+    update_benchmark_score {
         let caller: T::AccountId = whitelisted_caller();
         Pallet::<T>::register_node(
             RawOrigin::Signed(caller.clone()).into(),
@@ -203,6 +203,6 @@ benchmarks! {
             b"llama-70b".to_vec(),
             100u32,
         )?;
-    }: _(RawOrigin::Signed(caller), 0u64, 200u32)
+    }: _(RawOrigin::Signed(caller), b"llama-70b".to_vec(), 200u32)
 
 }

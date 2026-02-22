@@ -747,7 +747,7 @@ pub mod pallet {
 
         /// Resolve benchmark challenge (admin decides)
         #[pallet::call_index(9)]
-        #[pallet::weight(T::WeightInfo::resolve_benchmark_challenge())]
+        #[pallet::weight(T::WeightInfo::resolve_benchmark())]
         pub fn resolve_benchmark(
             origin: OriginFor<T>,
             claim_id: u64,
@@ -820,7 +820,7 @@ pub mod pallet {
 
         /// Update benchmark score for existing claim
         #[pallet::call_index(10)]
-        #[pallet::weight(T::WeightInfo::update_benchmark_claim())]
+        #[pallet::weight(T::WeightInfo::update_benchmark_score())]
         pub fn update_benchmark_score(
             origin: OriginFor<T>,
             model_id: Vec<u8>,

@@ -5,6 +5,7 @@ use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::{Currency, Get, ReservableCurrency};
 use frame_support::BoundedVec;
 use frame_system::RawOrigin;
+use sp_std::vec::Vec;
 use sp_runtime::traits::Saturating;
 
 fn funded_account<T: Config>(name: &'static str, index: u32) -> T::AccountId {
