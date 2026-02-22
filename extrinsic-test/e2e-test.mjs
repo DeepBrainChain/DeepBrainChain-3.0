@@ -295,19 +295,22 @@ try {
   );
 
   // 5.3 Finalize settlement (SettlementDelay = 600 blocks)
-  // Use raw JSON-RPC engine_createBlock to fast-forward past the settlement delay
+  // Submit system.remark transactions to trigger instant-seal block production
   const settlementBlocks = 610; // > 600 SettlementDelay
-  console.log(`       Fast-forwarding ${settlementBlocks} blocks via engine_createBlock...`);
-  const rpcUrl = 'http://127.0.0.1:9944';
+  console.log(`       Fast-forwarding ${settlementBlocks} blocks via system.remark (instant seal)...`);
+  const startBlock = (await api.rpc.chain.getHeader()).number.toNumber();
+  // Send remarks in fire-and-forget batches (instant seal = 1 block per tx)
+  const nonces = [];
+  let currentNonce = (await api.rpc.system.accountNextIndex(alice.address)).toNumber();
   for (let i = 0; i < settlementBlocks; i++) {
-    await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: i + 1, method: 'engine_createBlock', params: [true, false, null] }),
-    });
+    api.tx.system.remark('0x00').signAndSend(alice, { nonce: currentNonce++ });
+    // yield to event loop every 50 to let blocks process
+    if (i % 50 === 49) await new Promise(r => setTimeout(r, 100));
   }
-  const currentBlock = (await api.rpc.chain.getHeader()).number.toNumber();
-  console.log(`       Current block: ${currentBlock}`);
+  // Wait for all blocks to be produced
+  await new Promise(r => setTimeout(r, 5000));
+  const endBlock = (await api.rpc.chain.getHeader()).number.toNumber();
+  console.log(`       Blocks: ${startBlock} → ${endBlock} (produced ${endBlock - startBlock})`);
   await submitAndWait(
     api.tx.x402Settlement.finalizeSettlement(0),
     alice, '5.3 finalizeSettlement'
