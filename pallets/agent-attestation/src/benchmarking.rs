@@ -3,9 +3,10 @@
 use super::*;
 use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::Currency;
-use sp_std::vec;
 use frame_system::RawOrigin;
 use sp_core::H256;
+use sp_runtime::traits::Saturating;
+use sp_std::vec;
 
 benchmarks! {
     register_node {
@@ -134,5 +135,74 @@ benchmarks! {
         let price_per_token = amount;
         let region = b"us-east".to_vec();
     }: _(RawOrigin::Signed(caller), model_ids, max_concurrent, price_per_token, region)
+
+    submit_benchmark_claim {
+        let caller: T::AccountId = whitelisted_caller();
+        Pallet::<T>::register_node(
+            RawOrigin::Signed(caller.clone()).into(),
+            b"GPU-1234".to_vec(),
+            100u32,
+        )?;
+        let amount = T::BenchmarkDeposit::get().saturating_mul(10u32.into());
+        T::Currency::make_free_balance_be(&caller, amount);
+        let model_id = b"llama-70b".to_vec();
+        let score = 100u32;
+    }: _(RawOrigin::Signed(caller), model_id, score)
+
+    challenge_benchmark {
+        let attester: T::AccountId = whitelisted_caller();
+        let challenger: T::AccountId = account("challenger", 0, 0);
+        Pallet::<T>::register_node(
+            RawOrigin::Signed(attester.clone()).into(),
+            b"GPU-1234".to_vec(),
+            100u32,
+        )?;
+        let amount = T::BenchmarkDeposit::get().saturating_mul(10u32.into());
+        T::Currency::make_free_balance_be(&attester, amount);
+        T::Currency::make_free_balance_be(&challenger, amount);
+        Pallet::<T>::submit_benchmark_claim(
+            RawOrigin::Signed(attester).into(),
+            b"llama-70b".to_vec(),
+            100u32,
+        )?;
+    }: _(RawOrigin::Signed(challenger), 0u64)
+
+    resolve_benchmark_challenge {
+        let attester: T::AccountId = whitelisted_caller();
+        let challenger: T::AccountId = account("challenger", 0, 0);
+        Pallet::<T>::register_node(
+            RawOrigin::Signed(attester.clone()).into(),
+            b"GPU-1234".to_vec(),
+            100u32,
+        )?;
+        let amount = T::BenchmarkDeposit::get().saturating_mul(10u32.into());
+        T::Currency::make_free_balance_be(&attester, amount);
+        T::Currency::make_free_balance_be(&challenger, amount);
+        Pallet::<T>::submit_benchmark_claim(
+            RawOrigin::Signed(attester).into(),
+            b"llama-70b".to_vec(),
+            100u32,
+        )?;
+        Pallet::<T>::challenge_benchmark(
+            RawOrigin::Signed(challenger).into(),
+            0u64,
+        )?;
+    }: _(RawOrigin::Root, 0u64, true)
+
+    update_benchmark_claim {
+        let caller: T::AccountId = whitelisted_caller();
+        Pallet::<T>::register_node(
+            RawOrigin::Signed(caller.clone()).into(),
+            b"GPU-1234".to_vec(),
+            100u32,
+        )?;
+        let amount = T::BenchmarkDeposit::get().saturating_mul(10u32.into());
+        T::Currency::make_free_balance_be(&caller, amount);
+        Pallet::<T>::submit_benchmark_claim(
+            RawOrigin::Signed(caller.clone()).into(),
+            b"llama-70b".to_vec(),
+            100u32,
+        )?;
+    }: _(RawOrigin::Signed(caller), 0u64, 200u32)
 
 }

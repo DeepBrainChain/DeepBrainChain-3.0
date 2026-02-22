@@ -38,6 +38,9 @@ parameter_types! {
     pub const MaxModelIdLen: u32 = 256;
     pub const MaxGpuUuidLen: u32 = 128;
     pub const MaxModelsPerAgent: u32 = 10;
+    pub const BenchmarkDeposit: u128 = 500;
+    pub const BenchmarkChallengeDeposit: u128 = 200;
+    pub const MaxBenchmarkClaims: u32 = 10;
 }
 
 impl frame_system::Config for Test {
@@ -110,6 +113,9 @@ impl crate::Config for Test {
     type MaxModelIdLen = MaxModelIdLen;
     type MaxGpuUuidLen = MaxGpuUuidLen;
     type MaxModelsPerAgent = MaxModelsPerAgent;
+    type BenchmarkDeposit = BenchmarkDeposit;
+    type BenchmarkChallengeDeposit = BenchmarkChallengeDeposit;
+    type MaxBenchmarkClaims = MaxBenchmarkClaims;
     type WeightInfo = ();
     type AdminOrigin = frame_system::EnsureSigned<AccountId>;
     type OnAttestationConfirmed = MockAttestationSettler;
@@ -126,6 +132,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
             (2, 1_000_000_000_000),
             (3, 1_000_000_000_000),
             (4, 1_000_000_000_000),
+            (5, 1_000_000_000_000),
         ],
     }
     .assimilate_storage(&mut t)

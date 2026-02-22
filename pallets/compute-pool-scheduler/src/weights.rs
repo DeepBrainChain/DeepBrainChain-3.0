@@ -47,6 +47,10 @@ pub trait WeightInfo {
 	fn on_initialize() -> Weight;
 	fn stake_to_pool() -> Weight;
 	fn unstake_from_pool() -> Weight;
+	fn file_complaint() -> Weight;
+	fn resolve_complaint() -> Weight;
+	fn cancel_complaint() -> Weight;
+	fn appeal_complaint() -> Weight;
 }
 
 /// Weights for `pallet_compute_pool_scheduler` using the Substrate node and recommended hardware.
@@ -250,6 +254,30 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
+	/// Complaint: file_complaint
+	fn file_complaint() -> Weight {
+		Weight::from_parts(45_000_000, 4000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+	/// Complaint: resolve_complaint
+	fn resolve_complaint() -> Weight {
+		Weight::from_parts(55_000_000, 4500)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+	/// Complaint: cancel_complaint
+	fn cancel_complaint() -> Weight {
+		Weight::from_parts(35_000_000, 3800)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Complaint: appeal_complaint
+	fn appeal_complaint() -> Weight {
+		Weight::from_parts(40_000_000, 4000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -438,6 +466,30 @@ impl WeightInfo for () {
 		//  Estimated: `3958`
 		// Minimum execution time: 45_550_000 picoseconds.
 		Weight::from_parts(46_126_000, 3958)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Complaint: file_complaint
+	fn file_complaint() -> Weight {
+		Weight::from_parts(45_000_000, 4000)
+			.saturating_add(RocksDbWeight::get().reads(5_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	}
+	/// Complaint: resolve_complaint
+	fn resolve_complaint() -> Weight {
+		Weight::from_parts(55_000_000, 4500)
+			.saturating_add(RocksDbWeight::get().reads(4_u64))
+			.saturating_add(RocksDbWeight::get().writes(5_u64))
+	}
+	/// Complaint: cancel_complaint
+	fn cancel_complaint() -> Weight {
+		Weight::from_parts(35_000_000, 3800)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Complaint: appeal_complaint
+	fn appeal_complaint() -> Weight {
+		Weight::from_parts(40_000_000, 4000)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}

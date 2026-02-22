@@ -189,4 +189,94 @@ benchmarks! {
         ).expect("stake failed");
     }: _(RawOrigin::Signed(staker), pool_id, amount)
 
+
+    file_complaint {
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let pool_id = create_pool::<T>(&owner);
+        let user: T::AccountId = funded_account::<T>("user", 1);
+        let task_id = create_computing_task::<T>(&owner, &user, pool_id);
+
+        Tasks::<T>::mutate(task_id, |maybe_task| {
+            if let Some(task) = maybe_task.as_mut() {
+                task.status = TaskStatus::Completed;
+                task.verification_result = Some(true);
+                task.proof_hash = Some([1u8; 32]);
+            }
+        });
+
+        let reason: Vec<u8> = b"Poor quality output".to_vec();
+    }: _(RawOrigin::Signed(user), task_id, reason)
+
+    resolve_complaint {
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let pool_id = create_pool::<T>(&owner);
+        let user: T::AccountId = funded_account::<T>("user", 1);
+        let task_id = create_computing_task::<T>(&owner, &user, pool_id);
+
+        Tasks::<T>::mutate(task_id, |maybe_task| {
+            if let Some(task) = maybe_task.as_mut() {
+                task.status = TaskStatus::Completed;
+                task.verification_result = Some(true);
+                task.proof_hash = Some([1u8; 32]);
+            }
+        });
+
+        Pallet::<T>::file_complaint(
+            RawOrigin::Signed(user.clone()).into(),
+            task_id,
+            b"Bad result".to_vec(),
+        ).expect("file_complaint failed");
+        let complaint_id = crate::NextComplaintId::<T>::get().saturating_sub(1);
+    }: _(RawOrigin::Root, complaint_id, true)
+
+    cancel_complaint {
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let pool_id = create_pool::<T>(&owner);
+        let user: T::AccountId = funded_account::<T>("user", 1);
+        let task_id = create_computing_task::<T>(&owner, &user, pool_id);
+
+        Tasks::<T>::mutate(task_id, |maybe_task| {
+            if let Some(task) = maybe_task.as_mut() {
+                task.status = TaskStatus::Completed;
+                task.verification_result = Some(true);
+                task.proof_hash = Some([1u8; 32]);
+            }
+        });
+
+        Pallet::<T>::file_complaint(
+            RawOrigin::Signed(user.clone()).into(),
+            task_id,
+            b"Bad result".to_vec(),
+        ).expect("file_complaint failed");
+        let complaint_id = crate::NextComplaintId::<T>::get().saturating_sub(1);
+    }: _(RawOrigin::Signed(user), complaint_id)
+
+    appeal_complaint {
+        let owner: T::AccountId = funded_account::<T>("owner", 0);
+        let pool_id = create_pool::<T>(&owner);
+        let user: T::AccountId = funded_account::<T>("user", 1);
+        let task_id = create_computing_task::<T>(&owner, &user, pool_id);
+
+        Tasks::<T>::mutate(task_id, |maybe_task| {
+            if let Some(task) = maybe_task.as_mut() {
+                task.status = TaskStatus::Completed;
+                task.verification_result = Some(true);
+                task.proof_hash = Some([1u8; 32]);
+            }
+        });
+
+        Pallet::<T>::file_complaint(
+            RawOrigin::Signed(user.clone()).into(),
+            task_id,
+            b"Bad result".to_vec(),
+        ).expect("file_complaint failed");
+        let complaint_id = crate::NextComplaintId::<T>::get().saturating_sub(1);
+
+        Pallet::<T>::resolve_complaint(
+            RawOrigin::Root.into(),
+            complaint_id,
+            true,
+        ).expect("resolve_complaint failed");
+    }: _(RawOrigin::Signed(owner), complaint_id)
+
 }

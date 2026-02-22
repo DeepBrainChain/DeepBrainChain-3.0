@@ -309,6 +309,20 @@ pub trait AttestationSettler {
 
 /// Trait for task-mode to notify settlement about billing.
 /// Implemented by pallet-task-mode itself (for internal accounting).
+
+/// Query benchmark scores across pallets.
+/// Implemented by pallet-agent-attestation.
+pub trait BenchmarkScoreProvider {
+    type AccountId;
+
+    /// Get the benchmark score for a miner on a specific model.
+    /// Returns None if no active claim exists.
+    fn get_benchmark_score(miner: &Self::AccountId, model_id: &[u8]) -> Option<u32>;
+
+    /// Check if miner has any slashed benchmark claims (used for pool scoring penalty).
+    fn has_slashed_claims(miner: &Self::AccountId) -> bool;
+}
+
 pub trait TaskBillingProvider {
     type AccountId;
     type Balance;

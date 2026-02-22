@@ -43,6 +43,10 @@ pub trait WeightInfo {
 	fn confirm_attestation() -> Weight;
 	fn resolve_challenge() -> Weight;
 	fn update_capability() -> Weight;
+	fn submit_benchmark_claim() -> Weight;
+	fn challenge_benchmark() -> Weight;
+	fn resolve_benchmark_challenge() -> Weight;
+	fn update_benchmark_claim() -> Weight;
 }
 
 /// Weights for `pallet_agent_attestation` using the Substrate node and recommended hardware.
@@ -139,6 +143,26 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
+	fn submit_benchmark_claim() -> Weight {
+		Weight::from_parts(50_000_000, 4000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+	fn challenge_benchmark() -> Weight {
+		Weight::from_parts(45_000_000, 4000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
+	fn resolve_benchmark_challenge() -> Weight {
+		Weight::from_parts(60_000_000, 4000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	fn update_benchmark_claim() -> Weight {
+		Weight::from_parts(30_000_000, 4000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -233,5 +257,25 @@ impl WeightInfo for () {
 		Weight::from_parts(25_451_000, 6167)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	fn submit_benchmark_claim() -> Weight {
+		Weight::from_parts(50_000_000, 4000)
+			.saturating_add(RocksDbWeight::get().reads(4_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	}
+	fn challenge_benchmark() -> Weight {
+		Weight::from_parts(45_000_000, 4000)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+	fn resolve_benchmark_challenge() -> Weight {
+		Weight::from_parts(60_000_000, 4000)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	fn update_benchmark_claim() -> Weight {
+		Weight::from_parts(30_000_000, 4000)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

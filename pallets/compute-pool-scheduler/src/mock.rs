@@ -42,6 +42,10 @@ parameter_types! {
     pub const MaxTasksPerPool: u32 = 16;
     pub const InitialReputation: u32 = 80;
     pub const VerificationTimeout: BlockNumber = 3;
+    pub const ComplaintDeposit: Balance = 100;
+    pub const ComplaintSlashPercent: u32 = 20;
+    pub const MaxOpenComplaints: u32 = 10;
+    pub const SlashGracePeriod: BlockNumber = 5;
 }
 
 impl frame_system::Config for Test {
@@ -120,6 +124,10 @@ impl crate::Config for Test {
     type VerificationTimeout = VerificationTimeout;
     type WeightInfo = ();
     type OnTaskCompleted = MockTaskCompletionHandler;
+    type ComplaintDeposit = ComplaintDeposit;
+    type ComplaintSlashPercent = ComplaintSlashPercent;
+    type MaxOpenComplaints = MaxOpenComplaints;
+    type SlashGracePeriod = SlashGracePeriod;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {

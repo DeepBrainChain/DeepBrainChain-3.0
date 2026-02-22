@@ -146,6 +146,29 @@ pub mod pallet {
         pub claimed: bool,
     }
 
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    pub enum ComplaintStatus {
+        Open,
+        ResolvedValid,
+        ResolvedInvalid,
+        Appealed,
+        Executed,
+        Cancelled,
+    }
+
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[scale_info(skip_type_params(T))]
+    pub struct Complaint<T: Config> {
+        pub complainant: T::AccountId,
+        pub pool_id: PoolId,
+        pub task_id: TaskId,
+        pub deposit: BalanceOf<T>,
+        pub status: ComplaintStatus,
+        pub filed_at: BlockNumberFor<T>,
+        pub resolved_at: Option<BlockNumberFor<T>>,
+        pub reason: BoundedVec<u8, ConstU32<256>>,
+    }
+
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -171,6 +194,21 @@ pub mod pallet {
         /// Blocks to wait for independent verification before auto-approving a submitted proof
         #[pallet::constant]
         type VerificationTimeout: Get<BlockNumberFor<Self>>;
+        /// Complaint deposit amount
+        #[pallet::constant]
+        type ComplaintDeposit: Get<BalanceOf<Self>>;
+
+        /// Slash percent on valid complaint (0-100)
+        #[pallet::constant]
+        type ComplaintSlashPercent: Get<u32>;
+
+        /// Max open complaints per pool
+        #[pallet::constant]
+        type MaxOpenComplaints: Get<u32>;
+
+        /// Grace period for appeal after valid complaint resolution (blocks)
+        #[pallet::constant]
+        type SlashGracePeriod: Get<BlockNumberFor<Self>>;
         type WeightInfo: WeightInfo;
         /// Handler to notify when a task is completed
         type OnTaskCompleted: dbc_support::traits::TaskCompletionHandler<AccountId = Self::AccountId>;
@@ -261,6 +299,31 @@ pub mod pallet {
     pub type ProofSubmittedAt<T: Config> =
         StorageMap<_, Blake2_128Concat, TaskId, BlockNumberFor<T>, OptionQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn next_complaint_id)]
+    pub type NextComplaintId<T: Config> = StorageValue<_, u64, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn complaints)]
+    pub type Complaints<T: Config> = StorageMap<_, Blake2_128Concat, u64, Complaint<T>>;
+
+    /// TaskId -> ComplaintId (one complaint per task)
+    #[pallet::storage]
+    #[pallet::getter(fn task_complaint)]
+    pub type TaskComplaint<T: Config> = StorageMap<_, Blake2_128Concat, TaskId, u64, OptionQuery>;
+
+    /// PoolId -> open complaint count
+    #[pallet::storage]
+    #[pallet::getter(fn pool_open_complaints)]
+    pub type PoolOpenComplaints<T: Config> = StorageMap<_, Blake2_128Concat, PoolId, u32, ValueQuery>;
+
+    /// Pending complaint slash: complaint_id -> (pool_id, amount, execute_after_block)
+    #[pallet::storage]
+    #[pallet::getter(fn pending_complaint_slash)]
+    pub type PendingComplaintSlash<T: Config> = StorageMap<
+        _, Blake2_128Concat, u64, (PoolId, BalanceOf<T>, BlockNumberFor<T>), OptionQuery
+    >;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -280,6 +343,11 @@ pub mod pallet {
         Staked { who: T::AccountId, pool_id: PoolId, amount: BalanceOf<T> },
         Unstaked { who: T::AccountId, pool_id: PoolId, amount: BalanceOf<T> },
         StakeSlashed { pool_id: PoolId, amount: BalanceOf<T> },
+        ComplaintFiled { complaint_id: u64, complainant: T::AccountId, pool_id: PoolId, task_id: TaskId },
+        ComplaintResolved { complaint_id: u64, valid: bool },
+        ComplaintCancelled { complaint_id: u64 },
+        ComplaintAppealed { complaint_id: u64, pool_owner: T::AccountId },
+        ComplaintSlashExecuted { complaint_id: u64, pool_id: PoolId, amount: BalanceOf<T> },
     }
 
     #[pallet::error]
@@ -311,6 +379,12 @@ pub mod pallet {
         SelfVerificationNotAllowed,
         /// Task proof has not been submitted yet
         ProofNotSubmitted,
+        ComplaintNotFound,
+        ComplaintAlreadyFiled,
+        NotComplainant,
+        TooManyOpenComplaints,
+        ComplaintNotOpen,
+        ComplaintNotInGracePeriod,
     }
 
     #[pallet::genesis_config]
@@ -379,7 +453,40 @@ pub mod pallet {
             }
 
             // Return accurate weight based on actual work done
-            let total_processed = expired_count.saturating_add(auto_verify_count);
+            // Execute pending complaint slashes past grace period
+            let mut slash_executed: Vec<u64> = Vec::new();
+            for (complaint_id, (pool_id, slash_amount, execute_at)) in PendingComplaintSlash::<T>::iter() {
+                if now >= execute_at {
+                    // Execute the slash
+                    if let Some(complaint) = Complaints::<T>::get(complaint_id) {
+                        if matches!(complaint.status, ComplaintStatus::ResolvedValid) {
+                            Pools::<T>::mutate(pool_id, |maybe_pool| {
+                                if let Some(pool) = maybe_pool {
+                                    let actual_slash = slash_amount.min(pool.deposit_held);
+                                    let half = actual_slash / 2u32.into();
+                                    let _imbalance = T::Currency::slash_reserved(&pool.owner, actual_slash);
+                                    pool.deposit_held = pool.deposit_held.saturating_sub(actual_slash);
+                                    // Reward complainant with half
+                                    let _ = T::Currency::deposit_into_existing(&complaint.complainant, half);
+                                }
+                            });
+                            Complaints::<T>::mutate(complaint_id, |maybe_c| {
+                                if let Some(c) = maybe_c {
+                                    c.status = ComplaintStatus::Executed;
+                                }
+                            });
+                            Self::deposit_event(Event::ComplaintSlashExecuted { complaint_id, pool_id, amount: slash_amount });
+                        }
+                    }
+                    slash_executed.push(complaint_id);
+                }
+            }
+            for id in &slash_executed {
+                PendingComplaintSlash::<T>::remove(id);
+            }
+            let slash_count = slash_executed.len() as u64;
+
+            let total_processed = expired_count.saturating_add(auto_verify_count).saturating_add(slash_count);
             T::DbWeight::get().reads(reads.saturating_add(1))
                 .saturating_add(T::DbWeight::get().reads_writes(
                     total_processed.saturating_mul(5),
@@ -806,6 +913,166 @@ pub mod pallet {
             TotalPoolStake::<T>::mutate(pool_id, |total| *total = total.saturating_sub(amount));
             Self::deposit_event(Event::Unstaked { who, pool_id, amount });
             Ok(())
+        }
+
+        /// File a complaint against a completed task
+        #[pallet::call_index(10)]
+        #[pallet::weight(T::WeightInfo::file_complaint())]
+        pub fn file_complaint(
+            origin: OriginFor<T>,
+            task_id: TaskId,
+            reason: Vec<u8>,
+        ) -> DispatchResult {
+            let complainant = ensure_signed(origin)?;
+            let task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
+            ensure!(task.user == complainant, Error::<T>::NotTaskUser);
+            ensure!(matches!(task.status, TaskStatus::Completed), Error::<T>::InvalidTaskState);
+            ensure!(task.verification_result == Some(true), Error::<T>::InvalidTaskState);
+            ensure!(!TaskComplaint::<T>::contains_key(task_id), Error::<T>::ComplaintAlreadyFiled);
+
+            let pool_id = task.pool_id;
+            let open_count = PoolOpenComplaints::<T>::get(pool_id);
+            ensure!(open_count < T::MaxOpenComplaints::get(), Error::<T>::TooManyOpenComplaints);
+
+            let deposit = T::ComplaintDeposit::get();
+            T::Currency::reserve(&complainant, deposit)
+                .map_err(|_| Error::<T>::InsufficientBalance)?;
+
+            let reason_bounded: BoundedVec<u8, ConstU32<256>> = reason
+                .try_into()
+                .map_err(|_| Error::<T>::ArithmeticOverflow)?;
+
+            let complaint_id = NextComplaintId::<T>::get();
+            let next_id = complaint_id.checked_add(1).ok_or(Error::<T>::ArithmeticOverflow)?;
+            NextComplaintId::<T>::put(next_id);
+
+            let now = frame_system::Pallet::<T>::block_number();
+            Complaints::<T>::insert(complaint_id, Complaint {
+                complainant: complainant.clone(),
+                pool_id,
+                task_id,
+                deposit,
+                status: ComplaintStatus::Open,
+                filed_at: now,
+                resolved_at: None,
+                reason: reason_bounded,
+            });
+
+            TaskComplaint::<T>::insert(task_id, complaint_id);
+            PoolOpenComplaints::<T>::mutate(pool_id, |c| *c = c.saturating_add(1));
+
+            Self::deposit_event(Event::ComplaintFiled { complaint_id, complainant, pool_id, task_id });
+            Ok(())
+        }
+
+        /// Resolve a complaint (root decides)
+        #[pallet::call_index(11)]
+        #[pallet::weight(T::WeightInfo::resolve_complaint())]
+        pub fn resolve_complaint(
+            origin: OriginFor<T>,
+            complaint_id: u64,
+            valid: bool,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            Complaints::<T>::try_mutate(complaint_id, |maybe_complaint| -> DispatchResult {
+                let complaint = maybe_complaint.as_mut().ok_or(Error::<T>::ComplaintNotFound)?;
+                ensure!(
+                    matches!(complaint.status, ComplaintStatus::Open | ComplaintStatus::Appealed),
+                    Error::<T>::ComplaintNotOpen
+                );
+
+                let now = frame_system::Pallet::<T>::block_number();
+                complaint.resolved_at = Some(now);
+
+                if valid {
+                    complaint.status = ComplaintStatus::ResolvedValid;
+                    T::Currency::unreserve(&complaint.complainant, complaint.deposit);
+
+                    let pool = Pools::<T>::get(complaint.pool_id).ok_or(Error::<T>::PoolNotFound)?;
+                    let slash_percent = T::ComplaintSlashPercent::get();
+                    let slash_amount = sp_runtime::Perbill::from_percent(slash_percent) * pool.deposit_held;
+
+                    let execute_at = now.saturating_add(T::SlashGracePeriod::get());
+                    PendingComplaintSlash::<T>::insert(complaint_id, (complaint.pool_id, slash_amount, execute_at));
+
+                    Pools::<T>::mutate(complaint.pool_id, |maybe_pool| {
+                        if let Some(pool) = maybe_pool {
+                            pool.reputation = pool.reputation.saturating_sub(5);
+                        }
+                    });
+                } else {
+                    complaint.status = ComplaintStatus::ResolvedInvalid;
+                    let half = complaint.deposit / 2u32.into();
+                    let _imbalance = T::Currency::slash_reserved(&complaint.complainant, complaint.deposit);
+                    if let Some(pool) = Pools::<T>::get(complaint.pool_id) {
+                        let _ = T::Currency::deposit_into_existing(&pool.owner, half);
+                    }
+                }
+
+                PoolOpenComplaints::<T>::mutate(complaint.pool_id, |c| *c = c.saturating_sub(1));
+                Self::deposit_event(Event::ComplaintResolved { complaint_id, valid });
+                Ok(())
+            })
+        }
+
+        /// Cancel an open complaint (complainant only, 90% refund)
+        #[pallet::call_index(12)]
+        #[pallet::weight(T::WeightInfo::cancel_complaint())]
+        pub fn cancel_complaint(
+            origin: OriginFor<T>,
+            complaint_id: u64,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+
+            Complaints::<T>::try_mutate(complaint_id, |maybe_complaint| -> DispatchResult {
+                let complaint = maybe_complaint.as_mut().ok_or(Error::<T>::ComplaintNotFound)?;
+                ensure!(complaint.complainant == who, Error::<T>::NotComplainant);
+                ensure!(matches!(complaint.status, ComplaintStatus::Open), Error::<T>::ComplaintNotOpen);
+
+                complaint.status = ComplaintStatus::Cancelled;
+
+                let penalty = complaint.deposit / 10u32.into();
+                let refund = complaint.deposit.saturating_sub(penalty);
+                let _imbalance = T::Currency::slash_reserved(&who, penalty);
+                T::Currency::unreserve(&who, refund);
+
+                PoolOpenComplaints::<T>::mutate(complaint.pool_id, |c| *c = c.saturating_sub(1));
+
+                Self::deposit_event(Event::ComplaintCancelled { complaint_id });
+                Ok(())
+            })
+        }
+
+        /// Appeal a valid complaint resolution (pool owner, within grace period)
+        #[pallet::call_index(13)]
+        #[pallet::weight(T::WeightInfo::appeal_complaint())]
+        pub fn appeal_complaint(
+            origin: OriginFor<T>,
+            complaint_id: u64,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+
+            Complaints::<T>::try_mutate(complaint_id, |maybe_complaint| -> DispatchResult {
+                let complaint = maybe_complaint.as_mut().ok_or(Error::<T>::ComplaintNotFound)?;
+                ensure!(matches!(complaint.status, ComplaintStatus::ResolvedValid), Error::<T>::ComplaintNotOpen);
+
+                let pool = Pools::<T>::get(complaint.pool_id).ok_or(Error::<T>::PoolNotFound)?;
+                ensure!(pool.owner == who, Error::<T>::NotPoolOwner);
+
+                let now = frame_system::Pallet::<T>::block_number();
+                let resolved_at = complaint.resolved_at.ok_or(Error::<T>::ComplaintNotOpen)?;
+                ensure!(
+                    now <= resolved_at.saturating_add(T::SlashGracePeriod::get()),
+                    Error::<T>::ComplaintNotInGracePeriod
+                );
+
+                complaint.status = ComplaintStatus::Appealed;
+                PendingComplaintSlash::<T>::remove(complaint_id);
+
+                Self::deposit_event(Event::ComplaintAppealed { complaint_id, pool_owner: who });
+                Ok(())
+            })
         }
     }
 

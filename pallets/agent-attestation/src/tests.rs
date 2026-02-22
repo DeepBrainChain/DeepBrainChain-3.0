@@ -18,11 +18,7 @@ fn model_id_2() -> Vec<u8> {
 #[test]
 fn register_node_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         let node = AgentAttestation::node_of(1).unwrap();
         assert_eq!(node.tflops, 120);
         assert!(node.is_active);
@@ -32,11 +28,7 @@ fn register_node_works() {
 #[test]
 fn register_node_duplicate_fails() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         assert_noop!(
             AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120),
             Error::<Test>::NodeAlreadyRegistered
@@ -47,11 +39,7 @@ fn register_node_duplicate_fails() {
 #[test]
 fn heartbeat_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         System::set_block_number(102);
         assert_ok!(AgentAttestation::heartbeat(RuntimeOrigin::signed(1)));
         let node = AgentAttestation::node_of(1).unwrap();
@@ -62,11 +50,7 @@ fn heartbeat_works() {
 #[test]
 fn heartbeat_too_early_fails() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         System::set_block_number(51);
         assert_noop!(
             AgentAttestation::heartbeat(RuntimeOrigin::signed(1)),
@@ -78,11 +62,7 @@ fn heartbeat_too_early_fails() {
 #[test]
 fn submit_attestation_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         let result_hash = H256::from_low_u64_be(42);
         assert_ok!(AgentAttestation::submit_attestation(
             RuntimeOrigin::signed(1),
@@ -122,11 +102,7 @@ fn submit_attestation_unregistered_fails() {
 #[test]
 fn challenge_attestation_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         assert_ok!(AgentAttestation::submit_attestation(
             RuntimeOrigin::signed(1),
             1,
@@ -136,10 +112,7 @@ fn challenge_attestation_works() {
             500,
         ));
         System::set_block_number(25);
-        assert_ok!(AgentAttestation::challenge_attestation(
-            RuntimeOrigin::signed(2),
-            0,
-        ));
+        assert_ok!(AgentAttestation::challenge_attestation(RuntimeOrigin::signed(2), 0,));
         let att = AgentAttestation::attestation_of(0).unwrap();
         assert_eq!(att.challenger, Some(2));
     });
@@ -148,11 +121,7 @@ fn challenge_attestation_works() {
 #[test]
 fn challenge_after_window_fails() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         assert_ok!(AgentAttestation::submit_attestation(
             RuntimeOrigin::signed(1),
             1,
@@ -172,11 +141,7 @@ fn challenge_after_window_fails() {
 #[test]
 fn confirm_attestation_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         assert_ok!(AgentAttestation::submit_attestation(
             RuntimeOrigin::signed(1),
             1,
@@ -188,10 +153,7 @@ fn confirm_attestation_works() {
         let reserved = Balances::reserved_balance(1);
         assert_eq!(reserved, 1_000);
         System::set_block_number(52);
-        assert_ok!(AgentAttestation::confirm_attestation(
-            RuntimeOrigin::signed(3),
-            0,
-        ));
+        assert_ok!(AgentAttestation::confirm_attestation(RuntimeOrigin::signed(3), 0,));
         let att = AgentAttestation::attestation_of(0).unwrap();
         assert!(matches!(att.status, AttestationStatus::Confirmed));
         let reserved_after = Balances::reserved_balance(1);
@@ -202,11 +164,7 @@ fn confirm_attestation_works() {
 #[test]
 fn resolve_challenge_slash_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         assert_ok!(AgentAttestation::submit_attestation(
             RuntimeOrigin::signed(1),
             1,
@@ -215,16 +173,9 @@ fn resolve_challenge_slash_works() {
             1000,
             500,
         ));
-        assert_ok!(AgentAttestation::challenge_attestation(
-            RuntimeOrigin::signed(2),
-            0,
-        ));
+        assert_ok!(AgentAttestation::challenge_attestation(RuntimeOrigin::signed(2), 0,));
         let balance_before = Balances::free_balance(1);
-        assert_ok!(AgentAttestation::resolve_challenge(
-            RuntimeOrigin::root(),
-            0,
-            true,
-        ));
+        assert_ok!(AgentAttestation::resolve_challenge(RuntimeOrigin::root(), 0, true,));
         let att = AgentAttestation::attestation_of(0).unwrap();
         assert!(matches!(att.status, AttestationStatus::Slashed));
         let balance_after = Balances::free_balance(1);
@@ -236,11 +187,7 @@ fn resolve_challenge_slash_works() {
 #[test]
 fn resolve_challenge_defend_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
         assert_ok!(AgentAttestation::submit_attestation(
             RuntimeOrigin::signed(1),
             1,
@@ -249,16 +196,9 @@ fn resolve_challenge_defend_works() {
             1000,
             500,
         ));
-        assert_ok!(AgentAttestation::challenge_attestation(
-            RuntimeOrigin::signed(2),
-            0,
-        ));
+        assert_ok!(AgentAttestation::challenge_attestation(RuntimeOrigin::signed(2), 0,));
         let balance_before = Balances::free_balance(1);
-        assert_ok!(AgentAttestation::resolve_challenge(
-            RuntimeOrigin::root(),
-            0,
-            false,
-        ));
+        assert_ok!(AgentAttestation::resolve_challenge(RuntimeOrigin::root(), 0, false,));
         let att = AgentAttestation::attestation_of(0).unwrap();
         assert!(matches!(att.status, AttestationStatus::Defended));
         let balance_after = Balances::free_balance(1);
@@ -269,11 +209,7 @@ fn resolve_challenge_defend_works() {
 #[test]
 fn update_capability_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(AgentAttestation::register_node(
-            RuntimeOrigin::signed(1),
-            gpu_uuid(),
-            120,
-        ));
+        assert_ok!(AgentAttestation::register_node(RuntimeOrigin::signed(1), gpu_uuid(), 120,));
 
         assert_ok!(AgentAttestation::update_capability(
             RuntimeOrigin::signed(1),
@@ -289,7 +225,8 @@ fn update_capability_works() {
         assert_eq!(cap.max_concurrent, 8);
         assert_eq!(cap.price_per_token, 10);
 
-        let model_bounded: frame_support::BoundedVec<u8, MaxModelIdLen> = model_id().try_into().unwrap();
+        let model_bounded: frame_support::BoundedVec<u8, MaxModelIdLen> =
+            model_id().try_into().unwrap();
         let providers = AgentAttestation::get_providers_for_model(&model_bounded);
         assert_eq!(providers, vec![1]);
 
@@ -301,8 +238,249 @@ fn update_capability_works() {
             b"eu".to_vec(),
         ));
 
-        let old_model_bounded: frame_support::BoundedVec<u8, MaxModelIdLen> = model_id().try_into().unwrap();
+        let old_model_bounded: frame_support::BoundedVec<u8, MaxModelIdLen> =
+            model_id().try_into().unwrap();
         let old_providers = AgentAttestation::get_providers_for_model(&old_model_bounded);
         assert!(old_providers.is_empty());
+    });
+}
+
+// ============================================================
+// Benchmark Claim Tests
+// ============================================================
+
+fn register_miner(who: u64) {
+    assert_ok!(AgentAttestation::register_node(
+        RuntimeOrigin::signed(who),
+        b"GPU-12345678-abcd-efgh-ijkl-1234567890ab".to_vec(),
+        120,
+    ));
+}
+
+#[test]
+fn submit_benchmark_claim_works() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        let balance_before = Balances::free_balance(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
+        ));
+        let claim = AgentAttestation::benchmark_claims(0).unwrap();
+        assert_eq!(claim.claimer, 1);
+        assert_eq!(claim.score, 100);
+        assert_eq!(claim.status, crate::pallet::BenchmarkClaimStatus::Active);
+        assert_eq!(AgentAttestation::miner_claim_count(1), 1);
+        // Deposit reserved
+        let balance_after = Balances::free_balance(1);
+        assert_eq!(balance_before - balance_after, 500); // BenchmarkDeposit
+    });
+}
+
+#[test]
+fn submit_benchmark_claim_not_registered_fails() {
+    new_test_ext().execute_with(|| {
+        assert_noop!(
+            AgentAttestation::submit_benchmark_claim(
+                RuntimeOrigin::signed(1),
+                model_id(),
+                100,
+            ),
+            Error::<Test>::NodeNotRegistered
+        );
+    });
+}
+
+#[test]
+fn submit_benchmark_claim_insufficient_deposit_fails() {
+    new_test_ext().execute_with(|| {
+        // Register miner with account 5, then burn most of the balance
+        register_miner(5);
+        // Force account 5 balance to 100 by transferring away via multiple calls
+        // BenchmarkDeposit is 500, so 100 free balance should fail
+        use frame_support::traits::Currency;
+        let free = <Balances as Currency<u64>>::free_balance(&5);
+        let to_remove = free.saturating_sub(100);
+        // Use withdraw to reduce balance
+        let _ = <Balances as Currency<u64>>::withdraw(
+            &5,
+            to_remove,
+            frame_support::traits::WithdrawReasons::TRANSFER,
+            frame_support::traits::ExistenceRequirement::AllowDeath,
+        ).expect("withdraw should succeed");
+        // Verify balance is now ~100
+        let remaining = <Balances as Currency<u64>>::free_balance(&5);
+        assert!(remaining < 500, "Balance should be < 500 but is {}", remaining);
+        assert_noop!(
+            AgentAttestation::submit_benchmark_claim(
+                RuntimeOrigin::signed(5),
+                model_id(),
+                100,
+            ),
+            Error::<Test>::InsufficientDeposit
+        );
+    });
+}
+
+#[test]
+fn submit_benchmark_claim_replaces_old() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        let balance_mid = Balances::free_balance(1);
+        // Submit again for same model - should replace
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 200,
+        ));
+        let claim = AgentAttestation::benchmark_claims(1).unwrap();
+        assert_eq!(claim.score, 200);
+        // Claim count should still be 1 (replaced, not added)
+        assert_eq!(AgentAttestation::miner_claim_count(1), 1);
+        // Balance should be same (old refunded, new reserved)
+        assert_eq!(Balances::free_balance(1), balance_mid);
+    });
+}
+
+#[test]
+fn challenge_benchmark_works() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(
+            RuntimeOrigin::signed(2), 0,
+        ));
+        let claim = AgentAttestation::benchmark_claims(0).unwrap();
+        assert_eq!(claim.status, crate::pallet::BenchmarkClaimStatus::Challenged);
+        assert_eq!(claim.challenger, Some(2));
+        assert!(claim.challenge_deposit.is_some());
+    });
+}
+
+#[test]
+fn challenge_benchmark_self_fails() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        assert_noop!(
+            AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(1), 0),
+            Error::<Test>::CannotChallengeSelf
+        );
+    });
+}
+
+#[test]
+fn challenge_benchmark_already_challenged_fails() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(
+            RuntimeOrigin::signed(2), 0,
+        ));
+        assert_noop!(
+            AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(3), 0),
+            Error::<Test>::BenchmarkAlreadyResolved
+        );
+    });
+}
+
+#[test]
+fn resolve_benchmark_miner_guilty() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        let challenger_before = Balances::free_balance(2);
+        assert_ok!(AgentAttestation::challenge_benchmark(
+            RuntimeOrigin::signed(2), 0,
+        ));
+        assert_ok!(AgentAttestation::resolve_benchmark(
+            RuntimeOrigin::root(), 0, false,
+        ));
+        let claim = AgentAttestation::benchmark_claims(0).unwrap();
+        assert_eq!(claim.status, crate::pallet::BenchmarkClaimStatus::Slashed);
+        // Challenger should get challenge deposit back + half of miner deposit
+        let challenger_after = Balances::free_balance(2);
+        assert!(challenger_after > challenger_before - 200); // Got reward
+    });
+}
+
+#[test]
+fn resolve_benchmark_miner_innocent() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        let miner_before = Balances::free_balance(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(
+            RuntimeOrigin::signed(2), 0,
+        ));
+        assert_ok!(AgentAttestation::resolve_benchmark(
+            RuntimeOrigin::root(), 0, true,
+        ));
+        let claim = AgentAttestation::benchmark_claims(0).unwrap();
+        assert_eq!(claim.status, crate::pallet::BenchmarkClaimStatus::Defended);
+        // Miner deposit (500) should be unreserved back
+        // Miner should end up with more than what they had after claim+challenge
+        let miner_after = Balances::free_balance(1);
+        // miner_before was before claim (had full balance)
+        // After claim: -500 reserved. After resolution: +500 unreserved + potential reward
+        assert!(miner_after >= miner_before - 500);
+    });
+}
+
+#[test]
+fn resolve_benchmark_not_challenged_fails() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        assert_noop!(
+            AgentAttestation::resolve_benchmark(RuntimeOrigin::root(), 0, true),
+            Error::<Test>::BenchmarkNotChallenged
+        );
+    });
+}
+
+#[test]
+fn update_benchmark_claim_works() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        assert_ok!(AgentAttestation::update_benchmark_score(
+            RuntimeOrigin::signed(1), model_id(), 200,
+        ));
+        let claim = AgentAttestation::benchmark_claims(0).unwrap();
+        assert_eq!(claim.score, 200);
+    });
+}
+
+#[test]
+fn update_benchmark_claim_while_challenged_fails() {
+    new_test_ext().execute_with(|| {
+        register_miner(1);
+        assert_ok!(AgentAttestation::submit_benchmark_claim(
+            RuntimeOrigin::signed(1), model_id(), 100,
+        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(
+            RuntimeOrigin::signed(2), 0,
+        ));
+        assert_noop!(
+            AgentAttestation::update_benchmark_score(RuntimeOrigin::signed(1), model_id(), 200),
+            Error::<Test>::BenchmarkAlreadyResolved
+        );
     });
 }

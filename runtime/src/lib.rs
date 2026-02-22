@@ -1413,6 +1413,12 @@ parameter_types! {
     pub const MaxTasksPerPool: u32 = 1000;
     pub const InitialReputation: u32 = 100;
 
+    // Complaint Mechanism (compute-pool-scheduler)
+    pub const ComplaintDeposit: Balance = 100 * DBCS;
+    pub const ComplaintSlashPercent: u32 = 20;
+    pub const MaxOpenComplaints: u32 = 10;
+    pub const SlashGracePeriod: BlockNumber = 600; // ~1 hour
+
     // Agent Attestation
     pub const AttestationDeposit: Balance = 100 * DBCS;
     pub const ChallengeWindow: BlockNumber = 7200; // ~12 hours
@@ -1420,6 +1426,11 @@ parameter_types! {
     pub const AttestationHeartbeatInterval: BlockNumber = 100;
     pub const MaxGpuUuidLen: u32 = 128;
     pub const MaxModelsPerAgent: u32 = 10;
+
+    // Benchmark Claims (agent-attestation)
+    pub const BenchmarkDeposit: Balance = 500 * DBCS;
+    pub const BenchmarkChallengeDeposit: Balance = 200 * DBCS;
+    pub const MaxBenchmarkClaims: u32 = 10;
 
     // ZK Compute (additional)
     pub const MaxPendingTasks: u32 = 1000;
@@ -1538,6 +1549,10 @@ impl pallet_compute_pool_scheduler::Config for Runtime {
     type VerificationTimeout = VerificationTimeout;
     type WeightInfo = pallet_compute_pool_scheduler::weights::SubstrateWeight<Runtime>;
     type OnTaskCompleted = AgentAttestation;
+    type ComplaintDeposit = ComplaintDeposit;
+    type ComplaintSlashPercent = ComplaintSlashPercent;
+    type MaxOpenComplaints = MaxOpenComplaints;
+    type SlashGracePeriod = SlashGracePeriod;
 }
 
 impl pallet_agent_attestation::Config for Runtime {
@@ -1553,6 +1568,9 @@ impl pallet_agent_attestation::Config for Runtime {
     type MaxModelsPerAgent = MaxModelsPerAgent;
     type WeightInfo = pallet_agent_attestation::weights::SubstrateWeight<Runtime>;
     type OnAttestationConfirmed = X402Settlement;
+    type BenchmarkDeposit = BenchmarkDeposit;
+    type BenchmarkChallengeDeposit = BenchmarkChallengeDeposit;
+    type MaxBenchmarkClaims = MaxBenchmarkClaims;
 }
 
 impl pallet_x402_settlement::Config for Runtime {
