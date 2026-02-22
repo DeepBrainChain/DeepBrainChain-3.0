@@ -295,20 +295,23 @@ try {
   );
 
   // 5.3 Finalize settlement (SettlementDelay = 600 blocks)
-  // Submit system.remark transactions to trigger instant-seal block production
+  // Sequential system.remark to produce 1 block each (instant seal batches concurrent txs)
   const settlementBlocks = 610; // > 600 SettlementDelay
-  console.log(`       Fast-forwarding ${settlementBlocks} blocks via system.remark (instant seal)...`);
   const startBlock = (await api.rpc.chain.getHeader()).number.toNumber();
-  // Send remarks in fire-and-forget batches (instant seal = 1 block per tx)
-  const nonces = [];
+  console.log(`       Fast-forwarding ${settlementBlocks} blocks from block ${startBlock}...`);
   let currentNonce = (await api.rpc.system.accountNextIndex(alice.address)).toNumber();
   for (let i = 0; i < settlementBlocks; i++) {
-    api.tx.system.remark('0x00').signAndSend(alice, { nonce: currentNonce++ });
-    // yield to event loop every 50 to let blocks process
-    if (i % 50 === 49) await new Promise(r => setTimeout(r, 100));
+    await new Promise((resolve, reject) => {
+      const unsub = api.tx.system.remark('0x00').signAndSend(
+        alice, { nonce: currentNonce++ },
+        ({ status }) => { if (status.isInBlock) { if (typeof unsub === 'function') unsub(); resolve(); } }
+      ).catch(reject);
+    });
+    if (i % 100 === 99) {
+      const blk = (await api.rpc.chain.getHeader()).number.toNumber();
+      console.log(`       ... ${i + 1}/${settlementBlocks} (block ${blk})`);
+    }
   }
-  // Wait for all blocks to be produced
-  await new Promise(r => setTimeout(r, 5000));
   const endBlock = (await api.rpc.chain.getHeader()).number.toNumber();
   console.log(`       Blocks: ${startBlock} → ${endBlock} (produced ${endBlock - startBlock})`);
   await submitAndWait(
