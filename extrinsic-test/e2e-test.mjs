@@ -207,10 +207,26 @@ try {
   // ================================================================
   console.log('━━━ Pallet 4: ZkCompute ━━━');
 
-  // 4.1 Submit proof
-  const zkProof = '0x' + Buffer.from('zk-snark-proof-data-v2').toString('hex');
+  // 4.1 Submit proof — construct valid HashCommitmentZkVerifier proof
+  // Format: version(1) || random_data(64) || binding_hash(32) = 97 bytes
+  // binding_hash = blake2_256(proof[0..65] || m_le || n_le || k_le)
+  const { blake2AsU8a } = await import('@polkadot/util-crypto');
+  const zkDims = [256, 256, 128];
+  const proofHeader = new Uint8Array(65);
+  proofHeader[0] = 0x01; // version
+  for (let i = 1; i < 65; i++) proofHeader[i] = i & 0xff; // deterministic padding
+  // Build preimage: proof[0..65] || m_le(4) || n_le(4) || k_le(4)
+  const dimBuf = new Uint8Array(12);
+  new DataView(dimBuf.buffer).setUint32(0, zkDims[0], true);
+  new DataView(dimBuf.buffer).setUint32(4, zkDims[1], true);
+  new DataView(dimBuf.buffer).setUint32(8, zkDims[2], true);
+  const preimage = new Uint8Array([...proofHeader, ...dimBuf]);
+  const bindingHash = blake2AsU8a(preimage, 256); // 32 bytes
+  const zkProofBytes = new Uint8Array([...proofHeader, ...bindingHash]);
+  const zkProof = '0x' + Buffer.from(zkProofBytes).toString('hex');
+  console.log(`       ZK proof: ${zkProof.length / 2 - 1} bytes (version=0x01, binding valid)`);
   await submitAndWait(
-    api.tx.zkCompute.submitProof(zkProof, [256, 256, 128], 130, 1),
+    api.tx.zkCompute.submitProof(zkProof, zkDims, 130, 1),
     alice, '4.1 submitProof'
   );
   await queryStorage('zk task 0', () => api.query.zkCompute.zkTasks(0));
@@ -278,9 +294,15 @@ try {
     facilitatorPair, '5.2 verifySettlement'
   );
 
-  // 5.3 Finalize settlement (SettlementDelay = 5 blocks on dev)
-  console.log('       Waiting 35s for settlement delay (5 blocks)...');
-  await new Promise(r => setTimeout(r, 35000));
+  // 5.3 Finalize settlement (SettlementDelay = 600 blocks)
+  // Use engine.createBlock to fast-forward past the settlement delay
+  const settlementBlocks = 610; // > 600 SettlementDelay
+  console.log(`       Fast-forwarding ${settlementBlocks} blocks via engine.createBlock...`);
+  for (let i = 0; i < settlementBlocks; i++) {
+    await api.rpc.engine.createBlock(true /* empty */, false /* finalize */);
+  }
+  const currentBlock = (await api.rpc.chain.getHeader()).number.toNumber();
+  console.log(`       Current block: ${currentBlock}`);
   await submitAndWait(
     api.tx.x402Settlement.finalizeSettlement(0),
     alice, '5.3 finalizeSettlement'
