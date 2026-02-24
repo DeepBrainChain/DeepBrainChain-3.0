@@ -22,6 +22,7 @@ use frame_support::{
     pallet_prelude::*,
     traits::{fungible, tokens::ConversionToAssetBalance},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{traits::Convert, FixedPointNumber, FixedPointOperand, FixedU128};
 
 pub(super) type DepositBalanceOf<T, I = ()> =
@@ -326,7 +327,7 @@ pub(super) type ApprovalsOf<T, I = ()> = BoundedBTreeMap<
     AssetLock<
         <T as SystemConfig>::AccountId,
         <T as Config<I>>::Balance,
-        <T as SystemConfig>::BlockNumber,
+        BlockNumberFor<T>,
     >,
     AssetLockLimit,
 >;

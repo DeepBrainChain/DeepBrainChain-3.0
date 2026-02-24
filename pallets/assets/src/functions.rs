@@ -19,6 +19,7 @@
 
 use super::*;
 use frame_support::{traits::Get, BoundedVec};
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_std::collections::btree_set::BTreeSet;
 
 #[must_use]
@@ -700,7 +701,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
         source: &T::AccountId,
         dest: &T::AccountId,
         amount: T::Balance,
-        lock_duration: T::BlockNumber,
+        lock_duration: BlockNumberFor<T>,
         maybe_need_admin: Option<T::AccountId>,
         f: TransferFlags,
     ) -> Result<T::Balance, DispatchError> {
@@ -727,7 +728,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
         source: &T::AccountId,
         dest: &T::AccountId,
         amount: T::Balance,
-        lock_duration: T::BlockNumber,
+        lock_duration: BlockNumberFor<T>,
         maybe_need_admin: Option<T::AccountId>,
         f: TransferFlags,
     ) -> Result<(T::Balance, Option<DeadConsequence>), DispatchError> {

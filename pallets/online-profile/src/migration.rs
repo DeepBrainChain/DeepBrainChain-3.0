@@ -1,4 +1,5 @@
 use frame_support::{pallet_prelude::*, storage_alias, traits::OnRuntimeUpgrade};
+use frame_system::pallet_prelude::BlockNumberFor;
 use Config;
 
 use crate::*;
@@ -9,17 +10,16 @@ use sp_std::prelude::*;
 const TARGET: &'static str = "online-profile-migration";
 
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+type BlockNumberOf<T> = BlockNumberFor::<T>;
 
 mod v0 {
     use dbc_support::{
         machine_type::{CommitteeUploadInfo, Latitude, Longitude, MachineStatus},
         EraIndex,
     };
-    use frame_support::{
-        dispatch::{Decode, Encode, TypeInfo},
-        RuntimeDebug,
-    };
+    use parity_scale_codec::{Decode, Encode};
+    use scale_info::TypeInfo;
+    use sp_runtime::RuntimeDebug;
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
     use sp_core::H256;

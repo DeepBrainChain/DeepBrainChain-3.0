@@ -24,13 +24,13 @@ use sp_runtime::{
     generic::Header,
     testing::TestXt,
     traits::{BlakeTwo256, IdentityLookup, Verify},
-    Perbill, Permill,
+    BuildStorage, Perbill, Permill,
 };
 use std::convert::TryInto;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRuntime>;
 type Balance = u128;
-type Block = frame_system::mocking::MockBlock<TestRuntime>;
+type Block = frame_system::mocking::MockBlockU32<TestRuntime>;
 
 // 1 DBC = 1 * 10^15
 pub const ONE_DBC: u128 = 1_000_000_000_000_000;
@@ -53,13 +53,12 @@ impl frame_system::Config for TestRuntime {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = BlockNumber;
+    type Nonce = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = sr25519::Public;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header<BlockNumber, BlakeTwo256>;
+    type Block = Block;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type Version = ();
@@ -89,7 +88,7 @@ impl pallet_balances::Config for TestRuntime {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
-    type HoldIdentifier = ();
+    type RuntimeHoldReason = ();
     type FreezeIdentifier = ();
     type MaxHolds = ();
     type MaxFreezes = ();
@@ -112,7 +111,7 @@ where
         call: RuntimeCall,
         _public: <Signature as Verify>::Signer,
         _account: <TestRuntime as frame_system::Config>::AccountId,
-        index: <TestRuntime as frame_system::Config>::Index,
+        index: <TestRuntime as frame_system::Config>::Nonce,
     ) -> Option<(RuntimeCall, <TestExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload)>
     {
         Some((call, (index, ())))
@@ -301,7 +300,7 @@ pub fn run_to_block(n: BlockNumber) {
 // 初始条件：设置参数，并上线一台机器
 pub fn new_test_with_init_machine_online() -> sp_io::TestExternalities {
     let mut storage =
-        frame_system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap();
+        frame_system::GenesisConfig::<TestRuntime>::default().build_storage().unwrap();
 
     #[rustfmt::skip]
     pallet_balances::GenesisConfig::<TestRuntime> {

@@ -1,4 +1,5 @@
 use crate::{BalanceOf, CommitteeUploadInfo, Config, Pallet};
+use frame_system::pallet_prelude::BlockNumberFor;
 use dbc_support::{
     verify_online::{OCCommitteeMachineList, OCMachineCommitteeList, OCMachineStatus},
     MachineId,
@@ -30,7 +31,7 @@ pub struct RpcOCCommitteeOps<BlockNumber, Balance> {
 impl<T: Config> Pallet<T> {
     pub fn get_machine_committee_list(
         machine_id: MachineId,
-    ) -> OCMachineCommitteeList<T::AccountId, T::BlockNumber> {
+    ) -> OCMachineCommitteeList<T::AccountId, BlockNumberFor::<T>> {
         Self::machine_committee(machine_id)
     }
 
@@ -41,7 +42,7 @@ impl<T: Config> Pallet<T> {
     pub fn get_committee_ops(
         committee: T::AccountId,
         machine_id: MachineId,
-    ) -> Option<RpcOCCommitteeOps<T::BlockNumber, BalanceOf<T>>> {
+    ) -> Option<RpcOCCommitteeOps<BlockNumberFor::<T>, BalanceOf<T>>> {
         let oc_committee_ops = Self::committee_ops(&committee, &machine_id);
 
         let committee_info = Self::machine_committee(&machine_id);

@@ -9,6 +9,7 @@ use dbc_support::{
     ItemList, MachineId,
 };
 use frame_support::{debug::info, traits::Get, weights::Weight, IterableStorageMap};
+use frame_system::pallet_prelude::BlockNumberFor;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Zero;
@@ -67,7 +68,7 @@ pub mod deprecated {
 
             // 用户租用的某个机器的详情
             pub RentOrder get(fn rent_order): map hasher(blake2_128_concat)
-                MachineId => OldRentOrderDetail<T::AccountId, T::BlockNumber, BalanceOf<T>>;
+                MachineId => OldRentOrderDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>;
 
             // 等待用户确认租用成功的机器
             pub PendingConfirming get(fn pending_confirming): map hasher(blake2_128_concat)
@@ -75,7 +76,7 @@ pub mod deprecated {
 
             // 记录每个区块将要结束租用的机器
             pub PendingRentEnding get(fn pending_rent_ending): map hasher(blake2_128_concat)
-                T::BlockNumber => Vec<MachineId>;
+                BlockNumberFor::<T> => Vec<MachineId>;
         }
     }
     decl_module! {

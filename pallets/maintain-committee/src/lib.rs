@@ -60,7 +60,7 @@ pub mod pallet {
         type MTOps: MTOps<
             AccountId = Self::AccountId,
             MachineId = MachineId,
-            FaultType = OPSlashReason<Self::BlockNumber>,
+            FaultType = OPSlashReason<BlockNumberFor::<Self>>,
             Balance = BalanceOf<Self>,
         >;
         type Slash: OnUnbalanced<NegativeImbalanceOf<Self>>;
@@ -80,7 +80,7 @@ pub mod pallet {
             Weight::zero()
         }
 
-        fn on_finalize(_block_number: T::BlockNumber) {
+        fn on_finalize(_block_number: BlockNumberFor::<T>) {
             // TODO: 记录惩罚时的当前租用人，当惩罚执行时所有租用人都能获得赔偿
             Self::summary_fault_hook();
             Self::summary_inaccessible_hook();
@@ -132,7 +132,7 @@ pub mod pallet {
         T::AccountId,
         Blake2_128Concat,
         ReportId,
-        MTCommitteeOpsDetail<T::BlockNumber, BalanceOf<T>>,
+        MTCommitteeOpsDetail<BlockNumberFor::<T>, BalanceOf<T>>,
         ValueQuery,
     >;
     /// 系统中还未完成的订单
@@ -148,7 +148,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         ReportId,
-        MTReportInfoDetail<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        MTReportInfoDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
     >;
 
     #[pallet::storage]
@@ -157,13 +157,13 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         ReportId,
-        MTReportResultInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        MTReportResultInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
     >;
 
     #[pallet::storage]
     #[pallet::getter(fn unhandled_report_result)]
     pub(super) type UnhandledReportResult<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::BlockNumber, Vec<ReportId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<ReportId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn pending_slash_review)]
@@ -171,7 +171,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         ReportId,
-        MTPendingSlashReviewInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>,
+        MTPendingSlashReviewInfo<T::AccountId, BalanceOf<T>, BlockNumberFor::<T>>,
     >;
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -776,7 +776,7 @@ impl<T: Config> Pallet<T> {
     fn do_report_machine_fault(
         reporter: T::AccountId,
         machine_fault_type: MachineFaultType,
-        report_time: Option<T::BlockNumber>,
+        report_time: Option<BlockNumberFor::<T>>,
         live_report: &mut MTLiveReportList,
         reporter_report: &mut ReporterReportList,
     ) -> DispatchResultWithPostInfo {
@@ -805,7 +805,7 @@ impl<T: Config> Pallet<T> {
     fn book_report(
         committee: T::AccountId,
         report_id: ReportId,
-        report_info: &mut MTReportInfoDetail<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        report_info: &mut MTReportInfoDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
         order_stake: BalanceOf<T>,
     ) {
         let now = <frame_system::Pallet<T>>::block_number();
@@ -1055,11 +1055,11 @@ impl<T: Config> Pallet<T> {
     // 在第一个预订后，3个小时前进行检查
     fn summary_before_submit_raw(
         report_id: ReportId,
-        now: T::BlockNumber,
+        now: BlockNumberFor::<T>,
 
         live_report: &mut MTLiveReportList,
         reporter_report: &mut ReporterReportList,
-        report_result: &mut MTReportResultInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        report_result: &mut MTReportResultInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
     ) -> Result<(), ()> {
         let mut report_info = Self::report_info(&report_id).ok_or(())?;
 
@@ -1125,7 +1125,7 @@ impl<T: Config> Pallet<T> {
     // 并在提交raw开始前，如果有正在验证的委员会(还未完成工作)，则移除其信息，退还质押，不作处理。
     fn summary_after_submit_raw(
         report_id: ReportId,
-        now: T::BlockNumber,
+        now: BlockNumberFor::<T>,
         live_report: &mut MTLiveReportList,
     ) -> Result<(), ()> {
         live_report.clean_unfinished_report(&report_id);

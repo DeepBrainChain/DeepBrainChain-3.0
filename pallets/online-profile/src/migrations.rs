@@ -12,7 +12,10 @@ use dbc_support::{
     verify_slash::{OPPendingSlashInfo, OPSlashReason},
     EraIndex,
 };
-use frame_support::{debug::info, traits::Get, weights::Weight, IterableStorageMap, RuntimeDebug};
+use frame_support::{traits::Get, weights::Weight, IterableStorageMap};
+use frame_system::pallet_prelude::BlockNumberFor;
+use log::info;
+use sp_runtime::RuntimeDebug;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::{
@@ -138,7 +141,7 @@ where
 ///
 /// Use with care and run at your own risk.
 pub fn apply<T: Config>() -> Weight {
-    frame_support::debug::RuntimeLogger::init();
+    sp_runtime::runtime_logger::RuntimeLogger::init();
 
     info!(
         target: "runtime::online_profile",
@@ -158,13 +161,13 @@ pub fn apply<T: Config>() -> Weight {
             regenerate_sys_info::<T>() +
             reset_params::<T>()
     } else {
-        frame_support::debug::info!(" >>> Unused migration!");
+        log::info!(" >>> Unused migration!");
         0
     }
 }
 
 fn migrate_machine_info_to_v2<T: Config>() -> Weight {
-    MachinesInfo::<T>::translate::<OldMachineInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>, _>(
+    MachinesInfo::<T>::translate::<OldMachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>, _>(
         |_, machine_info| Some(machine_info.into()),
     );
     let count = MachinesInfo::<T>::iter_values().count();
@@ -181,7 +184,7 @@ fn migrate_machine_info_to_v2<T: Config>() -> Weight {
 
 fn migrate_pending_slash_to_v2<T: Config>() -> Weight {
     PendingSlash::<T>::translate::<
-        OldOPPendingSlashInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        OldOPPendingSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
         _,
     >(|_, slash_info| Some(slash_info.into()));
     let count = PendingSlash::<T>::iter_values().count();

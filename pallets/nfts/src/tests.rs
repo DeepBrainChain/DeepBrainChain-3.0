@@ -21,12 +21,12 @@ use crate::{mock::*, Event, *};
 use enumflags2::BitFlags;
 use frame_support::{
     assert_noop, assert_ok,
-    dispatch::Dispatchable,
     traits::{
         tokens::nonfungibles_v2::{Destroy, Mutate},
         Currency, Get,
     },
 };
+use sp_runtime::traits::Dispatchable;
 use pallet_balances::Error as BalancesError;
 use sp_core::{bounded::BoundedVec, Pair};
 use sp_runtime::{traits::IdentifyAccount, MultiSignature, MultiSigner};

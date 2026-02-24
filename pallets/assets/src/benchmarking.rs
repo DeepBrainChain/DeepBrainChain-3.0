@@ -27,7 +27,7 @@ use frame_support::{
     dispatch::UnfilteredDispatchable,
     traits::{EnsureOrigin, Get},
 };
-use frame_system::RawOrigin as SystemOrigin;
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin as SystemOrigin};
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
 
@@ -552,7 +552,7 @@ benchmarks_instance_pallet! {
     }
 
      transfer_and_lock {
-        let duration = T::BlockNumber::from(1000u32);
+        let duration = BlockNumberFor::<T>::from(1000u32);
         let amount = T::Balance::from(2*100_000_000u32);
         let (asset_id, caller, caller_lookup) = create_default_minted_asset::<T, I>(true, amount);
         let target: T::AccountId = account("target", 0, SEED);
@@ -563,7 +563,7 @@ benchmarks_instance_pallet! {
     }
 
     transfer_and_lock_keep_alive {
-        let duration = T::BlockNumber::from(1000u32);
+        let duration = BlockNumberFor::<T>::from(1000u32);
 
         let mint_amount = T::Balance::from(2*100_000_000u32+1);
         let amount = T::Balance::from(2*100_000_000u32);
@@ -577,7 +577,7 @@ benchmarks_instance_pallet! {
 
 
     unlock {
-        let duration = T::BlockNumber::from(1000u32);
+        let duration = BlockNumberFor::<T>::from(1000u32);
         let amount = T::Balance::from(2*100_000_000u32);
         let (asset_id, caller, caller_lookup) = create_default_minted_asset::<T, I>(true, amount);
         let target: T::AccountId = account("target", 0, SEED);
@@ -591,7 +591,7 @@ benchmarks_instance_pallet! {
             duration
         ).is_ok());
 
-        frame_system::Pallet::<T>::set_block_number(T::BlockNumber::from(1001u32));
+        frame_system::Pallet::<T>::set_block_number(BlockNumberFor::<T>::from(1001u32));
 
         let lock_index = 0u32;
     }: _(SystemOrigin::Signed(target.clone()), asset_id.into(), lock_index)
@@ -601,7 +601,7 @@ benchmarks_instance_pallet! {
 
 
     force_remove_lock {
-        let duration = T::BlockNumber::from(1000u32);
+        let duration = BlockNumberFor::<T>::from(1000u32);
         let amount = T::Balance::from(2*100_000_000u32);
         let (asset_id, caller, caller_lookup) = create_default_minted_asset::<T, I>(true, amount);
         let target: T::AccountId = account("target", 0, SEED);

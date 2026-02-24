@@ -6,7 +6,7 @@ pub use sp_keyring::sr25519::Keyring as Sr25519Keyring;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    BuildStorage, Perbill,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRuntime>;
@@ -27,13 +27,12 @@ impl frame_system::Config for TestRuntime {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = sr25519::Public;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
+    type Block = Block;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type Version = ();
@@ -63,7 +62,7 @@ impl pallet_balances::Config for TestRuntime {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
-    type HoldIdentifier = ();
+    type RuntimeHoldReason = ();
     type FreezeIdentifier = ();
     type MaxHolds = ();
     type MaxFreezes = ();
@@ -90,7 +89,7 @@ frame_support::construct_runtime!(
 
 pub fn new_test_with_init_params_ext() -> sp_io::TestExternalities {
     let mut storage =
-        frame_system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap();
+        frame_system::GenesisConfig::<TestRuntime>::default().build_storage().unwrap();
 
     #[rustfmt::skip]
     pallet_balances::GenesisConfig::<TestRuntime> {

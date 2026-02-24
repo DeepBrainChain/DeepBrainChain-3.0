@@ -13,7 +13,7 @@ mod tests {
     use sp_runtime::{
         generic::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        Percent,
+        BuildStorage, Percent,
     };
     use std::cell::RefCell;
     use codec;
@@ -107,6 +107,21 @@ mod tests {
         pub const MaxModelsPerAgent: u32 = 10;
         pub const MinPoolStake: Balance = 100;
         pub const StakeSlashPercent: u32 = 10;
+
+        // Missing Config items
+        pub const OrderTimeout: BlockNumber = 50;
+        pub const CpsVerificationTimeout: BlockNumber = 3;
+        pub const ComplaintDeposit: Balance = 100;
+        pub const ComplaintSlashPercent: u32 = 20;
+        pub const MaxOpenComplaints: u32 = 10;
+        pub const SlashGracePeriod: BlockNumber = 5;
+        pub const BenchmarkDeposit: Balance = 500;
+        pub const BenchmarkChallengeDeposit: Balance = 200;
+        pub const MaxBenchmarkClaims: u32 = 10;
+        pub FacilitatorPublicKeyValue: [u8; 32] = {
+            use sp_core::Pair;
+            sp_core::sr25519::Pair::from_seed(&[1u8; 32]).public().0
+        };
     }
 
     // ================================================================
@@ -176,13 +191,12 @@ mod tests {
         type DbWeight = ();
         type RuntimeOrigin = RuntimeOrigin;
         type RuntimeCall = RuntimeCall;
-        type Index = u64;
-        type BlockNumber = BlockNumber;
+        type Nonce = u64;
         type Hash = H256;
         type Hashing = BlakeTwo256;
         type AccountId = AccountId;
         type Lookup = IdentityLookup<Self::AccountId>;
-        type Header = Header<BlockNumber, BlakeTwo256>;
+        type Block = Block;
         type RuntimeEvent = RuntimeEvent;
         type BlockHashCount = BlockHashCount;
         type Version = ();
@@ -209,7 +223,7 @@ mod tests {
         type MaxFreezes = ConstU32<0>;
         type MaxHolds = ConstU32<0>;
         type FreezeIdentifier = ();
-        type HoldIdentifier = ();
+        type RuntimeHoldReason = ();
     }
 
     // REAL WIRING: TaskMode uses ComputePoolScheduler for compute scheduling
@@ -224,6 +238,7 @@ mod tests {
         type EraDuration = EraDuration;
         type MaxModelIdLen = MaxModelIdLen;
         type MaxPolicyCidLen = MaxPolicyCidLen;
+        type OrderTimeout = OrderTimeout;
         type WeightInfo = ();
         // REAL: TaskMode -> ComputePoolScheduler
         type ComputeScheduler = ComputePoolScheduler;
@@ -243,6 +258,11 @@ mod tests {
         type WeightInfo = ();
         type MinPoolStake = MinPoolStake;
         type StakeSlashPercent = StakeSlashPercent;
+        type VerificationTimeout = CpsVerificationTimeout;
+        type ComplaintDeposit = ComplaintDeposit;
+        type ComplaintSlashPercent = ComplaintSlashPercent;
+        type MaxOpenComplaints = MaxOpenComplaints;
+        type SlashGracePeriod = SlashGracePeriod;
         // REAL: ComputePoolScheduler -> AgentAttestation
         type OnTaskCompleted = AgentAttestation;
     }
@@ -259,6 +279,9 @@ mod tests {
         type MaxGpuUuidLen = MaxGpuUuidLen;
         type WeightInfo = ();
         type MaxModelsPerAgent = MaxModelsPerAgent;
+        type BenchmarkDeposit = BenchmarkDeposit;
+        type BenchmarkChallengeDeposit = BenchmarkChallengeDeposit;
+        type MaxBenchmarkClaims = MaxBenchmarkClaims;
         type AdminOrigin = frame_system::EnsureSigned<AccountId>;
         // REAL: AgentAttestation -> X402Settlement
         type OnAttestationConfirmed = X402Settlement;
@@ -291,6 +314,7 @@ mod tests {
         type RuntimeEvent = RuntimeEvent;
         type Currency = Balances;
         type FacilitatorAccount = FacilitatorAccount;
+        type FacilitatorPublicKey = FacilitatorPublicKeyValue;
         type MaxSignatureLen = MaxSignatureLen;
         type SettlementDelay = SettlementDelay;
         type PaymentIntentTTL = PaymentIntentTTL;
@@ -303,8 +327,8 @@ mod tests {
     // ================================================================
 
     pub fn new_test_ext() -> sp_io::TestExternalities {
-        let mut t = frame_system::GenesisConfig::default()
-            .build_storage::<Test>()
+        let mut t = frame_system::GenesisConfig::<Test>::default()
+            .build_storage()
             .expect("frame system storage builds");
 
         pallet_balances::GenesisConfig::<Test> {
@@ -436,7 +460,6 @@ mod tests {
                 RuntimeOrigin::signed(miner),
                 0,          // task_id
                 proof_hash, // proof_hash
-                true,       // verification_result
             ).is_ok());
 
             // Verify task completed
@@ -573,7 +596,6 @@ mod tests {
                 RuntimeOrigin::signed(pool_owner),
                 0,
                 proof_hash,
-                true,
             ).is_ok());
 
             // Verify task completed

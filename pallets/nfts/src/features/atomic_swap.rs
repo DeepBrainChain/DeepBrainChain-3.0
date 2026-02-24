@@ -20,6 +20,7 @@ use frame_support::{
     pallet_prelude::*,
     traits::{Currency, ExistenceRequirement::KeepAlive},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
     pub(crate) fn do_create_swap(
@@ -29,7 +30,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
         desired_collection_id: T::CollectionId,
         maybe_desired_item_id: Option<T::ItemId>,
         maybe_price: Option<PriceWithDirection<ItemPrice<T, I>>>,
-        duration: <T as SystemConfig>::BlockNumber,
+        duration: BlockNumberFor::<T>,
     ) -> DispatchResult {
         ensure!(
             Self::is_pallet_feature_enabled(PalletFeature::Swaps),

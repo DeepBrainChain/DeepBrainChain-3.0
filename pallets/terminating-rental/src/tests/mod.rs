@@ -1,3 +1,4 @@
+use frame_system::pallet_prelude::BlockNumberFor;
 pub mod test_bonding_machine;
 pub mod test_committee_slash;
 pub mod test_rent_machine;

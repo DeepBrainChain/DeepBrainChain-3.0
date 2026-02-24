@@ -165,6 +165,28 @@ impl<T: Config<I>, I: 'static> Create<<T as SystemConfig>::AccountId, Collection
         )?;
         Ok(collection)
     }
+
+    fn create_collection_with_id(
+        collection: T::CollectionId,
+        who: &T::AccountId,
+        admin: &T::AccountId,
+        config: &CollectionConfigFor<T, I>,
+    ) -> Result<(), DispatchError> {
+        // DepositRequired can be disabled by calling the force_create() only
+        ensure!(
+            !config.has_disabled_setting(CollectionSetting::DepositRequired),
+            Error::<T, I>::WrongSetting
+        );
+
+        Self::do_create_collection(
+            collection,
+            who.clone(),
+            admin.clone(),
+            *config,
+            T::CollectionDeposit::get(),
+            Event::Created { collection, creator: who.clone(), owner: admin.clone() },
+        )
+    }
 }
 
 impl<T: Config<I>, I: 'static> Destroy<<T as SystemConfig>::AccountId> for Pallet<T, I> {

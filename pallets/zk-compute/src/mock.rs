@@ -8,7 +8,7 @@ use frame_support::{
 };
 use frame_system as system;
 use sp_core::H256;
-use sp_runtime::traits::IdentityLookup;
+use sp_runtime::{traits::IdentityLookup, BuildStorage};
 
 pub type AccountId = u64;
 pub type Balance = u64;
@@ -50,7 +50,7 @@ parameter_types! {
 	pub const ScorePenaltyOnFailure: u32 = 20;
 }
 
-impl system::Config for Test {	type BaseCallFilter = frame_support::traits::Everything;	type BlockWeights = ();	type BlockLength = ();	type DbWeight = ();	type RuntimeOrigin = RuntimeOrigin;	type RuntimeCall = RuntimeCall;	type Index = u64;	type BlockNumber = BlockNumber;	type Hash = H256;	type Hashing = sp_runtime::traits::BlakeTwo256;	type AccountId = AccountId;	type Lookup = IdentityLookup<Self::AccountId>;	type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;	type RuntimeEvent = RuntimeEvent;	type BlockHashCount = BlockHashCount;	type Version = ();	type PalletInfo = PalletInfo;	type AccountData = pallet_balances::AccountData<Balance>;	type OnNewAccount = ();	type OnKilledAccount = ();	type SystemWeightInfo = ();	type SS58Prefix = ConstU16<42>;	type OnSetCode = ();	type MaxConsumers = ConstU32<16>;}
+impl system::Config for Test {	type BaseCallFilter = frame_support::traits::Everything;	type BlockWeights = ();	type BlockLength = ();	type DbWeight = ();	type RuntimeOrigin = RuntimeOrigin;	type RuntimeCall = RuntimeCall;	type Nonce = u64;	type Hash = H256;	type Hashing = sp_runtime::traits::BlakeTwo256;	type AccountId = AccountId;	type Lookup = IdentityLookup<Self::AccountId>;	type Block = Block;	type RuntimeEvent = RuntimeEvent;	type BlockHashCount = BlockHashCount;	type Version = ();	type PalletInfo = PalletInfo;	type AccountData = pallet_balances::AccountData<Balance>;	type OnNewAccount = ();	type OnKilledAccount = ();	type SystemWeightInfo = ();	type SS58Prefix = ConstU16<42>;	type OnSetCode = ();	type MaxConsumers = ConstU32<16>;}
 
 impl pallet_balances::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
@@ -65,7 +65,7 @@ impl pallet_balances::Config for Test {
 	type MaxFreezes = ConstU32<0>;
 	type MaxHolds = ConstU32<0>;
 	type FreezeIdentifier = ();
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
 }
 
 pub struct MockZkVerifier;
@@ -110,8 +110,8 @@ impl pallet_zk_compute::Config for Test {
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	use sp_runtime::traits::AccountIdConversion;
 
-	let mut storage = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
+	let mut storage = frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
 		.expect("mock storage should build");
 
 	let pallet_account = ZkPalletId::get().into_account_truncating();

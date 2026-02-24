@@ -11,6 +11,7 @@ use dbc_support::{
     ItemList, MachineId,
 };
 use frame_support::IterableStorageMap;
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{
     traits::{CheckedSub, Saturating, Zero},
     Perbill, SaturatedConversion,
@@ -243,10 +244,10 @@ impl<T: Config> OCOps for Pallet<T> {
 
 impl<T: Config> RTOps for Pallet<T> {
     type MachineId = MachineId;
-    type MachineStatus = MachineStatus<T::BlockNumber, T::AccountId>;
+    type MachineStatus = MachineStatus<BlockNumberFor::<T>, T::AccountId>;
     type AccountId = T::AccountId;
     type Balance = BalanceOf<T>;
-    type BlockNumber = T::BlockNumber;
+    type BlockNumber = BlockNumberFor::<T>;
 
     /// 根据GPU数量和该机器算力点数，计算该机器相比标准配置的租用价格
     // standard_point / machine_point ==  standard_price / machine_price
@@ -311,7 +312,7 @@ impl<T: Config> RTOps for Pallet<T> {
     fn change_machine_status_on_rent_end(
         machine_id: &MachineId,
         rented_gpu_num: u32,
-        rent_duration: Self::BlockNumber,
+        rent_duration: BlockNumberFor::<T>,
         is_machine_last_rent: bool,
         is_renter_last_rent: bool,
         renter: Self::AccountId,
@@ -435,14 +436,14 @@ impl<T: Config> OPRPCQuery for Pallet<T> {
 impl<T: Config> MTOps for Pallet<T> {
     type MachineId = MachineId;
     type AccountId = T::AccountId;
-    type FaultType = OPSlashReason<T::BlockNumber>;
+    type FaultType = OPSlashReason<BlockNumberFor::<T>>;
     type Balance = BalanceOf<T>;
 
     fn mt_machine_offline(
         reporter: T::AccountId,
         committee: Vec<T::AccountId>,
         machine_id: MachineId,
-        fault_type: OPSlashReason<T::BlockNumber>,
+        fault_type: OPSlashReason<BlockNumberFor::<T>>,
     ) -> Result<(), ()> {
         Self::machine_offline(
             machine_id.clone(),

@@ -39,7 +39,7 @@ pub mod pallet {
         /// How long each seat is kept. This defines the next block number at which an election
         /// round will happen. If set to zero, no elections are ever triggered and the module will
         /// be in passive mode.
-        type RewardFrequency: Get<Self::BlockNumber>;
+        type RewardFrequency: Get<BlockNumberFor::<Self>>;
 
         // 奖励特定(USD or DBC)
         type PrimerReward: Get<(u64, BalanceOf<Self>)>;
@@ -53,7 +53,7 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        // fn on_finalize(n: T::BlockNumber) {
+        // fn on_finalize(n: BlockNumberFor::<T>) {
         //     let reward_frequency = <T as pallet::Config>::RewardFrequency::get();
         //     // NOTE: 议会当选后顺延15天(43200 blocks)发放奖励
         //     if !reward_frequency.is_zero() && n % reward_frequency == 43200u32.into() {

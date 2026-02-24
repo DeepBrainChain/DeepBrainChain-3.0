@@ -17,6 +17,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::BlockNumberFor;
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
     pub(crate) fn do_force_collection_config(
@@ -61,7 +62,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
         collection: T::CollectionId,
         mint_settings: MintSettings<
             BalanceOf<T, I>,
-            <T as SystemConfig>::BlockNumber,
+            BlockNumberFor::<T>,
             T::CollectionId,
         >,
     ) -> DispatchResult {

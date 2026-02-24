@@ -160,12 +160,12 @@ pub use types::*;
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
-    ArithmeticError, TokenError,
+    ArithmeticError, DispatchError, TokenError,
 };
 use sp_std::prelude::*;
 
 use frame_support::{
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::DispatchResult,
     ensure,
     pallet_prelude::{ConstU32, DispatchResultWithPostInfo},
     storage::KeyPrefixIterator,
@@ -335,7 +335,7 @@ pub mod pallet {
         type MinLockAmount: Get<Self::Balance>;
 
         #[pallet::constant]
-        type MaxLockDuration: Get<Self::BlockNumber>;
+        type MaxLockDuration: Get<BlockNumberFor<Self>>;
     }
 
     #[pallet::storage]
@@ -389,7 +389,7 @@ pub mod pallet {
         T::AssetId,
         Blake2_128Concat,
         T::AccountId,
-        ApprovalsOf<T, I>, // BTreeMap<u32, AssetLock<T::AccountId, T::Balance, T::BlockNumber>>,
+        ApprovalsOf<T, I>, // BTreeMap<u32, AssetLock<T::AccountId, T::Balance, BlockNumberFor<T>>>,
     >;
 
     #[pallet::storage]
@@ -415,7 +415,7 @@ pub mod pallet {
     }
 
     #[pallet::genesis_build]
-    impl<T: Config<I>, I: 'static> GenesisBuild<T, I> for GenesisConfig<T, I> {
+    impl<T: Config<I>, I: 'static> BuildGenesisConfig for GenesisConfig<T, I> {
         fn build(&self) {
             for (id, owner, is_sufficient, min_balance) in &self.assets {
                 assert!(!Asset::<T, I>::contains_key(id), "Asset id already in use");

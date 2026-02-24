@@ -19,15 +19,15 @@
 
 use dbc_support::traits::PhaseReward;
 use frame_election_provider_support::{
-    data_provider, BoundedSupportsOf, ElectionDataProvider, ElectionProvider, ScoreProvider,
-    SortedListProvider, VoteWeight, VoterOf,
+    bounds::DataProviderBounds, data_provider, BoundedSupportsOf, ElectionDataProvider,
+    ElectionProvider, ScoreProvider, SortedListProvider, VoteWeight, VoterOf,
 };
 use frame_support::{
     defensive,
     dispatch::WithPostDispatchInfo,
     pallet_prelude::*,
     traits::{
-        Currency, CurrencyToVote, Defensive, DefensiveResult, EstimateNextNewSession, Get,
+        Currency, Defensive, DefensiveResult, EstimateNextNewSession, Get,
         Imbalance, LockableCurrency, OnUnbalanced, TryCollect, UnixTime, WithdrawReasons,
     },
     weights::Weight,
@@ -39,6 +39,7 @@ use sp_runtime::{
     Perbill,
 };
 use sp_staking::{
+    currency_to_vote::CurrencyToVote,
     offence::{DisableStrategy, OffenceDetails, OnOffenceHandler},
     EraIndex, SessionIndex, Stake, StakingInterface,
 };
@@ -1109,7 +1110,8 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(Self::validator_count())
     }
 
-    fn electing_voters(maybe_max_len: Option<usize>) -> data_provider::Result<Vec<VoterOf<Self>>> {
+    fn electing_voters(bounds: DataProviderBounds) -> data_provider::Result<Vec<VoterOf<Self>>> {
+        let maybe_max_len = bounds.count.map(|c| c.0 as usize);
         // This can never fail -- if `maybe_max_len` is `Some(_)` we handle it.
         let voters = Self::get_npos_voters(maybe_max_len);
         debug_assert!(maybe_max_len.map_or(true, |max| voters.len() <= max));
@@ -1117,7 +1119,8 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(voters)
     }
 
-    fn electable_targets(maybe_max_len: Option<usize>) -> data_provider::Result<Vec<T::AccountId>> {
+    fn electable_targets(bounds: DataProviderBounds) -> data_provider::Result<Vec<T::AccountId>> {
+        let maybe_max_len = bounds.count.map(|c| c.0 as usize);
         let target_count = T::TargetList::count();
 
         // We can't handle this case yet -- return an error.
@@ -1128,7 +1131,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(Self::get_npos_targets(None))
     }
 
-    fn next_election_prediction(now: T::BlockNumber) -> T::BlockNumber {
+    fn next_election_prediction(now: BlockNumberFor::<T>) -> BlockNumberFor::<T> {
         let current_era = Self::current_era().unwrap_or(0);
         let current_session = Self::current_planned_session();
         let current_era_start_session_index =
@@ -1145,7 +1148,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
 
         let session_length = T::NextNewSession::average_session_length();
 
-        let sessions_left: T::BlockNumber = match ForceEra::<T>::get() {
+        let sessions_left: BlockNumberFor::<T> = match ForceEra::<T>::get() {
             Forcing::ForceNone => Bounded::max_value(),
             Forcing::ForceNew | Forcing::ForceAlways => Zero::zero(),
             Forcing::NotForcing if era_progress >= T::SessionsPerEra::get() => Zero::zero(),
@@ -1344,7 +1347,7 @@ impl<T: Config> historical::SessionManager<T::AccountId, Exposure<T::AccountId, 
 
 /// Add reward points to block authors:
 /// * 20 points to the block producer for producing a (non-uncle) block,
-impl<T> pallet_authorship::EventHandler<T::AccountId, T::BlockNumber> for Pallet<T>
+impl<T> pallet_authorship::EventHandler<T::AccountId, BlockNumberFor::<T>> for Pallet<T>
 where
     T: Config + pallet_authorship::Config + pallet_session::Config,
 {
@@ -1679,6 +1682,7 @@ impl<T: Config> SortedListProvider<T::AccountId> for UseNominatorsAndValidatorsM
 impl<T: Config> StakingInterface for Pallet<T> {
     type AccountId = T::AccountId;
     type Balance = BalanceOf<T>;
+    type CurrencyToVote = T::CurrencyToVote;
 
     fn minimum_nominator_bond() -> Self::Balance {
         MinNominatorBond::<T>::get()
