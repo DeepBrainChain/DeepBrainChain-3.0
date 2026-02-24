@@ -330,9 +330,8 @@ quote = { version = "1.0.20" }
 syn = { version = "1.0.98" }
 proc-macro2 = { version = "1.0.40" }
 
+# fflonk was renamed to w3f-pcs upstream, but bandersnatch_vrfs still depends on "fflonk".
+# Vendored from https://github.com/w3f/fflonk at rev 26a5045 (last commit with package name "fflonk").
 [patch."https://github.com/w3f/fflonk"]
-fflonk = { path = "/tmp/fflonk" }
-
-[patch.crates-io]
-comfy-table = { path = "/tmp/comfy-table-7.1.4" }
+fflonk = { path = "vendor/fflonk" }
 

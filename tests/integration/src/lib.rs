@@ -454,7 +454,6 @@ mod tests {
             ));
 
             // ----- Step 6: Submit proof (miner) -----
-            // This triggers OnTaskCompleted -> AgentAttestation::on_task_completed
             let proof_hash = [1u8; 32];
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::submit_proof(
                 RuntimeOrigin::signed(miner),
@@ -462,7 +461,15 @@ mod tests {
                 proof_hash, // proof_hash
             ).is_ok());
 
-            // Verify task completed
+            // Verify proof (must be someone OTHER than pool owner)
+            // Pool owner is miner (2), so use admin (3) as verifier
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::verify_proof(
+                RuntimeOrigin::signed(admin),
+                0,    // task_id
+                true, // approve
+            ).is_ok());
+
+            // Verify task completed (verify_proof triggers OnTaskCompleted -> AgentAttestation)
             let completed_task = pallet_compute_pool_scheduler::Tasks::<Test>::get(0).unwrap();
             assert!(matches!(
                 completed_task.status,
@@ -596,6 +603,14 @@ mod tests {
                 RuntimeOrigin::signed(pool_owner),
                 0,
                 proof_hash,
+            ).is_ok());
+
+            // Verify proof (must be someone OTHER than pool owner)
+            // Pool owner is pool_owner (2), so use task_user (1) as verifier
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::verify_proof(
+                RuntimeOrigin::signed(task_user),
+                0,    // task_id
+                true, // approve
             ).is_ok());
 
             // Verify task completed
@@ -896,12 +911,14 @@ mod tests {
         new_test_ext().execute_with(|| {
             let merchant: AccountId = 1;
             let miner: AccountId = 2;
-            let facilitator: AccountId = 100;
 
-            // Create valid facilitator signature
+            // Create valid facilitator sr25519 signature
             let amount: Balance = 500;
             let nonce: u64 = 1;
             let replay_fingerprint = H256::from_low_u64_be(42);
+
+            use sp_core::Pair;
+            let facilitator_pair = sp_core::sr25519::Pair::from_seed(&[1u8; 32]);
 
             let mut message = Vec::new();
             codec::Encode::encode_to(&merchant, &mut message);
@@ -909,9 +926,9 @@ mod tests {
             codec::Encode::encode_to(&amount, &mut message);
             codec::Encode::encode_to(&nonce, &mut message);
             codec::Encode::encode_to(&replay_fingerprint, &mut message);
-            codec::Encode::encode_to(&facilitator, &mut message);
-            let hash = sp_io::hashing::blake2_256(&message);
-            let sig: Vec<u8> = hash.to_vec();
+
+            let sig_result = facilitator_pair.sign(&message);
+            let sig: Vec<u8> = sig_result.0.to_vec();
 
             // Submit payment intent
             let balance_before = pallet_balances::Pallet::<Test>::free_balance(merchant);
@@ -973,19 +990,23 @@ mod tests {
             let miner: AccountId = 2;
             let facilitator: AccountId = 100;
 
-            // Build valid signature
+            // Build valid sr25519 signature
             let amount: Balance = 1_000;
             let nonce: u64 = 1;
             let replay_fingerprint = H256::from_low_u64_be(99);
+
+            use sp_core::Pair;
+            let facilitator_pair = sp_core::sr25519::Pair::from_seed(&[1u8; 32]);
+
             let mut message = Vec::new();
             codec::Encode::encode_to(&merchant, &mut message);
             codec::Encode::encode_to(&miner, &mut message);
             codec::Encode::encode_to(&amount, &mut message);
             codec::Encode::encode_to(&nonce, &mut message);
             codec::Encode::encode_to(&replay_fingerprint, &mut message);
-            codec::Encode::encode_to(&facilitator, &mut message);
-            let hash = sp_io::hashing::blake2_256(&message);
-            let sig: Vec<u8> = hash.to_vec();
+
+            let sig_result = facilitator_pair.sign(&message);
+            let sig: Vec<u8> = sig_result.0.to_vec();
 
             // Submit intent
             assert!(pallet_x402_settlement::Pallet::<Test>::submit_payment_intent(
