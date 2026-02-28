@@ -1,3 +1,5 @@
+#![recursion_limit = "1024"]
+
 // This file is part of Substrate.
 
 // Copyright (C) Parity Technologies (UK) Ltd.
