@@ -21,10 +21,10 @@
 use coins_bip32::ecdsa::{SigningKey, VerifyingKey};
 use coins_bip39::{English, Mnemonic, Wordlist};
 use dbc_runtime::{
-    constants::currency::*, opaque::SessionKeys, wasm_binary_unwrap, AuthorityDiscoveryConfig,
+    constants::currency::*, opaque::SessionKeys, wasm_binary_unwrap,
     BabeConfig, BalancesConfig, BaseFeeConfig, Block, CouncilConfig, DefaultBaseFeePerGas,
     DefaultElasticity, DemocracyConfig, EVMChainIdConfig, EVMConfig, ElectionsConfig,
-    GrandpaConfig, ImOnlineConfig, IndicesConfig, MaxNominations, NominationPoolsConfig,
+    ImOnlineConfig, IndicesConfig, MaxNominations, NominationPoolsConfig,
     SessionConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
 };
 use fp_evm::GenesisAccount;
@@ -330,7 +330,7 @@ pub fn dev_testnet_genesis(
     balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
 
     GenesisConfig {
-        system: SystemConfig { code: wasm_binary_unwrap().to_vec() },
+        system: SystemConfig { code: wasm_binary_unwrap().to_vec(), ..Default::default() },
         balances: BalancesConfig { balances },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
@@ -373,12 +373,12 @@ pub fn dev_testnet_genesis(
         },
         sudo: SudoConfig { key: Some(root_key) },
         babe: BabeConfig {
-            authorities: vec![],
             epoch_config: Some(dbc_runtime::BABE_GENESIS_EPOCH_CONFIG),
+            ..Default::default()
         },
         im_online: ImOnlineConfig { keys: vec![] },
-        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
-        grandpa: GrandpaConfig { authorities: vec![] },
+        authority_discovery: Default::default(),
+        grandpa: Default::default(),
         treasury: Default::default(),
         // vesting: Default::default(),
         assets: pallet_assets::GenesisConfig {
@@ -411,8 +411,9 @@ pub fn dev_testnet_genesis(
                     )
                 })
                 .collect(),
+            ..Default::default()
         },
-        evm_chain_id: EVMChainIdConfig { chain_id: 19850818u64 },
+        evm_chain_id: EVMChainIdConfig { chain_id: 19850818u64, ..Default::default() },
         base_fee: BaseFeeConfig::new(DefaultBaseFeePerGas::get(), DefaultElasticity::get()),
         task_mode: Default::default(),
         zk_compute: Default::default(),
@@ -494,7 +495,7 @@ pub fn testnet_genesis(
     balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
 
     GenesisConfig {
-        system: SystemConfig { code: wasm_binary_unwrap().to_vec() },
+        system: SystemConfig { code: wasm_binary_unwrap().to_vec(), ..Default::default() },
         balances: BalancesConfig { balances },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
@@ -537,12 +538,12 @@ pub fn testnet_genesis(
         },
         sudo: SudoConfig { key: Some(root_key) },
         babe: BabeConfig {
-            authorities: vec![],
             epoch_config: Some(dbc_runtime::BABE_GENESIS_EPOCH_CONFIG),
+            ..Default::default()
         },
         im_online: ImOnlineConfig { keys: vec![] },
-        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
-        grandpa: GrandpaConfig { authorities: vec![] },
+        authority_discovery: Default::default(),
+        grandpa: Default::default(),
         treasury: Default::default(),
         // vesting: Default::default(),
         assets: Default::default(),
@@ -557,7 +558,7 @@ pub fn testnet_genesis(
         },
         ethereum: Default::default(),
         evm: Default::default(),
-        evm_chain_id: EVMChainIdConfig { chain_id: 19850818u64 },
+        evm_chain_id: EVMChainIdConfig { chain_id: 19850818u64, ..Default::default() },
         base_fee: BaseFeeConfig::new(DefaultBaseFeePerGas::get(), DefaultElasticity::get()),
         task_mode: Default::default(),
         zk_compute: Default::default(),
@@ -786,7 +787,7 @@ pub fn mainnet_genesis(
     balances.push((zk_pallet_account, 10_000_000 * DOLLARS)); // 10M DBC for ZK rewards pool
 
     GenesisConfig {
-        system: SystemConfig { code: wasm_binary_unwrap().to_vec() },
+        system: SystemConfig { code: wasm_binary_unwrap().to_vec(), ..Default::default() },
         balances: BalancesConfig { balances },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
@@ -829,12 +830,12 @@ pub fn mainnet_genesis(
         },
         sudo: SudoConfig { key: Some(root_key) },
         babe: BabeConfig {
-            authorities: vec![],
             epoch_config: Some(dbc_runtime::BABE_GENESIS_EPOCH_CONFIG),
+            ..Default::default()
         },
         im_online: ImOnlineConfig { keys: vec![] },
-        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
-        grandpa: GrandpaConfig { authorities: vec![] },
+        authority_discovery: Default::default(),
+        grandpa: Default::default(),
         treasury: Default::default(),
         // vesting: Default::default(),
         assets: Default::default(),
@@ -849,7 +850,7 @@ pub fn mainnet_genesis(
         },
         ethereum: Default::default(),
         evm: Default::default(),
-        evm_chain_id: EVMChainIdConfig { chain_id: 19880818u64 },
+        evm_chain_id: EVMChainIdConfig { chain_id: 19880818u64, ..Default::default() },
         base_fee: BaseFeeConfig::new(DefaultBaseFeePerGas::get(), DefaultElasticity::get()),
         task_mode: Default::default(),
         zk_compute: Default::default(),

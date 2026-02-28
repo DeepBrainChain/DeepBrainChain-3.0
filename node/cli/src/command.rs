@@ -6,7 +6,7 @@ use crate::{
 use dbc_node_common::cli_opt::{BackendType, BackendTypeConfig, RpcConfig};
 use dbc_runtime::Block;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
+use sc_cli::SubstrateCli;
 use sc_service::PartialComponents;
 
 #[cfg(feature = "try-runtime")]
@@ -47,10 +47,6 @@ impl SubstrateCli for Cli {
                 Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?)
             },
         })
-    }
-
-    fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &dbc_runtime::VERSION
     }
 }
 
@@ -150,7 +146,7 @@ pub fn run() -> sc_cli::Result<()> {
                             )
                         }
 
-                        cmd.run::<Block, service::ExecutorDispatch>(config)
+                        cmd.run::<Block, service::HostFunctions>(config)
                     },
                     BenchmarkCmd::Block(cmd) => {
                         let PartialComponents { client, .. } =
@@ -181,8 +177,6 @@ pub fn run() -> sc_cli::Result<()> {
         },
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
-            use crate::service::ExecutorDispatch;
-            use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 // we don't need any of the components of new_partial, just a runtime, or a task
@@ -194,10 +188,7 @@ pub fn run() -> sc_cli::Result<()> {
                 let info_provider = timestamp_with_babe_info(6000);
 
                 Ok((
-                    cmd.run::<Block, ExtendedHostFunctions<
-                        sp_io::SubstrateHostFunctions,
-                        <ExecutorDispatch as NativeExecutionDispatch>::ExtendHostFunctions,
-                    >, _>(Some(info_provider)),
+                    cmd.run::<Block, service::HostFunctions, _>(Some(info_provider)),
                     task_manager,
                 ))
             })

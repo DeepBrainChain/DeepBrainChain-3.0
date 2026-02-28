@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use dbc_node_common::{cli_opt::EthApi as EthApiCmd, rpc::TracingConfig};
 use dbc_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Index};
+use fc_rpc::pending;
 
 use dbc_node_common::rpc::BabeDeps;
 use sp_api::{CallApiAt, ProvideRuntimeApi};
@@ -156,7 +157,7 @@ where
         EthFilter::new(
             client.clone(),
             frontier_backend.clone(),
-            fc_rpc::TxPool::new(client.clone(), graph.clone()),
+            graph.clone(),
             filter_pool,
             500_usize, // max stored filters
             max_past_logs,
@@ -211,7 +212,7 @@ where
     let convert_transaction: Option<Never> = None;
 
     io.merge(
-        Eth::new(
+        Eth::<_, _, _, _, _, _, _, ()>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
             graph.clone(),
@@ -219,13 +220,20 @@ where
             Arc::clone(&sync_service),
             signers,
             Arc::clone(&overrides),
-            Arc::clone(&frontier_backend),
+            frontier_backend.clone(),
             is_authority,
             Arc::clone(&block_data_cache),
             fee_history_cache,
             fee_history_limit,
             10,
             forced_parent_hashes,
+            // pending_create_inherent_data_providers
+            move |_, ()| async move {
+                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+                Ok(timestamp)
+            },
+            // pending_consensus_data_provider
+            None::<Box<dyn pending::ConsensusDataProvider<Block>>>,
         )
         .into_rpc(),
     )
