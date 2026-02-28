@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use frame_benchmarking::vec;
+use sp_std::vec;
 use crate::Pallet as TaskMode;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::{Currency, Get};
@@ -26,7 +26,7 @@ fn setup_task_definition<T: Config>(admin: T::AccountId) -> u64 {
 /// Seed the DBC price oracle so that get_dbc_price() returns Some(_).
 fn seed_dbc_price<T: Config>() {
     use frame_support::storage::unhashed;
-    use frame_support::sp_io::hashing::twox_128;
+    use sp_io::hashing::twox_128;
     let mut key = Vec::new();
     key.extend_from_slice(&twox_128(b"DBCPriceOCW"));
     key.extend_from_slice(&twox_128(b"AvgPrice"));
