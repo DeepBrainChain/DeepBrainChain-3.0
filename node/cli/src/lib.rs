@@ -1,4 +1,4 @@
-#![recursion_limit = "1024"]
+#![recursion_limit = "4096"]
 
 // This file is part of Substrate.
 
