@@ -4,6 +4,7 @@ use crate::{
     service,
 };
 use dbc_node_common::cli_opt::{BackendType, BackendTypeConfig, RpcConfig};
+use dbc_primitives::Block as OpaqueBlock;
 use dbc_runtime::Block;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use sc_cli::SubstrateCli;
@@ -146,7 +147,7 @@ pub fn run() -> sc_cli::Result<()> {
                             )
                         }
 
-                        cmd.run::<Block, service::HostFunctions>(config)
+                        cmd.run::<OpaqueBlock, service::HostFunctions>(config)
                     },
                     BenchmarkCmd::Block(cmd) => {
                         let PartialComponents { client, .. } =
@@ -188,7 +189,7 @@ pub fn run() -> sc_cli::Result<()> {
                 let info_provider = timestamp_with_babe_info(6000);
 
                 Ok((
-                    cmd.run::<Block, service::HostFunctions, _>(Some(info_provider)),
+                    cmd.run::<OpaqueBlock, service::HostFunctions, _>(Some(info_provider)),
                     task_manager,
                 ))
             })
@@ -199,7 +200,7 @@ pub fn run() -> sc_cli::Result<()> {
             .into()),
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|config| cmd.run::<Block>(&config))
+            runner.sync_run(|config| cmd.run::<OpaqueBlock>(&config))
         },
         None => {
             let runner = cli.create_runner(&cli.run)?;
