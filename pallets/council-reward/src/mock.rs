@@ -3,7 +3,7 @@ use dbc_support::ONE_DAY;
 use frame_support::{
     pallet_prelude::Weight,
     parameter_types,
-    traits::{ConstU32, LockIdentifier, OnFinalize, OnInitialize, U128CurrencyToVote},
+    traits::{ConstU32, LockIdentifier, OnFinalize, OnInitialize},
     PalletId,
 };
 use frame_system::{EnsureRoot, EnsureWithSuccess};
@@ -16,8 +16,10 @@ use sp_runtime::{
     generic::Header,
     testing::TestXt,
     traits::{BlakeTwo256, IdentityLookup, Verify},
-    Permill,
+    BuildStorage, Permill,
 };
+
+type BlockNumber = u64;
 
 // 初始1000WDBC
 pub const INIT_BALANCE: u128 = 10_000_000 * ONE_DBC;
@@ -32,7 +34,6 @@ pub const fn deposit(items: u32, bytes: u32) -> Balance {
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRuntime>;
 type Balance = u128;
-type BlockNumber = u32;
 type Block = frame_system::mocking::MockBlock<TestRuntime>;
 
 // 1 DBC = 1 * 10^15
@@ -50,13 +51,12 @@ impl frame_system::Config for TestRuntime {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = BlockNumber;
+    type Nonce = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = sr25519::Public;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header<BlockNumber, BlakeTwo256>;
+    type Block = Block;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type Version = ();
@@ -86,7 +86,7 @@ impl pallet_balances::Config for TestRuntime {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
-    type HoldIdentifier = ();
+    type RuntimeHoldReason = ();
     type FreezeIdentifier = ();
     type MaxHolds = ();
     type MaxFreezes = ();
@@ -152,7 +152,7 @@ parameter_types! {
     pub const VotingBondBase: Balance = deposit(1, 64);
     // additional data per vote is 32 bytes (account id).
     pub const VotingBondFactor: Balance = deposit(0, 32);
-    pub const TermDuration: BlockNumber = 120 * ONE_DAY;
+    pub const TermDuration: BlockNumber = 120 * ONE_DAY as BlockNumber;
     pub const DesiredMembers: u32 = 21;
     pub const DesiredRunnersUp: u32 = 7;
     pub const ElectionsPhragmenModuleId: LockIdentifier = *b"phrelect";
@@ -167,7 +167,7 @@ impl pallet_elections_phragmen::Config for TestRuntime {
     // NOTE: this implies that council's genesis members cannot be set directly and must come from
     // this module.
     type InitializeMembers = Council;
-    type CurrencyToVote = U128CurrencyToVote;
+    type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
     type CandidacyBond = CandidacyBond;
     type VotingBondBase = VotingBondBase;
     type VotingBondFactor = VotingBondFactor;
@@ -205,7 +205,7 @@ where
         call: RuntimeCall,
         _public: <Signature as Verify>::Signer,
         _account: <TestRuntime as frame_system::Config>::AccountId,
-        index: <TestRuntime as frame_system::Config>::Index,
+        index: <TestRuntime as frame_system::Config>::Nonce,
     ) -> Option<(RuntimeCall, <TestExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload)>
     {
         Some((call, (index, ())))
@@ -234,7 +234,7 @@ parameter_types! {
     // 排名第三的议会成员：1000 USD 或 20万 DBC 取价值较小
     pub const ThirdReward: (u64, Balance) = (2_000_000_000u64, 200_000 * ONE_DBC);
     // 发放周期
-    pub const RewardFrequency: BlockNumber = 30 * ONE_DAY;
+    pub const RewardFrequency: BlockNumber = 30 * ONE_DAY as BlockNumber;
 }
 
 impl council_reward::Config for TestRuntime {
@@ -270,7 +270,7 @@ frame_support::construct_runtime!(
 
 pub fn new_test_ext_after_machine_online() -> sp_io::TestExternalities {
     let mut storage =
-        frame_system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap();
+        frame_system::GenesisConfig::<TestRuntime>::default().build_storage().unwrap();
 
     #[rustfmt::skip]
     pallet_balances::GenesisConfig::<TestRuntime> {

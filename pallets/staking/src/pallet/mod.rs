@@ -20,11 +20,11 @@
 use frame_election_provider_support::{
     ElectionProvider, ElectionProviderBase, SortedListProvider, VoteWeight,
 };
+use codec::Codec;
 use frame_support::{
-    dispatch::Codec,
     pallet_prelude::*,
     traits::{
-        Currency, CurrencyToVote, Defensive, DefensiveResult, DefensiveSaturating, EnsureOrigin,
+        Currency, Defensive, DefensiveResult, DefensiveSaturating, EnsureOrigin,
         EstimateNextNewSession, Get, LockIdentifier, LockableCurrency, OnUnbalanced, TryCollect,
         UnixTime,
     },
@@ -87,7 +87,7 @@ pub mod pallet {
         /// The staking balance.
         type Currency: LockableCurrency<
             Self::AccountId,
-            Moment = Self::BlockNumber,
+            Moment = BlockNumberFor::<Self>,
             Balance = Self::CurrencyBalance,
         >;
         /// Just the `Currency::Balance` type; we have this item to allow us to constrain it to
@@ -113,19 +113,19 @@ pub mod pallet {
         /// in 128.
         /// Consequently, the backward convert is used convert the u128s from sp-elections back to a
         /// [`BalanceOf`].
-        type CurrencyToVote: CurrencyToVote<BalanceOf<Self>>;
+        type CurrencyToVote: sp_staking::currency_to_vote::CurrencyToVote<BalanceOf<Self>>;
 
         /// Something that provides the election functionality.
         type ElectionProvider: ElectionProvider<
             AccountId = Self::AccountId,
-            BlockNumber = Self::BlockNumber,
+            BlockNumber = BlockNumberFor::<Self>,
             // we only accept an election provider that has staking as data provider.
             DataProvider = Pallet<Self>,
         >;
         /// Something that provides the election functionality at genesis.
         type GenesisElectionProvider: ElectionProvider<
             AccountId = Self::AccountId,
-            BlockNumber = Self::BlockNumber,
+            BlockNumber = BlockNumberFor::<Self>,
             DataProvider = Pallet<Self>,
         >;
 
@@ -200,7 +200,7 @@ pub mod pallet {
 
         /// Something that can estimate the next session change, accurately or as a best effort
         /// guess.
-        type NextNewSession: EstimateNextNewSession<Self::BlockNumber>;
+        type NextNewSession: EstimateNextNewSession<BlockNumberFor::<Self>>;
 
         /// The maximum number of nominators rewarded for each validator.
         ///
@@ -261,9 +261,11 @@ pub mod pallet {
         #[pallet::constant]
         type MaxUnlockingChunks: Get<u32>;
 
-        /// A hook called when any staker is slashed. Mostly likely this can be a no-op unless
-        /// other pallets exist that are affected by slashing per-staker.
-        type OnStakerSlash: sp_staking::OnStakerSlash<Self::AccountId, BalanceOf<Self>>;
+        /// Something that listens to staking updates and performs actions based on the data it
+        /// receives.
+        ///
+        /// WARNING: this only reports slashing events for the time being.
+        type EventListeners: sp_staking::OnStakingUpdate<Self::AccountId, BalanceOf<Self>>;
 
         /// Some parameters of the benchmarking.
         type BenchmarkingConfig: BenchmarkingConfig;
@@ -595,7 +597,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn reward_start_height)]
-    pub type RewardStartHeight<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
+    pub type RewardStartHeight<T: Config> = StorageValue<_, BlockNumberFor::<T>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
@@ -650,7 +652,7 @@ pub mod pallet {
     }
 
     #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             ValidatorCount::<T>::put(self.validator_count);
             MinimumValidatorCount::<T>::put(self.minimum_validator_count);
@@ -1876,7 +1878,7 @@ pub mod pallet {
         #[pallet::weight(frame_support::weights::Weight::from_parts(10000, 0))]
         pub fn set_reward_start_height(
             origin: OriginFor<T>,
-            reward_start_height: T::BlockNumber,
+            reward_start_height: BlockNumberFor::<T>,
         ) -> DispatchResult {
             ensure_root(origin)?;
             RewardStartHeight::<T>::put(reward_start_height);

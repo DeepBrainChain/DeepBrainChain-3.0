@@ -18,6 +18,7 @@
 
 //! Substrate Node CLI
 
+#![recursion_limit = "4096"]
 #![warn(unused_crate_dependencies)]
 #![warn(unused_extern_crates)]
 

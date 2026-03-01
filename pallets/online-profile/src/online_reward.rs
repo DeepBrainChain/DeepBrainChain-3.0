@@ -4,6 +4,7 @@ use crate::{
     ErasMachinePoints, ErasMachineReleasedReward, ErasMachineReward, ErasStashPoints,
     ErasStashReleasedReward, ErasStashReward, MachineRecentReward, Pallet, StashMachines,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use dbc_support::{
     traits::{DbcPrice, ManageCommittee, OPRPCQuery},
     EraIndex, MachineId, ONE_DAY,
@@ -91,7 +92,7 @@ impl<T: Config> Pallet<T> {
         }
     }
 
-    pub fn backup_and_reward(now: T::BlockNumber) {
+    pub fn backup_and_reward(now: BlockNumberFor::<T>) {
         let block_offset = now.saturated_into::<u64>() % ONE_DAY as u64;
 
         match block_offset {

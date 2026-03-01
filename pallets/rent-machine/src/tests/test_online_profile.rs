@@ -37,7 +37,7 @@ fn fulfill_machine_works() {
         let server_room = OnlineProfile::stash_server_rooms(&stash);
 
         // NOTE: stash把币转走，只剩下 2_000 DBC
-        assert_ok!(Balances::transfer(RuntimeOrigin::signed(stash), controller, 9_994_000 * ONE_DBC));
+        assert_ok!(Balances::transfer_allow_death(RuntimeOrigin::signed(stash), controller.into(), 9_994_000 * ONE_DBC));
         {
             assert_eq!(System::account(stash), AccountInfo{
                 nonce: 0,
@@ -148,7 +148,7 @@ fn fulfill_machine_works() {
             );
         }
 
-        assert_ok!(Balances::transfer(RuntimeOrigin::signed(controller), stash, 4_000 * ONE_DBC));
+        assert_ok!(Balances::transfer_allow_death(RuntimeOrigin::signed(controller), stash.into(), 4_000 * ONE_DBC));
 
         let machine_info = OnlineProfile::machines_info(&machine_id2).unwrap();
         assert_eq!(machine_info.init_stake_per_gpu, 1_000 * ONE_DBC);

@@ -1,3 +1,4 @@
+use frame_system::pallet_prelude::BlockNumberFor;
 pub mod test_report_fault_works;
 pub mod test_report_inaccessible_works;
 pub mod test_report_individual_gpu;

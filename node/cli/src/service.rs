@@ -36,12 +36,12 @@ use futures::prelude::*;
 use jsonrpsee::RpcModule;
 use sc_client_api::{BlockBackend, BlockchainEvents};
 use sc_consensus_babe::{self, SlotProportion};
-use sc_executor::{NativeElseWasmExecutor, WasmExecutor};
+use sc_executor::WasmExecutor;
 use sc_network::{
     config::FullNetworkConfiguration, event::Event, NetworkEventStream, NetworkService,
 };
-use sc_network_common::sync::warp::WarpSyncParams;
-use sc_network_sync::SyncingService;
+use sc_network_sync::{warp::WarpSyncParams, SyncingService};
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sc_rpc_api::DenyUnsafe;
 use sc_service::{
     config::Configuration, error::Error as ServiceError, RpcHandlers, SpawnTaskHandle, TaskManager,
@@ -51,32 +51,22 @@ use sp_api::NumberFor;
 use sp_runtime::traits::Block as BlockT;
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
-/// Our native executor instance.
-pub struct ExecutorDispatch;
+/// Host functions required by the runtime.
+#[cfg(feature = "runtime-benchmarks")]
+pub type HostFunctions = (
+    sp_io::SubstrateHostFunctions,
+    frame_benchmarking::benchmarking::HostFunctions,
+);
 
-impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
-    /// Only enable the benchmarking host functions when we actually want to benchmark.
-    #[cfg(feature = "runtime-benchmarks")]
-    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-    /// Otherwise we only use the default Substrate host functions.
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    type ExtendHostFunctions = (
-        frame_benchmarking::benchmarking::HostFunctions,
-        dbc_primitives_ext::tracing_ext::HostFunctions,
-    );
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        dbc_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> sc_executor::NativeVersion {
-        dbc_runtime::native_version()
-    }
-}
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type HostFunctions = (
+    sp_io::SubstrateHostFunctions,
+    frame_benchmarking::benchmarking::HostFunctions,
+    dbc_primitives_ext::tracing_ext::HostFunctions,
+);
 
 /// The full client type definition.
-type FullClient =
-    sc_service::TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<ExecutorDispatch>>;
+type FullClient = sc_service::TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>;
 
 /// The full backend type definition.
 type FullBackend = sc_service::TFullBackend<Block>;
@@ -140,7 +130,7 @@ pub fn new_partial(
         FullClient,
         FullBackend,
         FullSelectChain,
-        sc_consensus::DefaultImportQueue<Block, FullClient>,
+        sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::FullPool<Block, FullClient>,
         (
             sc_consensus_babe::BabeBlockImport<Block, FullClient, FullGrandpaBlockImport>,
@@ -167,13 +157,11 @@ pub fn new_partial(
         })
         .transpose()?;
 
-    let executor = NativeElseWasmExecutor::new_with_wasm_executor(
-        WasmExecutor::builder()
-            .with_execution_method(config.wasm_method)
-            .with_max_runtime_instances(config.max_runtime_instances)
-            .with_runtime_cache_size(config.runtime_cache_size)
-            .build(),
-    );
+    let executor = WasmExecutor::builder()
+        .with_execution_method(config.wasm_method)
+        .with_max_runtime_instances(config.max_runtime_instances)
+        .with_runtime_cache_size(config.runtime_cache_size)
+        .build();
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -202,6 +190,7 @@ pub fn new_partial(
 
     let (grandpa_block_import, grandpa_link) = sc_consensus_grandpa::block_import(
         client.clone(),
+        512,
         &(client.clone() as Arc<_>),
         select_chain.clone(),
         telemetry.as_ref().map(|x| x.handle()),
@@ -215,27 +204,31 @@ pub fn new_partial(
     )?;
 
     let slot_duration = babe_link.config().slot_duration();
-    let (import_queue, babe_worker_handle) = sc_consensus_babe::import_queue(
-        babe_link.clone(),
-        babe_block_import.clone(),
-        Some(Box::new(justification_import)),
-        client.clone(),
-        select_chain.clone(),
-        move |_, ()| async move {
-            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+    let (import_queue, babe_worker_handle) =
+        sc_consensus_babe::import_queue(sc_consensus_babe::ImportQueueParams {
+            link: babe_link.clone(),
+            block_import: babe_block_import.clone(),
+            justification_import: Some(Box::new(justification_import)),
+            client: client.clone(),
+            select_chain: select_chain.clone(),
+            create_inherent_data_providers: move |_, ()| async move {
+                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-            let slot =
-				sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-					*timestamp,
-					slot_duration,
-				);
+                let slot =
+                    sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+                        *timestamp,
+                        slot_duration,
+                    );
 
-            Ok((slot, timestamp))
-        },
-        &task_manager.spawn_essential_handle(),
-        config.prometheus_registry(),
-        telemetry.as_ref().map(|x| x.handle()),
-    )?;
+                Ok((slot, timestamp))
+            },
+            spawner: &task_manager.spawn_essential_handle(),
+            registry: config.prometheus_registry(),
+            telemetry: telemetry.as_ref().map(|x| x.handle()),
+            offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(
+                transaction_pool.clone(),
+            ),
+        })?;
 
     Ok(sc_service::PartialComponents {
         client,
@@ -309,16 +302,10 @@ pub fn new_full_base(
             import_queue,
             block_announce_validator_builder: None,
             warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
+            block_relay: None,
         })?;
 
-    if config.offchain_worker.enabled {
-        sc_service::build_offchain_workers(
-            &config,
-            task_manager.spawn_handle(),
-            client.clone(),
-            network.clone(),
-        );
-    }
+    // Note: offchain workers are handled by sc_service::spawn_tasks internally in v1.2.0
 
     let role = config.role.clone();
     let force_authoring = config.force_authoring;
@@ -460,11 +447,11 @@ pub fn new_full_base(
     let grandpa_config = sc_consensus_grandpa::Config {
         // FIXME #1578 make this available through chainspec
         gossip_duration: std::time::Duration::from_millis(333),
-        justification_period: 512,
+        justification_generation_period: 512,
         name: Some(name),
         observer_enabled: false,
         keystore,
-        local_role: role,
+        local_role: role.clone(),
         telemetry: telemetry.as_ref().map(|x| x.handle()),
         protocol_name: grandpa_protocol_name,
     };
@@ -485,6 +472,9 @@ pub fn new_full_base(
             voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
             prometheus_registry,
             shared_voter_state,
+            offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(
+                transaction_pool.clone(),
+            ),
         };
 
         // the GRANDPA voter task is considered infallible, i.e.

@@ -90,7 +90,7 @@ pub mod pallet {
 
         // // NOTE: only be used when upgrade from runtime 273.
         // fn on_runtime_upgrade() -> frame_support::weights::Weight {
-        //     frame_support::log::info!("🔍 GenericFunc Storage Migration start");
+        //     log::info!("🔍 GenericFunc Storage Migration start");
 
         //     let account: Vec<u8> = b"5GR31fgcHdrJ14eFW1xJmHhZJ56eQS7KynLKeXmDtERZTiw2".to_vec();
         //     let account_id32: [u8; 32] =
@@ -101,7 +101,7 @@ pub mod pallet {
         //         });
         //     }
 
-        //     frame_support::log::info!("🚀 GenericFunc Storage Migration end");
+        //     log::info!("🚀 GenericFunc Storage Migration end");
         //     Weight::zero()
         // }
     }

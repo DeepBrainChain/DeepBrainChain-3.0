@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use frame_benchmarking::vec;
+use sp_std::vec;
 use crate::Pallet as X402Settlement;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::Get;

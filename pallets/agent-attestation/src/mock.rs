@@ -7,6 +7,7 @@ use sp_core::H256;
 use sp_runtime::{
     generic::Header,
     traits::{BlakeTwo256, IdentityLookup},
+    BuildStorage,
 };
 
 pub type AccountId = u64;
@@ -50,13 +51,12 @@ impl frame_system::Config for Test {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = BlockNumber;
+    type Nonce = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header<BlockNumber, BlakeTwo256>;
+    type Block = Block;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type Version = ();
@@ -83,7 +83,7 @@ impl pallet_balances::Config for Test {
     type MaxFreezes = ConstU32<0>;
     type MaxHolds = ConstU32<0>;
     type FreezeIdentifier = ();
-    type HoldIdentifier = ();
+    type RuntimeHoldReason = ();
 }
 
 // Mock implementation for AttestationSettler
@@ -122,8 +122,8 @@ impl crate::Config for Test {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
+    let mut t = frame_system::GenesisConfig::<Test>::default()
+        .build_storage()
         .expect("frame system storage builds");
 
     pallet_balances::GenesisConfig::<Test> {

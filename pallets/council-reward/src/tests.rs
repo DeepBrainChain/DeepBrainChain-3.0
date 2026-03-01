@@ -90,9 +90,9 @@ fn test_reward_works() {
         }
         let treasury = treasury.unwrap();
         // assert_ok!(Balances::set_balance(RawOrigin::Root.into(), treasury, 10000000 * ONE_DBC, 0));
-        assert_ok!(Balances::transfer(
+        assert_ok!(Balances::transfer_allow_death(
             RuntimeOrigin::signed(council8),
-            treasury,
+            treasury.into(),
             1000_0000 * ONE_DBC
         ));
         assert_eq!(Balances::free_balance(treasury), 1000_0000 * ONE_DBC);

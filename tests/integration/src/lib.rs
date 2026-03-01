@@ -13,7 +13,7 @@ mod tests {
     use sp_runtime::{
         generic::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        Percent,
+        BuildStorage, Percent,
     };
     use std::cell::RefCell;
     use codec;
@@ -107,6 +107,21 @@ mod tests {
         pub const MaxModelsPerAgent: u32 = 10;
         pub const MinPoolStake: Balance = 100;
         pub const StakeSlashPercent: u32 = 10;
+
+        // Missing Config items
+        pub const OrderTimeout: BlockNumber = 50;
+        pub const CpsVerificationTimeout: BlockNumber = 3;
+        pub const ComplaintDeposit: Balance = 100;
+        pub const ComplaintSlashPercent: u32 = 20;
+        pub const MaxOpenComplaints: u32 = 10;
+        pub const SlashGracePeriod: BlockNumber = 5;
+        pub const BenchmarkDeposit: Balance = 500;
+        pub const BenchmarkChallengeDeposit: Balance = 200;
+        pub const MaxBenchmarkClaims: u32 = 10;
+        pub FacilitatorPublicKeyValue: [u8; 32] = {
+            use sp_core::Pair;
+            sp_core::sr25519::Pair::from_seed(&[1u8; 32]).public().0
+        };
     }
 
     // ================================================================
@@ -176,13 +191,12 @@ mod tests {
         type DbWeight = ();
         type RuntimeOrigin = RuntimeOrigin;
         type RuntimeCall = RuntimeCall;
-        type Index = u64;
-        type BlockNumber = BlockNumber;
+        type Nonce = u64;
         type Hash = H256;
         type Hashing = BlakeTwo256;
         type AccountId = AccountId;
         type Lookup = IdentityLookup<Self::AccountId>;
-        type Header = Header<BlockNumber, BlakeTwo256>;
+        type Block = Block;
         type RuntimeEvent = RuntimeEvent;
         type BlockHashCount = BlockHashCount;
         type Version = ();
@@ -209,7 +223,7 @@ mod tests {
         type MaxFreezes = ConstU32<0>;
         type MaxHolds = ConstU32<0>;
         type FreezeIdentifier = ();
-        type HoldIdentifier = ();
+        type RuntimeHoldReason = ();
     }
 
     // REAL WIRING: TaskMode uses ComputePoolScheduler for compute scheduling
@@ -224,6 +238,7 @@ mod tests {
         type EraDuration = EraDuration;
         type MaxModelIdLen = MaxModelIdLen;
         type MaxPolicyCidLen = MaxPolicyCidLen;
+        type OrderTimeout = OrderTimeout;
         type WeightInfo = ();
         // REAL: TaskMode -> ComputePoolScheduler
         type ComputeScheduler = ComputePoolScheduler;
@@ -243,6 +258,11 @@ mod tests {
         type WeightInfo = ();
         type MinPoolStake = MinPoolStake;
         type StakeSlashPercent = StakeSlashPercent;
+        type VerificationTimeout = CpsVerificationTimeout;
+        type ComplaintDeposit = ComplaintDeposit;
+        type ComplaintSlashPercent = ComplaintSlashPercent;
+        type MaxOpenComplaints = MaxOpenComplaints;
+        type SlashGracePeriod = SlashGracePeriod;
         // REAL: ComputePoolScheduler -> AgentAttestation
         type OnTaskCompleted = AgentAttestation;
     }
@@ -259,6 +279,9 @@ mod tests {
         type MaxGpuUuidLen = MaxGpuUuidLen;
         type WeightInfo = ();
         type MaxModelsPerAgent = MaxModelsPerAgent;
+        type BenchmarkDeposit = BenchmarkDeposit;
+        type BenchmarkChallengeDeposit = BenchmarkChallengeDeposit;
+        type MaxBenchmarkClaims = MaxBenchmarkClaims;
         type AdminOrigin = frame_system::EnsureSigned<AccountId>;
         // REAL: AgentAttestation -> X402Settlement
         type OnAttestationConfirmed = X402Settlement;
@@ -291,6 +314,7 @@ mod tests {
         type RuntimeEvent = RuntimeEvent;
         type Currency = Balances;
         type FacilitatorAccount = FacilitatorAccount;
+        type FacilitatorPublicKey = FacilitatorPublicKeyValue;
         type MaxSignatureLen = MaxSignatureLen;
         type SettlementDelay = SettlementDelay;
         type PaymentIntentTTL = PaymentIntentTTL;
@@ -303,8 +327,8 @@ mod tests {
     // ================================================================
 
     pub fn new_test_ext() -> sp_io::TestExternalities {
-        let mut t = frame_system::GenesisConfig::default()
-            .build_storage::<Test>()
+        let mut t = frame_system::GenesisConfig::<Test>::default()
+            .build_storage()
             .expect("frame system storage builds");
 
         pallet_balances::GenesisConfig::<Test> {
@@ -430,16 +454,22 @@ mod tests {
             ));
 
             // ----- Step 6: Submit proof (miner) -----
-            // This triggers OnTaskCompleted -> AgentAttestation::on_task_completed
             let proof_hash = [1u8; 32];
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::submit_proof(
                 RuntimeOrigin::signed(miner),
                 0,          // task_id
                 proof_hash, // proof_hash
-                true,       // verification_result
             ).is_ok());
 
-            // Verify task completed
+            // Verify proof (must be someone OTHER than pool owner)
+            // Pool owner is miner (2), so use admin (3) as verifier
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::verify_proof(
+                RuntimeOrigin::signed(admin),
+                0,    // task_id
+                true, // approve
+            ).is_ok());
+
+            // Verify task completed (verify_proof triggers OnTaskCompleted -> AgentAttestation)
             let completed_task = pallet_compute_pool_scheduler::Tasks::<Test>::get(0).unwrap();
             assert!(matches!(
                 completed_task.status,
@@ -573,7 +603,14 @@ mod tests {
                 RuntimeOrigin::signed(pool_owner),
                 0,
                 proof_hash,
-                true,
+            ).is_ok());
+
+            // Verify proof (must be someone OTHER than pool owner)
+            // Pool owner is pool_owner (2), so use task_user (1) as verifier
+            assert!(pallet_compute_pool_scheduler::Pallet::<Test>::verify_proof(
+                RuntimeOrigin::signed(task_user),
+                0,    // task_id
+                true, // approve
             ).is_ok());
 
             // Verify task completed
@@ -874,12 +911,14 @@ mod tests {
         new_test_ext().execute_with(|| {
             let merchant: AccountId = 1;
             let miner: AccountId = 2;
-            let facilitator: AccountId = 100;
 
-            // Create valid facilitator signature
+            // Create valid facilitator sr25519 signature
             let amount: Balance = 500;
             let nonce: u64 = 1;
             let replay_fingerprint = H256::from_low_u64_be(42);
+
+            use sp_core::Pair;
+            let facilitator_pair = sp_core::sr25519::Pair::from_seed(&[1u8; 32]);
 
             let mut message = Vec::new();
             codec::Encode::encode_to(&merchant, &mut message);
@@ -887,9 +926,9 @@ mod tests {
             codec::Encode::encode_to(&amount, &mut message);
             codec::Encode::encode_to(&nonce, &mut message);
             codec::Encode::encode_to(&replay_fingerprint, &mut message);
-            codec::Encode::encode_to(&facilitator, &mut message);
-            let hash = sp_io::hashing::blake2_256(&message);
-            let sig: Vec<u8> = hash.to_vec();
+
+            let sig_result = facilitator_pair.sign(&message);
+            let sig: Vec<u8> = sig_result.0.to_vec();
 
             // Submit payment intent
             let balance_before = pallet_balances::Pallet::<Test>::free_balance(merchant);
@@ -951,19 +990,23 @@ mod tests {
             let miner: AccountId = 2;
             let facilitator: AccountId = 100;
 
-            // Build valid signature
+            // Build valid sr25519 signature
             let amount: Balance = 1_000;
             let nonce: u64 = 1;
             let replay_fingerprint = H256::from_low_u64_be(99);
+
+            use sp_core::Pair;
+            let facilitator_pair = sp_core::sr25519::Pair::from_seed(&[1u8; 32]);
+
             let mut message = Vec::new();
             codec::Encode::encode_to(&merchant, &mut message);
             codec::Encode::encode_to(&miner, &mut message);
             codec::Encode::encode_to(&amount, &mut message);
             codec::Encode::encode_to(&nonce, &mut message);
             codec::Encode::encode_to(&replay_fingerprint, &mut message);
-            codec::Encode::encode_to(&facilitator, &mut message);
-            let hash = sp_io::hashing::blake2_256(&message);
-            let sig: Vec<u8> = hash.to_vec();
+
+            let sig_result = facilitator_pair.sign(&message);
+            let sig: Vec<u8> = sig_result.0.to_vec();
 
             // Submit intent
             assert!(pallet_x402_settlement::Pallet::<Test>::submit_payment_intent(

@@ -30,7 +30,7 @@ fn test_auto_destroy() {
         assert_eq!(Balances::free_balance(&alice), 10);
         assert_eq!(Balances::total_issuance(), INIT_BALANCE * (8 - 1) + 10);
 
-        assert_ok!(Balances::transfer(RuntimeOrigin::signed(bob), alice, 1000));
+        assert_ok!(Balances::transfer_allow_death(RuntimeOrigin::signed(bob), alice.into(), 1000));
 
         assert_eq!(Balances::free_balance(&alice), 1010);
         run_to_block(20);

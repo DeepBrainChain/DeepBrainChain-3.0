@@ -29,6 +29,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "generic-func/std",
+  "log/std",
   "serde",
   "sp-core/std",
   "sp-std/std",

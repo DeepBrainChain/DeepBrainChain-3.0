@@ -17,6 +17,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::BlockNumberFor;
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
     pub(crate) fn do_approve_transfer(
@@ -24,7 +25,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
         collection: T::CollectionId,
         item: T::ItemId,
         delegate: T::AccountId,
-        maybe_deadline: Option<<T as SystemConfig>::BlockNumber>,
+        maybe_deadline: Option<BlockNumberFor::<T>>,
     ) -> DispatchResult {
         ensure!(
             Self::is_pallet_feature_enabled(PalletFeature::Approvals),

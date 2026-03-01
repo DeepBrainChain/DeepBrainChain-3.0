@@ -49,10 +49,10 @@ pub mod pallet {
         type Currency: ReservableCurrency<Self::AccountId>;
         type RTOps: RTOps<
             MachineId = MachineId,
-            MachineStatus = MachineStatus<Self::BlockNumber, Self::AccountId>,
+            MachineStatus = MachineStatus<BlockNumberFor::<Self>, Self::AccountId>,
             AccountId = Self::AccountId,
             Balance = BalanceOf<Self>,
-            BlockNumber = Self::BlockNumber,
+            BlockNumber = BlockNumberFor::<Self>,
         >;
         type DbcPrice: DbcPrice<Balance = BalanceOf<Self>>;
     }
@@ -63,7 +63,7 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_finalize(block_number: T::BlockNumber) {
+        fn on_finalize(block_number: BlockNumberFor::<T>) {
             let _ = Self::check_machine_starting_status(block_number);
             let _ = Self::check_if_rent_finished(block_number);
         }
@@ -102,7 +102,7 @@ pub mod pallet {
         MachineId,
         Blake2_128Concat,
         T::AccountId,
-        Vec<MachineRenterRentedOrderDetail<T::BlockNumber>>,
+        Vec<MachineRenterRentedOrderDetail<BlockNumberFor::<T>>>,
         ValueQuery,
     >;
     #[pallet::storage]
@@ -117,20 +117,20 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         RentOrderId,
-        RentOrderDetail<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        RentOrderDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
     >;
 
     // 等待用户确认租用成功的机器
     #[pallet::storage]
     #[pallet::getter(fn confirming_order)]
     pub type ConfirmingOrder<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::BlockNumber, Vec<RentOrderId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<RentOrderId>, ValueQuery>;
 
     // 记录每个区块将要结束租用的机器
     #[pallet::storage]
     #[pallet::getter(fn rent_ending)]
     pub type RentEnding<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::BlockNumber, Vec<RentOrderId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<RentOrderId>, ValueQuery>;
 
     // 存储每个用户在该模块中的总质押量
     #[pallet::storage]
@@ -185,7 +185,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             machine_id: MachineId,
             rent_gpu_num: u32,
-            duration: T::BlockNumber,
+            duration: BlockNumberFor::<T>,
         ) -> DispatchResultWithPostInfo {
             let renter = ensure_signed(origin)?;
             Self::rent_machine_by_block(renter, machine_id, rent_gpu_num, duration)
@@ -282,7 +282,7 @@ pub mod pallet {
         pub fn relet_machine(
             origin: OriginFor<T>,
             rent_id: RentOrderId,
-            relet_duration: T::BlockNumber,
+            relet_duration: BlockNumberFor::<T>,
         ) -> DispatchResultWithPostInfo {
             let renter = ensure_signed(origin)?;
             Self::relet_machine_by_block(renter, rent_id, relet_duration)
@@ -315,11 +315,11 @@ pub mod pallet {
     pub enum Event<T: Config> {
         PayTxFee(T::AccountId, BalanceOf<T>),
         // rent_id, renter, MachineId, gpu_num, duration, balance
-        ConfirmRent(RentOrderId, T::AccountId, MachineId, u32, T::BlockNumber, BalanceOf<T>),
+        ConfirmRent(RentOrderId, T::AccountId, MachineId, u32, BlockNumberFor::<T>, BalanceOf<T>),
         // rent_id, renter, MachineId, gpu_num, duration, balance
-        Rent(RentOrderId, T::AccountId, MachineId, u32, T::BlockNumber, BalanceOf<T>),
+        Rent(RentOrderId, T::AccountId, MachineId, u32, BlockNumberFor::<T>, BalanceOf<T>),
         // rent_id, renter, MachineId, gpu_num, duration, balance
-        Relet(RentOrderId, T::AccountId, MachineId, u32, T::BlockNumber, BalanceOf<T>),
+        Relet(RentOrderId, T::AccountId, MachineId, u32, BlockNumberFor::<T>, BalanceOf<T>),
 
         SetEvmAddress(H160, T::AccountId),
     }
@@ -356,7 +356,7 @@ impl<T: Config> Pallet<T> {
         renter: T::AccountId,
         machine_id: MachineId,
         rent_gpu_num: u32,
-        duration: T::BlockNumber,
+        duration: BlockNumberFor::<T>,
     ) -> DispatchResultWithPostInfo {
         let now = <frame_system::Pallet<T>>::block_number();
         let machine_info =
@@ -462,7 +462,7 @@ impl<T: Config> Pallet<T> {
     fn relet_machine_by_block(
         renter: T::AccountId,
         rent_id: RentOrderId,
-        duration: T::BlockNumber,
+        duration: BlockNumberFor::<T>,
     ) -> DispatchResultWithPostInfo {
         let mut rent_info = Self::rent_info(&rent_id).ok_or(Error::<T>::Unknown)?;
         let old_rent_end = rent_info.rent_end;
@@ -486,7 +486,7 @@ impl<T: Config> Pallet<T> {
         let wanted_rent_end = old_rent_end + duration;
 
         // 计算实际可续租时间 (块高)
-        let add_duration: T::BlockNumber = if max_rent_end >= wanted_rent_end {
+        let add_duration: BlockNumberFor::<T> = if max_rent_end >= wanted_rent_end {
             duration
         } else {
             max_rent_end.saturating_sub(old_rent_end)
@@ -598,7 +598,7 @@ impl<T: Config> Pallet<T> {
     }
 
     // 定时检查机器是否30分钟没有上线
-    fn check_machine_starting_status(block_number: T::BlockNumber) -> Result<(), ()> {
+    fn check_machine_starting_status(block_number: BlockNumberFor::<T>) -> Result<(), ()> {
         if !<ConfirmingOrder<T>>::contains_key(block_number) {
             return Ok(())
         }
@@ -678,7 +678,7 @@ impl<T: Config> Pallet<T> {
     // 这里修rentMachine模块通知onlineProfile机器已经租用完成，
     // onlineProfile判断机器是否需要变成online状态，或者记录下之前是租用状态，
     // 以便机器再次上线时进行正确的惩罚
-    fn check_if_rent_finished(block_number: T::BlockNumber) -> Result<(), ()> {
+    fn check_if_rent_finished(block_number: BlockNumberFor::<T>) -> Result<(), ()> {
         if !<RentEnding<T>>::contains_key(block_number) {
             return Ok(())
         }
@@ -789,7 +789,7 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> MachineInfoTrait for Pallet<T> {
-    type BlockNumber = T::BlockNumber;
+    type BlockNumber = BlockNumberFor::<T>;
 
     fn get_machine_calc_point(machine_id: MachineId) -> u64 {
         let machine_info_result = online_profile::Pallet::<T>::machines_info(machine_id);
@@ -827,7 +827,7 @@ impl<T: Config> MachineInfoTrait for Pallet<T> {
     fn get_rent_end_at(
         machine_id: MachineId,
         rent_id: RentOrderId,
-    ) -> Result<T::BlockNumber, &'static str> {
+    ) -> Result<BlockNumberFor::<T>, &'static str> {
         let machine_info = online_profile::Pallet::<T>::machines_info(&machine_id)
             .ok_or(Error::<T>::MachineNotFound.as_str())?;
 
@@ -859,7 +859,7 @@ impl<T: Config> MachineInfoTrait for Pallet<T> {
 
     fn get_usdt_machine_rent_fee(
         machine_id: MachineId,
-        duration: T::BlockNumber,
+        duration: BlockNumberFor::<T>,
         rent_gpu_num: u32,
     ) -> Result<u64, &'static str> {
         let machine_info = <online_profile::Pallet<T>>::machines_info(&machine_id)
@@ -882,7 +882,7 @@ impl<T: Config> MachineInfoTrait for Pallet<T> {
     }
     fn get_dlc_machine_rent_fee(
         machine_id: MachineId,
-        duration: T::BlockNumber,
+        duration: BlockNumberFor::<T>,
         rent_gpu_num: u32,
     ) -> Result<u64, &'static str> {
         let machine_info = <online_profile::Pallet<T>>::machines_info(&machine_id)
@@ -911,7 +911,7 @@ impl<T: Config> MachineInfoTrait for Pallet<T> {
 
     fn get_dlc_rent_fee_by_calc_point(
         calc_point: u64,
-        duration: T::BlockNumber,
+        duration: BlockNumberFor::<T>,
         rent_gpu_num: u32,
         total_gpu_num: u32,
     ) -> Result<u64, &'static str> {
@@ -931,7 +931,7 @@ impl<T: Config> MachineInfoTrait for Pallet<T> {
 
     fn get_dbc_machine_rent_fee(
         machine_id: MachineId,
-        duration: T::BlockNumber,
+        duration: BlockNumberFor::<T>,
         rent_gpu_num: u32,
     ) -> Result<u64, &'static str> {
         let machine_info = <online_profile::Pallet<T>>::machines_info(&machine_id)

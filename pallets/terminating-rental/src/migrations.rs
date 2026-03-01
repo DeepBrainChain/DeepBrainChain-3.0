@@ -46,13 +46,14 @@ impl<A, B, C> From<OldOCPendingSlashInfo<A, B, C>> for OCPendingSlashInfo<A, B, 
 
 // pub fn migrate<T: Config>() {
 //     <PendingOnlineSlash<T>>::translate(
-//         |_key, old: OldOCPendingSlashInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>| {
+//         |_key, old: OldOCPendingSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>| {
 //             Some(old.into())
 //         },
 //     );
 // }
 
 use frame_support::{pallet_prelude::*, storage_alias, traits::OnRuntimeUpgrade};
+use frame_system::pallet_prelude::BlockNumberFor;
 use Config;
 
 use crate::*;
@@ -61,17 +62,14 @@ use sp_std::prelude::*;
 const TARGET: &'static str = "terminating-rental-migration";
 
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+type BlockNumberOf<T> = BlockNumberFor::<T>;
 
 mod v0 {
     use dbc_support::{
         machine_type::{CommitteeUploadInfo, Latitude, Longitude, MachineStatus},
         EraIndex,
     };
-    use frame_support::{
-        dispatch::{Decode, Encode, TypeInfo},
-        RuntimeDebug,
-    };
+    use sp_runtime::RuntimeDebug;
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
     use sp_core::H256;

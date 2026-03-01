@@ -5,6 +5,7 @@ use dbc_support::{
     ItemList, ReportHash, ReportId,
 };
 use frame_support::{dispatch::DispatchResultWithPostInfo, ensure, traits::ReservableCurrency};
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::traits::{Saturating, Zero};
 use sp_std::vec::Vec;
 
@@ -26,7 +27,7 @@ impl<T: Config> Pallet<T> {
     // 判断Hash是否被提交过
     pub fn is_uniq_hash(
         report_id: ReportId,
-        report_info: &MTReportInfoDetail<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        report_info: &MTReportInfoDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
         hash: ReportHash,
     ) -> DispatchResultWithPostInfo {
         for a_committee in &report_info.hashed_committee {
@@ -60,7 +61,7 @@ impl<T: Config> Pallet<T> {
     pub fn update_unhandled_report(
         report_id: ReportId,
         is_add: bool,
-        slash_exec_time: T::BlockNumber,
+        slash_exec_time: BlockNumberFor::<T>,
     ) {
         UnhandledReportResult::<T>::mutate(slash_exec_time, |unhandled_report_result| {
             if is_add {

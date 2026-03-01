@@ -4,6 +4,7 @@ use dbc_support::{
     SEVEN_MINUTES, TEN_DAYS, TWO_DAYS,
 };
 use frame_support::{dispatch::DispatchResultWithPostInfo, ensure};
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_core::crypto::ByteArray;
 use sp_runtime::{traits::Verify, SaturatedConversion};
 use sp_std::{
@@ -42,7 +43,7 @@ impl<T: Config> Pallet<T> {
     // - Writes: PosGPUInfo
     // NOTE: pos_gpu_info only record actual machine grades(reward grade not included)
     pub fn update_region_on_online_changed(
-        machine_info: &MachineInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        machine_info: &MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
         is_online: bool,
     ) {
         let longitude = machine_info.longitude();
@@ -56,7 +57,7 @@ impl<T: Config> Pallet<T> {
     }
 
     pub fn update_region_on_exit(
-        machine_info: &MachineInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        machine_info: &MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
     ) {
         let longitude = machine_info.longitude();
         let latitude = machine_info.latitude();
@@ -76,7 +77,7 @@ impl<T: Config> Pallet<T> {
     /// GPU rented/surrender
     // - Writes: PosGPUInfo
     pub fn update_region_on_rent_changed(
-        machine_info: &MachineInfo<T::AccountId, T::BlockNumber, BalanceOf<T>>,
+        machine_info: &MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
         is_rented: bool,
     ) {
         let longitude = machine_info.longitude();
@@ -116,8 +117,8 @@ fn get_public_from_str(addr: &[u8]) -> Option<sp_core::sr25519::Public> {
 impl<T: Config> Pallet<T> {
     // 根据下线时长确定 slash 比例.
     pub fn slash_percent(
-        slash_reason: &OPSlashReason<T::BlockNumber>,
-        duration: T::BlockNumber,
+        slash_reason: &OPSlashReason<BlockNumberFor::<T>>,
+        duration: BlockNumberFor::<T>,
     ) -> u32 {
         let duration = duration.saturated_into::<u32>();
 

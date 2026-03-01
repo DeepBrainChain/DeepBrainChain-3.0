@@ -1,8 +1,7 @@
 use crate::{MachineId, RentOrderId};
-use frame_support::{
-    dispatch::{Decode, Encode, TypeInfo},
-    RuntimeDebug,
-};
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_runtime::RuntimeDebug;
 use sp_core::H160;
 use sp_std::vec::Vec;
 

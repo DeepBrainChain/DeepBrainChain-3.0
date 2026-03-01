@@ -15,6 +15,8 @@ sp-core = { workspace = true }
 sp-std = { workspace = true }
 sp-runtime = { workspace = true }
 
+log = { workspace = true }
+
 committee = { path = "../committee", default-features = false }
 dbc-support = { path = "../support", default-features = false }
 generic-func = { path = "../generic-func", default-features = false }
@@ -39,6 +41,7 @@ std = [
   "sp-core/std",
   "sp-std/std",
   "sp-runtime/std",
+  "log/std",
   "committee/std",
   "dbc-support/std",
   "generic-func/std",

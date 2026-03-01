@@ -3,7 +3,7 @@ use dbc_support::{
     report::{MCSlashResult, MTReportResultInfo, ReportResultType},
     MachineId, ReportId,
 };
-use frame_support::{traits::Get, weights::Weight, IterableStorageMap, RuntimeDebug};
+use frame_support::{traits::Get, weights::Weight, IterableStorageMap};
 use scale_info::TypeInfo;
 
 use crate::Config;
