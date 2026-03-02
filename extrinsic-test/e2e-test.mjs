@@ -185,7 +185,7 @@ try {
     api.tx.agentAttestation.registerNode(gpuUuid, 100),
     alice, '3.1 registerNode'
   );
-  await queryStorage('node registration', () => api.query.agentAttestation.nodeRegistrations(alice.address));
+  await queryStorage('node registration', () => api.query.agentAttestation.nodes(alice.address));
 
   // 3.2 Update capability (model_ids, max_concurrent, price_per_token, region)
   const modelIds = ['0x' + Buffer.from('gpt-4-turbo').toString('hex')];
@@ -237,7 +237,7 @@ try {
     api.tx.zkCompute.submitProof(zkProof, zkDims, 130, 1),
     alice, '4.1 submitProof'
   );
-  await queryStorage('zk task 0', () => api.query.zkCompute.zkTasks(0));
+  await queryStorage('zk task 0', () => api.query.zkCompute.tasks(0));
 
   // 4.2 Verify task (Bob as verifier — only takes task_id)
   await submitAndWait(
