@@ -657,9 +657,9 @@ impl pallet_staking::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type UnixTime = Timestamp;
     type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
-    type RewardRemainder = (); // TODO: route to Treasury via fungible Credit adapter
+    type RewardRemainder = frame_support::traits::tokens::imbalance::ResolveTo<TreasuryAccount, Balances>;
     type RuntimeEvent = RuntimeEvent;
-    type Slash = (); // TODO: route to Treasury via fungible Credit adapter
+    type Slash = frame_support::traits::tokens::imbalance::ResolveTo<TreasuryAccount, Balances>;
     type Reward = (); // rewards are minted from the void
     type SessionsPerEra = SessionsPerEra;
     type BondingDuration = BondingDuration;
