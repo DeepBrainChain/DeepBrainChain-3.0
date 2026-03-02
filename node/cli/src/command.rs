@@ -167,7 +167,7 @@ pub fn run() -> sc_cli::Result<()> {
                         let db = backend.expose_db();
                         let storage = backend.expose_storage();
 
-                        cmd.run(config, client, db, storage)
+                        cmd.run(config, client, db, storage, None)
                     },
                     BenchmarkCmd::Overhead(_) => Err("Unsupported benchmarking command".into()),
                     BenchmarkCmd::Extrinsic(_) => Err("Unsupported benchmarking command".into()),
