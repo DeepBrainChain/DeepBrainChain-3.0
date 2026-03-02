@@ -7,7 +7,7 @@ use dbc_support::{
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 // TODO: 1. 迁移这个存储
 // TODO: 2. 迁移 terminating_rental 存储

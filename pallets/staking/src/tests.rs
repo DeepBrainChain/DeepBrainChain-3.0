@@ -36,10 +36,10 @@ use sp_runtime::{
     Perbill, Percent, Rounding, TokenError,
 };
 use sp_staking::{
-    offence::{DisableStrategy, OffenceDetails, OnOffenceHandler},
+    offence::{OffenceDetails, OnOffenceHandler},
     SessionIndex,
 };
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 use substrate_test_utils::assert_eq_uvec;
 
 #[test]
@@ -2429,7 +2429,6 @@ fn slash_in_old_span_does_not_deselect() {
             }],
             &[Perbill::from_percent(0)],
             1,
-            DisableStrategy::WhenSlashed,
         );
 
         // the validator doesn't get chilled again
@@ -2446,7 +2445,6 @@ fn slash_in_old_span_does_not_deselect() {
             // NOTE: A 100% slash here would clean up the account, causing de-registration.
             &[Perbill::from_percent(95)],
             1,
-            DisableStrategy::WhenSlashed,
         );
 
         // the validator doesn't get chilled again
@@ -2743,7 +2741,6 @@ fn slashing_nominators_by_span_max() {
             }],
             &[Perbill::from_percent(10)],
             2,
-            DisableStrategy::WhenSlashed,
         );
 
         assert_eq!(Balances::free_balance(11), 900);
@@ -2770,7 +2767,6 @@ fn slashing_nominators_by_span_max() {
             }],
             &[Perbill::from_percent(30)],
             3,
-            DisableStrategy::WhenSlashed,
         );
 
         // 11 was not further slashed, but 21 and 101 were.
@@ -2792,7 +2788,6 @@ fn slashing_nominators_by_span_max() {
             }],
             &[Perbill::from_percent(20)],
             2,
-            DisableStrategy::WhenSlashed,
         );
 
         // 11 was further slashed, but 21 and 101 were not.
@@ -2939,7 +2934,6 @@ fn retroactive_deferred_slashes_two_eras_before() {
             &[OffenceDetails { offender: (11, exposure_11_at_era1), reporters: vec![] }],
             &[Perbill::from_percent(10)],
             1, // should be deferred for two full eras, and applied at the beginning of era 4.
-            DisableStrategy::Never,
         );
 
         mock::start_active_era(4);
@@ -2977,7 +2971,6 @@ fn retroactive_deferred_slashes_one_before() {
             &[OffenceDetails { offender: (11, exposure_11_at_era1), reporters: vec![] }],
             &[Perbill::from_percent(10)],
             2, // should be deferred for two full eras, and applied at the beginning of era 5.
-            DisableStrategy::Never,
         );
 
         mock::start_active_era(4);
@@ -3107,7 +3100,6 @@ fn remove_deferred() {
             &[OffenceDetails { offender: (11, exposure.clone()), reporters: vec![] }],
             &[Perbill::from_percent(15)],
             1,
-            DisableStrategy::WhenSlashed,
         );
 
         // fails if empty
@@ -3359,7 +3351,6 @@ fn slashing_independent_of_disabling_validator() {
             &[OffenceDetails { offender: (11, exposure_11.clone()), reporters: vec![] }],
             &[Perbill::zero()],
             now,
-            DisableStrategy::Always,
         );
 
         // nomination remains untouched.
@@ -3370,7 +3361,6 @@ fn slashing_independent_of_disabling_validator() {
             &[OffenceDetails { offender: (21, exposure_21.clone()), reporters: vec![] }],
             &[Perbill::from_percent(25)],
             now,
-            DisableStrategy::Never,
         );
 
         // nomination remains untouched.
@@ -4113,7 +4103,7 @@ fn offences_weight_calculated_correctly() {
 		let zero_offence_weight =
 			<Test as frame_system::Config>::DbWeight::get().reads_writes(4, 1);
 		assert_eq!(
-			Staking::on_offence(&[], &[Perbill::from_percent(50)], 0, DisableStrategy::WhenSlashed),
+			Staking::on_offence(&[], &[Perbill::from_percent(50)], 0),
 			zero_offence_weight
 		);
 
@@ -4138,7 +4128,6 @@ fn offences_weight_calculated_correctly() {
 				&offenders,
 				&[Perbill::from_percent(50)],
 				0,
-				DisableStrategy::WhenSlashed
 			),
 			n_offence_unapplied_weight
 		);
@@ -4168,7 +4157,6 @@ fn offences_weight_calculated_correctly() {
 				&one_offender,
 				&[Perbill::from_percent(50)],
 				0,
-				DisableStrategy::WhenSlashed{}
 			),
 			one_offence_unapplied_weight
 		);

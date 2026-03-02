@@ -7,7 +7,7 @@ use dbc_support::{
     ReportId,
 };
 use frame_support::IterableStorageMap;
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn exec_slash() -> Result<(), ()> {

@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use ethereum_types::{H160, H256, U256};
 use parity_scale_codec::{Decode, Encode};
-use sp_std::vec::Vec;
+use std::vec::Vec;
 
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, Serialize)]
 #[serde(rename_all = "camelCase")]

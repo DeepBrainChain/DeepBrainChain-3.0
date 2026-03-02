@@ -32,18 +32,13 @@ use sp_runtime::{
     BuildStorage, MultiSignature,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
-        System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
-        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-        Nfts: pallet_nfts::{Pallet, Call, Storage, Event<T>},
+    pub enum Test {
+        System: frame_system,
+        Balances: pallet_balances,
+        Nfts: pallet_nfts,
     }
 );
 
@@ -75,6 +70,13 @@ impl frame_system::Config for Test {
     type SS58Prefix = ();
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
+    type ExtensionsWeightInfo = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 impl pallet_balances::Config for Test {
@@ -87,10 +89,11 @@ impl pallet_balances::Config for Test {
     type MaxLocks = ();
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
-    type FreezeIdentifier = ();
-    type MaxFreezes = ();
     type RuntimeHoldReason = ();
-    type MaxHolds = ();
+    type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
+    type FreezeIdentifier = ();
+    type MaxFreezes = ConstU32<0>;
 }
 
 parameter_types! {

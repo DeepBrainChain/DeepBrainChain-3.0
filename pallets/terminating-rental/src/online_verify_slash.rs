@@ -8,7 +8,7 @@ use dbc_support::{
 };
 use frame_support::{dispatch::DispatchResultWithPostInfo, ensure};
 use sp_runtime::traits::{CheckedSub, Zero};
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn get_stake_per_order() -> Result<BalanceOf<T>, Error<T>> {

@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
+extern crate alloc;
 pub use pallet::*;
 pub mod weights;
 
@@ -29,7 +29,7 @@ pub mod pallet {
     use frame_support::traits::StorageVersion;
     use super::*;
     use crate::weights::WeightInfo;
-    use codec::{Decode, Encode, MaxEncodedLen};
+    use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
     use frame_support::{
         dispatch::DispatchResult,
         pallet_prelude::*,
@@ -38,7 +38,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use sp_runtime::traits::{Saturating, UniqueSaturatedInto, Zero};
     use sp_runtime::{ArithmeticError, RuntimeDebug};
-    use sp_std::vec::Vec;
+    use alloc::vec::Vec;
 
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -50,7 +50,7 @@ pub mod pallet {
         Deregistered,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum TaskPriority {
         Low,
         Normal,
@@ -58,7 +58,7 @@ pub mod pallet {
         Critical,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum TaskStatus {
         Pending,
         Assigned,
@@ -69,7 +69,7 @@ pub mod pallet {
         Failed,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct TaskDimensions {
         pub m: u32,
         pub n: u32,
@@ -389,7 +389,7 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub _phantom: sp_std::marker::PhantomData<T>,
+        pub _phantom: core::marker::PhantomData<T>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {

@@ -1,10 +1,7 @@
 //! Runtime API allowing to debug/trace Ethereum
 
-extern crate alloc;
-
 use ethereum_types::{H160, H256};
 use parity_scale_codec::{Decode, Encode};
-use sp_std::vec::Vec;
 
 pub mod block;
 pub mod serialization;
@@ -61,7 +58,7 @@ pub enum ContextType {
 
 impl ContextType {
     pub fn from(opcode: Vec<u8>) -> Option<Self> {
-        let opcode = match alloc::str::from_utf8(&opcode[..]) {
+        let opcode = match std::str::from_utf8(&opcode[..]) {
             Ok(op) => op.to_uppercase(),
             _ => return None,
         };

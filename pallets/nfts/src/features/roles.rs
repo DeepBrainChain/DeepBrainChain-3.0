@@ -17,7 +17,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
-use sp_std::collections::btree_map::BTreeMap;
+use alloc::collections::BTreeMap;
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
     pub(crate) fn do_set_team(

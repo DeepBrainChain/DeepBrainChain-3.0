@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 #![cfg_attr(not(feature = "std"), no_std)]
-
+extern crate alloc;
 use dbc_support::{traits::OPRPCQuery, verify_online::StashMachine};
 use frame_support::{
     pallet_prelude::*,
@@ -8,9 +8,9 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::*;
 pub use pallet::*;
-use pallet_identity::Data;
-use parity_scale_codec::EncodeLike;
-use sp_std::vec::Vec;
+
+use alloc::vec::Vec;
+use parity_scale_codec::Encode;
 
 pub mod rpc_types;
 pub use rpc_types::*;
@@ -43,14 +43,14 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-    pub fn get_staker_identity(account: impl EncodeLike<T::AccountId>) -> Vec<u8> {
-        let account_info = <pallet_identity::Pallet<T>>::identity(account);
+    pub fn get_staker_identity(account: &T::AccountId) -> Vec<u8> {
+        let registration = pallet_identity::IdentityOf::<T>::get(account);
 
-        match account_info {
-            None => return Vec::new(),
-            Some(account_info) => match account_info.info.display {
-                Data::Raw(out) => return out.into(),
-                _ => return Vec::new(),
+        match registration {
+            None => Vec::new(),
+            Some(registration) => {
+                // Encode the identity info as bytes since IdentityInformation is generic in stable2512
+                registration.info.encode()
             },
         }
     }
@@ -86,7 +86,7 @@ impl<T: Config> Pallet<T> {
 
         for (index, a_stash) in all_stash.into_iter().enumerate() {
             let staker_info = T::OPRpcQuery::get_stash_machine(a_stash.clone());
-            let identity = Self::get_staker_identity(a_stash.clone());
+            let identity = Self::get_staker_identity(&a_stash);
 
             stash_list_info.push(StakerListInfo {
                 index: index as u64 + 1,

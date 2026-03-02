@@ -11,7 +11,7 @@ use dbc_support::{
 use frame_support::{dispatch::DispatchResultWithPostInfo, ensure, traits::ReservableCurrency};
 use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::traits::{Saturating, Zero};
-use sp_std::{vec, vec::Vec};
+use alloc::{boxed::Box, vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     // Warp for SlashAndReward::slash_and_reward

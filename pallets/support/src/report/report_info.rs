@@ -3,16 +3,16 @@ use crate::{
     RentOrderId, ReportHash, FIVE_MINUTES, FOUR_HOURS, ONE_MINUTE, THREE_HOURS,
 };
 use frame_support::ensure;
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{Saturating, Zero},
     Perbill, RuntimeDebug,
 };
-use sp_std::{cmp::PartialEq, ops::Sub, vec, vec::Vec};
+use alloc::{vec, vec::Vec}; use core::{cmp::PartialEq, ops::Sub};
 
 // 报告的详细信息
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub struct MTReportInfoDetail<AccountId, BlockNumber, Balance> {
     ///报告人
     pub reporter: AccountId,
@@ -363,7 +363,7 @@ where
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub enum MachineFaultType {
     /// 机器被租用，但无法访问的故障 (机器离线)
     RentedInaccessible(MachineId, RentOrderId),
@@ -404,7 +404,7 @@ impl MachineFaultType {
     // }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub enum ReportStatus {
     /// 没有委员会预订过的报告, 允许报告人取消
     Reported,
@@ -425,7 +425,7 @@ impl Default for ReportStatus {
 }
 
 /// Reporter stake params
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
 pub struct ReporterStakeParamsInfo<Balance> {
     /// First time when report
     pub stake_baseline: Balance,

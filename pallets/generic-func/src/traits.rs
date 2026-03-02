@@ -5,7 +5,7 @@ use sp_runtime::{
     traits::{CheckedSub, Zero},
     Perbill,
 };
-use sp_std::prelude::Vec;
+use alloc::vec::Vec;
 
 impl<T: Config> GNOps for Pallet<T> {
     type AccountId = T::AccountId;

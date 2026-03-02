@@ -1,4 +1,4 @@
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 pub const ONE_MINUTE: u32 = 10;
 pub const FIVE_MINUTES: u32 = 5 * ONE_MINUTE;

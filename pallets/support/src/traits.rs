@@ -1,9 +1,9 @@
 use crate::{MachineId, RentOrderId};
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_core::H160;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 pub trait PhaseReward {
     type Balance;
@@ -196,7 +196,7 @@ pub trait MachineInfoTrait {
         rent_gpu_num: u32,
     ) -> Result<u64, &'static str>;
 }
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub enum PhaseLevel {
     PhaseOne,
     PhaseTwo,

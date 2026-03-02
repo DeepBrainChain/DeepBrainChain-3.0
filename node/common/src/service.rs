@@ -23,7 +23,7 @@ pub fn open_frontier_backend<C, BE>(
     client: Arc<C>,
     config: &Configuration,
     rpc_config: &RpcConfig,
-) -> Result<fc_db::Backend<Block>, String>
+) -> Result<fc_db::Backend<Block, C>, String>
 where
     C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + AuxStore,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError>,
@@ -33,32 +33,36 @@ where
     BE::State: StateBackend<BlakeTwo256>,
 {
     let frontier_backend = match rpc_config.frontier_backend_type {
-        BackendTypeConfig::KeyValue => fc_db::Backend::KeyValue(fc_db::kv::Backend::<Block>::new(
-            client,
-            &fc_db::kv::DatabaseSettings {
-                source: match config.database {
-                    DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
-                        path: frontier_database_dir(config, "db"),
-                        cache_size: 0,
-                    },
-                    DatabaseSource::ParityDb { .. } => {
-                        DatabaseSource::ParityDb { path: frontier_database_dir(config, "paritydb") }
-                    },
-                    DatabaseSource::Auto { .. } => DatabaseSource::Auto {
-                        rocksdb_path: frontier_database_dir(config, "db"),
-                        paritydb_path: frontier_database_dir(config, "paritydb"),
-                        cache_size: 0,
-                    },
-                    _ => {
-                        return Err(
-                            "Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string()
-                        )
+        BackendTypeConfig::KeyValue => fc_db::Backend::KeyValue(Arc::new(
+            fc_db::kv::Backend::<Block, C>::new(
+                client,
+                &fc_db::kv::DatabaseSettings {
+                    source: match config.database {
+                        DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
+                            path: frontier_database_dir(config, "db"),
+                            cache_size: 0,
+                        },
+                        DatabaseSource::ParityDb { .. } => {
+                            DatabaseSource::ParityDb {
+                                path: frontier_database_dir(config, "paritydb"),
+                            }
+                        },
+                        DatabaseSource::Auto { .. } => DatabaseSource::Auto {
+                            rocksdb_path: frontier_database_dir(config, "db"),
+                            paritydb_path: frontier_database_dir(config, "paritydb"),
+                            cache_size: 0,
+                        },
+                        _ => {
+                            return Err(
+                                "Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string()
+                            )
+                        },
                     },
                 },
-            },
-        )?),
+            )?
+        )),
         BackendTypeConfig::Sql { pool_size, num_ops_timeout, thread_count, cache_size } => {
-            let overrides = crate::rpc::overrides_handle(client.clone());
+            let storage_override = crate::rpc::storage_override::<Block, C, BE>(client.clone());
             let sqlite_db_path = frontier_database_dir(config, "sql");
             std::fs::create_dir_all(&sqlite_db_path).expect("failed creating sql db directory");
             let backend = futures::executor::block_on(fc_db::sql::Backend::new(
@@ -74,10 +78,10 @@ where
                 }),
                 pool_size,
                 std::num::NonZeroU32::new(num_ops_timeout),
-                overrides.clone(),
+                storage_override,
             ))
             .unwrap_or_else(|err| panic!("failed creating sql backend: {:?}", err));
-            fc_db::Backend::Sql(backend)
+            fc_db::Backend::Sql(Arc::new(backend))
         },
     };
 

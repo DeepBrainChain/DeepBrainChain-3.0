@@ -23,12 +23,11 @@ pub use sp_keyring::sr25519::Keyring as Sr25519Keyring;
 use sp_runtime::{
     generic::Header,
     testing::TestXt,
-    traits::{BlakeTwo256, IdentityLookup, Verify},
+    traits::{AccountIdConversion, BlakeTwo256, IdentityLookup, Verify},
     BuildStorage, Perbill, Permill,
 };
 use std::convert::TryInto;
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRuntime>;
 type Balance = u128;
 type Block = frame_system::mocking::MockBlockU32<TestRuntime>;
 
@@ -70,6 +69,13 @@ impl frame_system::Config for TestRuntime {
     type SS58Prefix = SS58Prefix;
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
+    type ExtensionsWeightInfo = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 parameter_types! {
@@ -89,9 +95,10 @@ impl pallet_balances::Config for TestRuntime {
     type AccountStore = System;
     type WeightInfo = ();
     type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
     type FreezeIdentifier = ();
-    type MaxHolds = ();
-    type MaxFreezes = ();
+    type MaxFreezes = ConstU32<0>;
 }
 
 impl dbc_price_ocw::Config for TestRuntime {
@@ -103,32 +110,42 @@ impl dbc_price_ocw::Config for TestRuntime {
 impl pallet_insecure_randomness_collective_flip::Config for TestRuntime {}
 
 type TestExtrinsic = TestXt<RuntimeCall, ()>;
+
+impl<LocalCall> frame_system::offchain::CreateTransactionBase<LocalCall> for TestRuntime
+where
+    RuntimeCall: From<LocalCall>,
+{
+    type RuntimeCall = RuntimeCall;
+    type Extrinsic = TestExtrinsic;
+}
+
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for TestRuntime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+    fn create_signed_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
         call: RuntimeCall,
         _public: <Signature as Verify>::Signer,
         _account: <TestRuntime as frame_system::Config>::AccountId,
-        index: <TestRuntime as frame_system::Config>::Nonce,
-    ) -> Option<(RuntimeCall, <TestExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload)>
+        nonce: <TestRuntime as frame_system::Config>::Nonce,
+    ) -> Option<Self::Extrinsic>
     {
-        Some((call, (index, ())))
+        Some(TestXt::new_signed(call, nonce.into(), (), ()))
+    }
+}
+
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for TestRuntime
+where
+    RuntimeCall: From<LocalCall>,
+{
+    fn create_bare(call: Self::RuntimeCall) -> Self::Extrinsic {
+        TestXt::new_bare(call)
     }
 }
 
 impl frame_system::offchain::SigningTypes for TestRuntime {
     type Public = <Signature as Verify>::Signer;
     type Signature = Signature;
-}
-
-impl<C> frame_system::offchain::SendTransactionTypes<C> for TestRuntime
-where
-    RuntimeCall: From<C>,
-{
-    type OverarchingCall = RuntimeCall;
-    type Extrinsic = TestExtrinsic;
 }
 
 impl generic_func::Config for TestRuntime {
@@ -140,33 +157,35 @@ impl generic_func::Config for TestRuntime {
 }
 
 parameter_types! {
-    pub const ProposalBond: Permill = Permill::from_percent(5);
-    pub const ProposalBondMinimum: u64 = 1;
     pub const SpendPeriod: BlockNumber = 2;
     pub const Burn: Permill = Permill::from_percent(50);
-    pub const DataDepositPerByte: u64 = 1;
     pub const TreasuryModuleId: PalletId = PalletId(*b"py/trsry");
     pub const MaxApprovals: u32 = 100;
     pub const MaxBalance: Balance = Balance::max_value();
+    pub TreasuryAccount: sr25519::Public = PalletId(*b"py/trsry").into_account_truncating();
 }
 
 impl pallet_treasury::Config for TestRuntime {
     type PalletId = TreasuryModuleId;
     type Currency = Balances;
-    type ApproveOrigin = EnsureRoot<Self::AccountId>;
     type RejectOrigin = EnsureRoot<Self::AccountId>;
     type RuntimeEvent = RuntimeEvent;
-    type OnSlash = ();
-    type ProposalBond = ProposalBond;
-    type ProposalBondMinimum = ProposalBondMinimum;
     type SpendPeriod = SpendPeriod;
     type Burn = Burn;
-    type BurnDestination = (); // Just gets burned.
+    type BurnDestination = ();
     type WeightInfo = ();
     type SpendFunds = ();
-    type ProposalBondMaximum = ();
     type MaxApprovals = MaxApprovals;
     type SpendOrigin = EnsureWithSuccess<EnsureRoot<Self::AccountId>, Self::AccountId, MaxBalance>;
+    type AssetKind = ();
+    type Beneficiary = Self::AccountId;
+    type BeneficiaryLookup = IdentityLookup<Self::AccountId>;
+    type Paymaster = frame_support::traits::tokens::pay::PayFromAccount<Balances, TreasuryAccount>;
+    type BalanceConverter = frame_support::traits::tokens::UnityAssetBalanceConversion;
+    type PayoutPeriod = SpendPeriod;
+    type BlockNumberProvider = System;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
 }
 
 parameter_types! {
@@ -188,6 +207,9 @@ impl pallet_collective::Config<TechnicalCollective> for TestRuntime {
     type WeightInfo = pallet_collective::weights::SubstrateWeight<TestRuntime>;
     type SetMembersOrigin = EnsureRoot<Self::AccountId>;
     type MaxProposalWeight = MaxProposalWeight;
+    type DisapproveOrigin = EnsureRoot<Self::AccountId>;
+    type KillOrigin = EnsureRoot<Self::AccountId>;
+    type Consideration = ();
 }
 
 parameter_types! {
@@ -252,11 +274,7 @@ impl rent_machine::Config for TestRuntime {
 }
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum TestRuntime where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
+    pub enum TestRuntime {
         System: frame_system,
         OnlineCommittee: online_committee,
         OnlineProfile: online_profile,
@@ -314,6 +332,7 @@ pub fn new_test_with_init_machine_online() -> sp_io::TestExternalities {
             (sr25519::Public::from(Sr25519Keyring::One), INIT_BALANCE),
             (sr25519::Public::from(Sr25519Keyring::Two), INIT_BALANCE),
         ],
+        dev_accounts: None,
     }
     .assimilate_storage(&mut storage)
     .unwrap();

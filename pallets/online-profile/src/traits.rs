@@ -16,7 +16,7 @@ use sp_runtime::{
     traits::{CheckedSub, Saturating, Zero},
     Perbill, SaturatedConversion,
 };
-use sp_std::{prelude::Box, vec, vec::Vec};
+use alloc::{boxed::Box, vec, vec::Vec};
 
 /// 审查委员会可以执行的操作
 impl<T: Config> OCOps for Pallet<T> {

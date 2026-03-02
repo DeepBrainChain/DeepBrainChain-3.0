@@ -18,7 +18,8 @@ use tracing::{instrument, Instrument};
 
 use sc_client_api::backend::{Backend, StateBackend, StorageProvider};
 use sc_utils::mpsc::TracingUnboundedSender;
-use sp_api::{ApiExt, Core, HeaderT, ProvideRuntimeApi};
+use sp_api::{ApiExt, Core, ProvideRuntimeApi};
+use sp_runtime::traits::Header as HeaderT;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{
     Backend as BlockchainBackend, Error as BlockChainError, HeaderBackend, HeaderMetadata,
@@ -29,7 +30,7 @@ use substrate_prometheus_endpoint::{
 };
 
 use ethereum_types::H256;
-use fc_rpc::OverrideHandle;
+use fc_storage::StorageOverride;
 use fp_rpc::EthereumRuntimeRPCApi;
 
 use dbc_client_evm_tracing::{
@@ -387,7 +388,7 @@ where
         backend: Arc<BE>,
         cache_duration: Duration,
         blocking_permits: Arc<Semaphore>,
-        overrides: Arc<OverrideHandle<B>>,
+        overrides: Arc<dyn StorageOverride<B>>,
         prometheus: Option<PrometheusRegistry>,
     ) -> (impl Future<Output = ()>, CacheRequester) {
         // Communication with the outside world :
@@ -480,7 +481,7 @@ where
         blocking_tx: &mpsc::Sender<BlockingTaskMessage>,
         sender: oneshot::Sender<CacheBatchId>,
         blocks: Vec<H256>,
-        overrides: Arc<OverrideHandle<B>>,
+        overrides: Arc<dyn StorageOverride<B>>,
     ) {
         tracing::trace!("Starting batch {}", self.next_batch_id);
         self.batches.insert(self.next_batch_id, blocks.clone());
@@ -722,7 +723,7 @@ where
         client: Arc<C>,
         backend: Arc<BE>,
         substrate_hash: H256,
-        overrides: Arc<OverrideHandle<B>>,
+        overrides: Arc<dyn StorageOverride<B>>,
     ) -> TxsTraceRes {
         // Get Subtrate block data.
         let api = client.runtime_api();
@@ -736,24 +737,18 @@ where
         let height = *block_header.number();
         let substrate_parent_hash = *block_header.parent_hash();
 
-        let schema =
-            fc_storage::onchain_storage_schema::<B, C, BE>(client.as_ref(), substrate_hash);
-
         // Get Ethereum block data.
-        let (eth_block, eth_transactions) = match overrides.schemas.get(&schema) {
-            Some(schema) => match (
-                schema.current_block(substrate_hash),
-                schema.current_transaction_statuses(substrate_hash),
-            ) {
-                (Some(a), Some(b)) => (a, b),
-                _ => {
-                    return Err(format!(
-                        "Failed to get Ethereum block data for Substrate block {}",
-                        substrate_hash
-                    ))
-                },
+        let (eth_block, eth_transactions) = match (
+            overrides.current_block(substrate_hash),
+            overrides.current_transaction_statuses(substrate_hash),
+        ) {
+            (Some(a), Some(b)) => (a, b),
+            _ => {
+                return Err(format!(
+                    "Failed to get Ethereum block data for Substrate block {}",
+                    substrate_hash
+                ))
             },
-            _ => return Err(format!("No storage override at {:?}", substrate_hash)),
         };
 
         let eth_block_hash = eth_block.header.hash();

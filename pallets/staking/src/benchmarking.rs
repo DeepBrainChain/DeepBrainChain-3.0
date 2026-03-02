@@ -32,7 +32,7 @@ use sp_runtime::{
     Perbill, Percent,
 };
 use sp_staking::{currency_to_vote::CurrencyToVote, SessionIndex};
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 
 pub use frame_benchmarking::v1::{
     account, benchmarks, impl_benchmark_test_suite, whitelist_account, whitelisted_caller,
@@ -168,7 +168,7 @@ impl<T: Config> ListScenario<T> {
 
         // burn the entire issuance.
         let i = T::Currency::burn(T::Currency::total_issuance());
-        sp_std::mem::forget(i);
+        core::mem::forget(i);
 
         // create accounts with the origin weight
 

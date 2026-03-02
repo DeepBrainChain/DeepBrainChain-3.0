@@ -1,7 +1,7 @@
 mod content;
 mod inspect;
 
-use ethereum::TransactionV2 as EthereumTransaction;
+use ethereum::TransactionV3 as EthereumTransaction;
 use ethereum_types::{H160, H256, U256};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -10,8 +10,8 @@ pub use self::{content::Transaction, inspect::Summary};
 
 pub type TransactionMap<T> = HashMap<H160, HashMap<U256, T>>;
 
-#[derive(Debug, Serialize)]
-pub struct TxPoolResult<T: Serialize> {
+#[derive(Clone, Debug, Serialize)]
+pub struct TxPoolResult<T: Serialize + Clone> {
     pub pending: T,
     pub queued: T,
 }

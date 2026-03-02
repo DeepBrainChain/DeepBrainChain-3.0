@@ -5,7 +5,7 @@ use fp_evm::{
 use sp_core::{Get, U256};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
-use crate::precompiles::LOG_TARGET;
+use crate::precompiles::{LOG_TARGET, to_ethabi_u256, to_ethabi_h160, from_ethabi_h160};
 use alloc::format;
 use core::marker::PhantomData;
 use frame_support::{ensure, pallet_prelude::Weight, traits::Currency};
@@ -32,6 +32,7 @@ impl<T> Precompile for AgentTask<T>
 where
     T: pallet_evm::Config + pallet_task_mode::Config + pallet_agent_attestation::Config,
     BalanceOf<T>: TryFrom<U256> + Into<U256>,
+    pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     fn execute(handle: &mut impl PrecompileHandle) -> PrecompileResult {
         let input = handle.input();
@@ -63,6 +64,7 @@ impl<T> AgentTask<T>
 where
     T: pallet_evm::Config + pallet_task_mode::Config + pallet_agent_attestation::Config,
     BalanceOf<T>: TryFrom<U256> + Into<U256>,
+    pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     /// createTaskOrder(uint64 task_id, address miner, uint64 input_tokens, uint64 output_tokens)
     /// Returns: uint64 order_id
@@ -94,7 +96,7 @@ where
                 exit_status: ExitRevert::Reverted,
                 output: "decode miner address failed".into(),
             })?;
-        let miner_account: T::AccountId = T::AddressMapping::into_account_id(miner_address);
+        let miner_account: T::AccountId = T::AddressMapping::into_account_id(from_ethabi_h160(miner_address)).into();
 
         let input_tokens_uint =
             param[2].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
@@ -112,7 +114,7 @@ where
 
         // Get caller account
         let caller_evm = handle.context().caller;
-        let caller_account: T::AccountId = T::AddressMapping::into_account_id(caller_evm);
+        let caller_account: T::AccountId = T::AddressMapping::into_account_id(caller_evm).into();
 
         log::debug!(
             target: LOG_TARGET,
@@ -150,7 +152,7 @@ where
 
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
-            output: ethabi::encode(&[ethabi::Token::Uint(U256::from(order_id))]),
+            output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(U256::from(order_id)))]),
         })
     }
 
@@ -214,9 +216,9 @@ where
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
             output: ethabi::encode(&[
-                ethabi::Token::Uint(U256::from(status)),
-                ethabi::Token::Address(miner_h160),
-                ethabi::Token::Uint(cost),
+                ethabi::Token::Uint(to_ethabi_u256(U256::from(status))),
+                ethabi::Token::Address(to_ethabi_h160(miner_h160)),
+                ethabi::Token::Uint(to_ethabi_u256(cost)),
             ]),
         })
     }
@@ -273,7 +275,7 @@ where
 
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
-            output: ethabi::encode(&[ethabi::Token::Uint(price)]),
+            output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(price))]),
         })
     }
 
@@ -307,7 +309,7 @@ where
 
         // Get caller account
         let caller_evm = handle.context().caller;
-        let caller_account: T::AccountId = T::AddressMapping::into_account_id(caller_evm);
+        let caller_account: T::AccountId = T::AddressMapping::into_account_id(caller_evm).into();
 
         log::debug!(
             target: LOG_TARGET,

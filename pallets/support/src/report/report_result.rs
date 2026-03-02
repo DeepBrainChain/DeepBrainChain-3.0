@@ -2,21 +2,17 @@ use crate::{
     report::{MTReportInfoDetail, ReportConfirmStatus},
     ItemList, MachineId, ReportId, TWO_DAYS,
 };
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{Saturating, Zero},
     RuntimeDebug,
 };
-use sp_std::{
-    cmp::PartialEq,
-    ops::{Add, Sub},
-    vec,
-    vec::Vec,
-};
+use alloc::{vec, vec::Vec};
+use core::{cmp::PartialEq, ops::{Add, Sub}};
 
 /// 报告的处理结果
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub struct MTReportResultInfo<AccountId, BlockNumber, Balance> {
     pub report_id: ReportId,
     pub reporter: AccountId,
@@ -36,7 +32,7 @@ pub struct MTReportResultInfo<AccountId, BlockNumber, Balance> {
     pub slash_result: MCSlashResult,
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub enum MCSlashResult {
     Pending,
     Canceled,
@@ -49,7 +45,7 @@ impl Default for MCSlashResult {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub enum ReportResultType {
     ReportSucceed,
     ReportRefused,

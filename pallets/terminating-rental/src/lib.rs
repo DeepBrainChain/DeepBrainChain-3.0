@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -47,7 +49,7 @@ use sp_runtime::{
     traits::{CheckedAdd, CheckedMul, CheckedSub, SaturatedConversion, Saturating, Zero},
     Perbill,
 };
-use sp_std::{prelude::*, str, vec::Vec};
+use alloc::{vec, vec::Vec}; use core::str;
 
 /// 36 hours divide into 9 intervals for verification
 pub const DISTRIBUTION: u32 = 9;
@@ -733,7 +735,7 @@ pub mod pallet {
                 renter,
                 machine_id,
                 rent_fee,
-                duration.into(),
+                duration,
                 gpu_num,
             ));
             Ok(().into())

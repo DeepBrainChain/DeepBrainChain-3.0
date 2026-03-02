@@ -1,13 +1,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use sp_std::vec;
+use alloc::vec;
 use crate::Pallet as TaskMode;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use codec::Encode;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 fn setup_task_definition<T: Config>(admin: T::AccountId) -> u64 {
     let task_id = NextTaskId::<T>::get();

@@ -7,7 +7,7 @@
 //! Proxies EVM messages to the host functions.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-
+extern crate alloc;
 pub mod tracer {
     use dbc_primitives_rpc_evm_tracing_events::{
         EvmEvent, GasometerEvent, RuntimeEvent, StepEventFilter,
@@ -17,7 +17,7 @@ pub mod tracer {
     use evm::tracing::{using as evm_using, EventListener as EvmListener};
     use evm_gasometer::tracing::{using as gasometer_using, EventListener as GasometerListener};
     use evm_runtime::tracing::{using as runtime_using, EventListener as RuntimeListener};
-    use sp_std::{cell::RefCell, rc::Rc};
+    use core::cell::RefCell; use alloc::rc::Rc;
 
     struct ListenerProxy<T>(pub Rc<RefCell<T>>);
     impl<T: GasometerListener> GasometerListener for ListenerProxy<T> {
@@ -44,7 +44,8 @@ pub mod tracer {
 
     impl EvmTracer {
         pub fn new() -> Self {
-            Self { step_event_filter: dbc_primitives_ext::tracing_ext::step_event_filter() }
+            let filter_bits = dbc_primitives_ext::tracing_ext::step_event_filter();
+            Self { step_event_filter: StepEventFilter::from_u32(filter_bits) }
         }
 
         /// Setup event listeners and execute provided closure.

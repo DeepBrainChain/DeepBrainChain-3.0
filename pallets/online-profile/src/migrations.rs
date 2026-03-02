@@ -22,7 +22,7 @@ use sp_runtime::{
     traits::{Saturating, Zero},
     Perbill, SaturatedConversion,
 };
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 // machine_info:
 //    .machine_status: creating -> online (creating状态被弃用)

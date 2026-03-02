@@ -30,7 +30,7 @@ use sp_runtime::traits::Dispatchable;
 use pallet_balances::Error as BalancesError;
 use sp_core::{bounded::BoundedVec, Pair};
 use sp_runtime::{traits::IdentifyAccount, MultiSignature, MultiSigner};
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 
 type AccountIdOf<Test> = <Test as frame_system::Config>::AccountId;
 

@@ -6,7 +6,7 @@ use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::traits::Saturating;
-use sp_std::vec;
+use alloc::vec;
 
 benchmarks! {
     register_node {

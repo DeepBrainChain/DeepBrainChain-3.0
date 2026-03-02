@@ -36,7 +36,7 @@ use sp_runtime::{
     traits::{IdentityLookup, Zero},
     BuildStorage,
 };
-use sp_staking::offence::{DisableStrategy, OffenceDetails, OnOffenceHandler};
+use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
 
 pub const INIT_TIMESTAMP: u64 = 30_000;
 pub const BLOCK_TIME: u64 = 1000;
@@ -83,15 +83,10 @@ pub fn is_disabled(controller: AccountId) -> bool {
     Session::disabled_validators().contains(&validator_index)
 }
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
+    pub enum Test {
         System: frame_system,
         Authorship: pallet_authorship,
         Timestamp: pallet_timestamp,
@@ -146,6 +141,13 @@ impl frame_system::Config for Test {
     type SS58Prefix = ();
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
+    type ExtensionsWeightInfo = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 impl pallet_balances::Config for Test {
     type MaxLocks = frame_support::traits::ConstU32<1024>;
@@ -157,10 +159,11 @@ impl pallet_balances::Config for Test {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
-    type FreezeIdentifier = ();
-    type MaxFreezes = ();
     type RuntimeHoldReason = ();
-    type MaxHolds = ();
+    type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
+    type FreezeIdentifier = ();
+    type MaxFreezes = ConstU32<0>;
 }
 
 sp_runtime::impl_opaque_keys! {
@@ -260,11 +263,13 @@ parameter_types! {
 
 pub struct OnChainSeqPhragmen;
 impl onchain::Config for OnChainSeqPhragmen {
+    type Sort = frame_support::traits::ConstBool<false>;
     type System = Test;
     type Solver = SequentialPhragmen<AccountId, Perbill>;
     type DataProvider = Staking;
     type WeightInfo = ();
-    type MaxWinners = MaxWinners;
+    type MaxWinnersPerPage = MaxWinners;
+    type MaxBackersPerWinner = frame_support::traits::ConstU32<{ u32::MAX }>;
     type Bounds = ElectionsBoundsOnChain;
 }
 
@@ -281,6 +286,7 @@ impl sp_staking::OnStakingUpdate<AccountId, Balance> for EventListenerMock {
         _pool_account: &AccountId,
         slashed_bonded: Balance,
         slashed_chunks: &BTreeMap<EraIndex, Balance>,
+        _slashed_total: Balance,
     ) {
         LedgerSlashPerEra::set((slashed_bonded, slashed_chunks.clone()));
     }
@@ -465,6 +471,7 @@ impl ExtBuilder {
                 // This allows us to have a total_payout different from 0.
                 (999, 1_000_000_000_000),
             ],
+            dev_accounts: None,
         }
         .assimilate_storage(&mut storage);
 
@@ -702,12 +709,11 @@ pub(crate) fn on_offence_in_era(
     >],
     slash_fraction: &[Perbill],
     era: EraIndex,
-    disable_strategy: DisableStrategy,
 ) {
     let bonded_eras = crate::BondedEras::<Test>::get();
     for &(bonded_era, start_session) in bonded_eras.iter() {
         if bonded_era == era {
-            let _ = Staking::on_offence(offenders, slash_fraction, start_session, disable_strategy);
+            let _ = Staking::on_offence(offenders, slash_fraction, start_session);
             return
         } else if bonded_era > era {
             break
@@ -719,7 +725,6 @@ pub(crate) fn on_offence_in_era(
             offenders,
             slash_fraction,
             Staking::eras_start_session_index(era).unwrap(),
-            disable_strategy,
         );
     } else {
         panic!("cannot slash in era {}", era);
@@ -734,7 +739,7 @@ pub(crate) fn on_offence_now(
     slash_fraction: &[Perbill],
 ) {
     let now = Staking::active_era().unwrap().index;
-    on_offence_in_era(offenders, slash_fraction, now, DisableStrategy::WhenSlashed)
+    on_offence_in_era(offenders, slash_fraction, now)
 }
 
 pub(crate) fn add_slash(who: &AccountId) {

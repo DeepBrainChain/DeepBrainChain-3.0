@@ -1,5 +1,5 @@
 #[cfg(feature = "std")]
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{de, ser, Deserialize, Serialize};
@@ -12,7 +12,7 @@ use std::result::Result as StdResult;
     Eq,
     PartialEq,
     Encode,
-    Decode,
+    Decode, DecodeWithMemTracking,
     Default,
     Clone,
     Copy,
@@ -53,7 +53,7 @@ mod serde_balance {
 
 #[cfg(feature = "std")]
 #[derive(
-    Eq, PartialEq, Encode, Decode, Default, Clone, Serialize, Deserialize, RuntimeDebug, TypeInfo,
+    Eq, PartialEq, Encode, Decode, DecodeWithMemTracking, Default, Clone, Serialize, Deserialize, RuntimeDebug, TypeInfo,
 )]
 pub struct RpcText(#[serde(with = "self::serde_text")] Vec<u8>);
 

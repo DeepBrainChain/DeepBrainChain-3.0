@@ -9,7 +9,6 @@ use sp_runtime::{
     BuildStorage, Perbill,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRuntime>;
 type Block = frame_system::mocking::MockBlock<TestRuntime>;
 
 pub const ONE_DBC: u128 = 1_000_000_000_000_000;
@@ -44,6 +43,13 @@ impl frame_system::Config for TestRuntime {
     type SS58Prefix = SS58Prefix;
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
+    type ExtensionsWeightInfo = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 parameter_types! {
@@ -63,9 +69,10 @@ impl pallet_balances::Config for TestRuntime {
     type AccountStore = System;
     type WeightInfo = ();
     type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
     type FreezeIdentifier = ();
-    type MaxHolds = ();
-    type MaxFreezes = ();
+    type MaxFreezes = ConstU32<0>;
 }
 
 impl committee::Config for TestRuntime {
@@ -76,11 +83,7 @@ impl committee::Config for TestRuntime {
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum TestRuntime where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
+    pub enum TestRuntime {
         System: frame_system,
         Balances: pallet_balances,
         Committee: committee,
@@ -103,6 +106,7 @@ pub fn new_test_with_init_params_ext() -> sp_io::TestExternalities {
             (sr25519::Public::from(Sr25519Keyring::One), INIT_BALANCE),
             (sr25519::Public::from(Sr25519Keyring::Two), INIT_BALANCE),
         ],
+        dev_accounts: None,
     }
     .assimilate_storage(&mut storage)
     .unwrap();

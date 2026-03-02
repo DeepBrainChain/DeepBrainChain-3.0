@@ -206,6 +206,11 @@ impl<'a> From<evm::tracing::Event<'a>> for EvmEvent {
                 is_static,
                 context: context.clone().into(),
             },
+            // Log event added in evm v0.x; not relevant for tracing
+            evm::tracing::Event::Log { .. } => return Self::Exit {
+                reason: evm::ExitReason::Succeed(evm::ExitSucceed::Stopped),
+                return_value: alloc::vec![],
+            },
         }
     }
 }

@@ -13,11 +13,11 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_runtime::traits::Block as BlockT;
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
-use dbc_primitives_rpc_txpool::{Transaction as TransactionV2, TxPoolResponse, TxPoolRuntimeApi};
+use dbc_primitives_rpc_txpool::{Transaction as EthTransaction, TxPoolResponse, TxPoolRuntimeApi};
 
 pub struct TxPool<B: BlockT, C, A: ChainApi> {
     client: Arc<C>,
-    graph: Arc<Pool<A>>,
+    graph: Arc<Pool<A, ()>>,
     _marker: PhantomData<B>,
 }
 
@@ -34,14 +34,17 @@ where
     /// queues.
     fn map_build<T>(&self) -> RpcResult<TxPoolResult<TransactionMap<T>>>
     where
-        T: GetT + Serialize,
+        T: GetT + Serialize + Clone,
     {
         // Collect transactions in the ready validated pool.
         let txs_ready = self
             .graph
             .validated_pool()
             .ready()
-            .map(|in_pool_tx| in_pool_tx.data().clone())
+            .map(|in_pool_tx| {
+                let data: &Arc<_> = in_pool_tx.data();
+                data.as_ref().clone()
+            })
             .collect();
 
         // Collect transactions in the future validated pool.
@@ -49,8 +52,8 @@ where
             .graph
             .validated_pool()
             .futures()
-            .iter()
-            .map(|(_hash, extrinsic)| extrinsic.clone())
+            .into_iter()
+            .map(|(_hash, extrinsic)| extrinsic.as_ref().clone())
             .collect();
 
         // Use the runtime to match the (here) opaque extrinsics against ethereum transactions.
@@ -70,8 +73,8 @@ where
                     internal_err(format!("fetch runtime extrinsic filter failed: {:?}", err))
                 })?;
             TxPoolResponse {
-                ready: res.ready.iter().map(|t| TransactionV2::Legacy(t.clone())).collect(),
-                future: res.future.iter().map(|t| TransactionV2::Legacy(t.clone())).collect(),
+                ready: res.ready.iter().map(|t| EthTransaction::Legacy(t.clone())).collect(),
+                future: res.future.iter().map(|t| EthTransaction::Legacy(t.clone())).collect(),
             }
         } else {
             api.extrinsic_filter(best_block, txs_ready, txs_future).map_err(|err| {
@@ -83,9 +86,10 @@ where
         for txn in ethereum_txns.ready.iter() {
             let hash = txn.hash();
             let nonce = match txn {
-                TransactionV2::Legacy(t) => t.nonce,
-                TransactionV2::EIP2930(t) => t.nonce,
-                TransactionV2::EIP1559(t) => t.nonce,
+                EthTransaction::Legacy(t) => t.nonce,
+                EthTransaction::EIP2930(t) => t.nonce,
+                EthTransaction::EIP1559(t) => t.nonce,
+                EthTransaction::EIP7702(t) => t.nonce,
             };
             let from_address = match public_key(txn) {
                 Ok(pk) => H160::from(H256::from_slice(Keccak256::digest(&pk).as_slice())),
@@ -100,9 +104,10 @@ where
         for txn in ethereum_txns.future.iter() {
             let hash = txn.hash();
             let nonce = match txn {
-                TransactionV2::Legacy(t) => t.nonce,
-                TransactionV2::EIP2930(t) => t.nonce,
-                TransactionV2::EIP1559(t) => t.nonce,
+                EthTransaction::Legacy(t) => t.nonce,
+                EthTransaction::EIP2930(t) => t.nonce,
+                EthTransaction::EIP1559(t) => t.nonce,
+                EthTransaction::EIP7702(t) => t.nonce,
             };
             let from_address = match public_key(txn) {
                 Ok(pk) => H160::from(H256::from_slice(Keccak256::digest(&pk).as_slice())),
@@ -118,7 +123,7 @@ where
 }
 
 impl<B: BlockT, C, A: ChainApi> TxPool<B, C, A> {
-    pub fn new(client: Arc<C>, graph: Arc<Pool<A>>) -> Self {
+    pub fn new(client: Arc<C>, graph: Arc<Pool<A, ()>>) -> Self {
         Self { client, graph, _marker: PhantomData }
     }
 }

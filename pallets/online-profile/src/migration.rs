@@ -5,7 +5,7 @@ use Config;
 use crate::*;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 
 const TARGET: &'static str = "online-profile-migration";
 

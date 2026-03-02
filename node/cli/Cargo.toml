@@ -72,11 +72,13 @@ sp-timestamp = { workspace = true }
 sp-transaction-storage-proof = { workspace = true }
 sp-wasm-interface = { workspace = true }
 sp-block-builder = { workspace = true }
+cumulus-primitives-proof-size-hostfunction = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
-try-runtime-cli = { workspace = true }
+# try-runtime-cli removed in stable2512
 
 # Frontier dependencies
+fc-api = { workspace = true }
 fc-db = { workspace = true, features = ["rocksdb"] }
 fc-mapping-sync = { workspace = true, features = ["sql"] }
 fc-rpc-core = { workspace = true }
@@ -84,6 +86,7 @@ dbc-client-rpc-txpool = { workspace = true }
 dbc-client-rpc-debug = { workspace = true }
 dbc-client-rpc-trace = { workspace = true }
 fc-rpc = { workspace = true, features = ["rpc-binary-search-estimate"] }
+fc-storage = { workspace = true }
 
 fp-storage = { workspace = true }
 dbc-primitives-ext = { workspace = true, features = ["std"] }
@@ -125,5 +128,4 @@ runtime-benchmarks = [
 ]
 try-runtime = [
 	"dbc-runtime/try-runtime",
-	"try-runtime-cli/try-runtime"
 ]

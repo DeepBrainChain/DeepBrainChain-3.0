@@ -4,7 +4,15 @@ import { cryptoWaitReady } from '@polkadot/util-crypto';
 await cryptoWaitReady();
 
 const provider = new WsProvider('ws://127.0.0.1:9944');
-const api = await ApiPromise.create({ provider });
+const api = await ApiPromise.create({
+  provider,
+  signedExtensions: {
+    CheckMetadataHash: {
+      extrinsic: { mode: 'u8' },
+      payload: { metadataHash: 'Option<[u8;32]>' }
+    }
+  }
+});
 const keyring = new Keyring({ type: 'sr25519' });
 const alice = keyring.addFromUri('//Alice');
 const bob = keyring.addFromUri('//Bob');

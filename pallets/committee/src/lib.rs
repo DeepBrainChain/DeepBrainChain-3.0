@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 // pub mod migrations;
 mod rpc;
 mod traits;
@@ -24,7 +26,7 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::*;
 use sp_runtime::traits::{CheckedAdd, CheckedSub, Saturating, Zero};
-use sp_std::{prelude::*, str};
+use alloc::vec::Vec; use core::str;
 
 type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;

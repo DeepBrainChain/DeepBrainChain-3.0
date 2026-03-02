@@ -2,9 +2,9 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use sp_runtime::{Perbill, RuntimeDebug};
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 // 处于不同状态的委员会的列表
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -54,7 +54,7 @@ impl<AccountId: Ord> CommitteeList<AccountId> {
 }
 
 /// 与委员会质押基本参数
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
 pub struct CommitteeStakeParamsInfo<Balance> {
     /// 第一次委员会质押的基准数值
     pub stake_baseline: Balance,

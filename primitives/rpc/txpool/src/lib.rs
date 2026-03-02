@@ -3,10 +3,12 @@
 #![allow(clippy::unnecessary_mut_passed)]
 #![allow(clippy::too_many_arguments)]
 
-pub use ethereum::{TransactionV0 as LegacyTransaction, TransactionV2 as Transaction};
+extern crate alloc;
+
+pub use ethereum::{TransactionV0 as LegacyTransaction, TransactionV3 as Transaction};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::{scale_info::TypeInfo, traits::Block as BlockT, RuntimeDebug};
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 #[derive(Eq, PartialEq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct TxPoolResponseLegacy {

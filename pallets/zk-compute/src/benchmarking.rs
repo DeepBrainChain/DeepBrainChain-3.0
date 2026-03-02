@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use sp_std::vec;
+use alloc::vec;
 use crate::Pallet as ZkCompute;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::Currency;

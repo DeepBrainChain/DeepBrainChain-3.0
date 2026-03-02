@@ -19,6 +19,7 @@ static_assertions = "1.1.0"
 log = { workspace = true }
 evm-macro = { path = "src/precompiles/macro" }
 ethabi = { workspace = true }
+ethereum = { workspace = true }
 array-bytes = { workspace = true }
 num_enum = { workspace = true }
 hex = { workspace = true }
@@ -41,6 +42,7 @@ sp-session = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-version = { workspace = true }
 sp-io = { workspace = true }
+sp-genesis-builder = { workspace = true }
 
 # frame dependencies
 frame-executive = { workspace = true }
@@ -88,6 +90,7 @@ pallet-utility = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-asset-tx-payment = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
 
 # DBC pallets
 pallet-assets = { path = "../pallets/assets", default-features = false }
@@ -150,6 +153,7 @@ default = ["std"]
 with-tracing = ["frame-executive/with-tracing"]
 std = [
   "ethabi/std",
+  "ethereum/std",
   "num_enum/std",
   "hex/std",
 
@@ -219,7 +223,9 @@ std = [
   "pallet-nfts/std",
   "log/std",
   "frame-try-runtime?/std",
+  "frame-metadata-hash-extension/std",
   "sp-io/std",
+  "sp-genesis-builder/std",
   "pallet-child-bounties/std",
   "substrate-wasm-builder",
 

@@ -25,7 +25,7 @@ use dbc_runtime::{
     BabeConfig, BalancesConfig, BaseFeeConfig, Block, CouncilConfig, DefaultBaseFeePerGas,
     DefaultElasticity, DemocracyConfig, EVMChainIdConfig, EVMConfig, ElectionsConfig,
     ImOnlineConfig, IndicesConfig, MaxNominations, NominationPoolsConfig,
-    SessionConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
+    SessionConfig, StakerStatus, StakingConfig, SudoConfig, TechnicalCommitteeConfig,
 };
 use fp_evm::GenesisAccount;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, EncodedPoint};
@@ -47,7 +47,7 @@ use frame_support::PalletId;
 use std::str::FromStr;
 
 pub use dbc_primitives::{AccountId, Balance, Signature};
-pub use dbc_runtime::GenesisConfig;
+pub use dbc_runtime::RuntimeGenesisConfig as GenesisConfig;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -75,7 +75,7 @@ pub struct Extensions {
 }
 
 /// Specialized `ChainSpec`.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// DBC Mainnet spec config
 pub fn mainnet_config() -> Result<ChainSpec, String> {
@@ -207,22 +207,20 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 
 /// Staging testnet config.
 pub fn staging_testnet_config() -> ChainSpec {
-    let boot_nodes = vec![];
-    ChainSpec::from_genesis(
-        "DBC Testnet 2024",
-        "staging_testnet_2024",
-        ChainType::Live,
-        staging_testnet_config_genesis,
-        boot_nodes,
-        Some(
+    let genesis = staging_testnet_config_genesis();
+    ChainSpec::builder(wasm_binary_unwrap(), Default::default())
+        .with_name("DBC Testnet 2024")
+        .with_id("staging_testnet_2024")
+        .with_chain_type(ChainType::Live)
+        .with_genesis_config(
+            serde_json::to_value(genesis).expect("genesis config serializes"),
+        )
+        .with_telemetry_endpoints(
             TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
                 .expect("Staging telemetry url is valid; qed"),
-        ),
-        None,
-        None,
-        Some(serde_json::from_str(DEFAULT_PROPS).unwrap()),
-        Default::default(),
-    )
+        )
+        .with_properties(serde_json::from_str(DEFAULT_PROPS).unwrap())
+        .build()
 }
 
 /// Helper function to generate a crypto pair from seed
@@ -330,8 +328,8 @@ pub fn dev_testnet_genesis(
     balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
 
     GenesisConfig {
-        system: SystemConfig { code: wasm_binary_unwrap().to_vec(), ..Default::default() },
-        balances: BalancesConfig { balances },
+        system: Default::default(),
+        balances: BalancesConfig { balances, dev_accounts: None },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
             keys: initial_authorities
@@ -344,6 +342,7 @@ pub fn dev_testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
+            non_authority_keys: vec![],
         },
         staking: StakingConfig {
             validator_count: initial_authorities.len() as u32,
@@ -373,7 +372,7 @@ pub fn dev_testnet_genesis(
         },
         sudo: SudoConfig { key: Some(root_key) },
         babe: BabeConfig {
-            epoch_config: Some(dbc_runtime::BABE_GENESIS_EPOCH_CONFIG),
+            epoch_config: dbc_runtime::BABE_GENESIS_EPOCH_CONFIG,
             ..Default::default()
         },
         im_online: ImOnlineConfig { keys: vec![] },
@@ -495,8 +494,8 @@ pub fn testnet_genesis(
     balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
 
     GenesisConfig {
-        system: SystemConfig { code: wasm_binary_unwrap().to_vec(), ..Default::default() },
-        balances: BalancesConfig { balances },
+        system: Default::default(),
+        balances: BalancesConfig { balances, dev_accounts: None },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
             keys: initial_authorities
@@ -509,6 +508,7 @@ pub fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
+            non_authority_keys: vec![],
         },
         staking: StakingConfig {
             validator_count: initial_authorities.len() as u32,
@@ -538,7 +538,7 @@ pub fn testnet_genesis(
         },
         sudo: SudoConfig { key: Some(root_key) },
         babe: BabeConfig {
-            epoch_config: Some(dbc_runtime::BABE_GENESIS_EPOCH_CONFIG),
+            epoch_config: dbc_runtime::BABE_GENESIS_EPOCH_CONFIG,
             ..Default::default()
         },
         im_online: ImOnlineConfig { keys: vec![] },
@@ -571,21 +571,20 @@ pub fn testnet_genesis(
 /// Mainnet config
 #[allow(dead_code)]
 fn generate_mainnet_config() -> ChainSpec {
-    ChainSpec::from_genesis(
-        "DBC Mainnet",
-        "dbc_network_mainnet",
-        ChainType::Live,
-        mainnet_config_genesis,
-        vec![], // boot_nodes
-        Some(
+    let genesis = mainnet_config_genesis();
+    ChainSpec::builder(wasm_binary_unwrap(), Default::default())
+        .with_name("DBC Mainnet")
+        .with_id("dbc_network_mainnet")
+        .with_chain_type(ChainType::Live)
+        .with_genesis_config(
+            serde_json::to_value(genesis).expect("genesis config serializes"),
+        )
+        .with_telemetry_endpoints(
             TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
                 .expect("Staging telemetry url is valid; qed"),
-        ),
-        None,
-        None,
-        Some(serde_json::from_str(DEFAULT_PROPS).unwrap()),
-        Default::default(),
-    )
+        )
+        .with_properties(serde_json::from_str(DEFAULT_PROPS).unwrap())
+        .build()
 }
 
 fn mainnet_config_genesis() -> GenesisConfig {
@@ -787,8 +786,8 @@ pub fn mainnet_genesis(
     balances.push((zk_pallet_account, 10_000_000 * DOLLARS)); // 10M DBC for ZK rewards pool
 
     GenesisConfig {
-        system: SystemConfig { code: wasm_binary_unwrap().to_vec(), ..Default::default() },
-        balances: BalancesConfig { balances },
+        system: Default::default(),
+        balances: BalancesConfig { balances, dev_accounts: None },
         indices: IndicesConfig { indices: vec![] },
         session: SessionConfig {
             keys: initial_authorities
@@ -801,6 +800,7 @@ pub fn mainnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
+            non_authority_keys: vec![],
         },
         staking: StakingConfig {
             validator_count: initial_authorities.len() as u32,
@@ -830,7 +830,7 @@ pub fn mainnet_genesis(
         },
         sudo: SudoConfig { key: Some(root_key) },
         babe: BabeConfig {
-            epoch_config: Some(dbc_runtime::BABE_GENESIS_EPOCH_CONFIG),
+            epoch_config: dbc_runtime::BABE_GENESIS_EPOCH_CONFIG,
             ..Default::default()
         },
         im_online: ImOnlineConfig { keys: vec![] },
@@ -871,18 +871,16 @@ fn development_config_genesis() -> GenesisConfig {
 
 /// Development config (single validator Alice)
 pub fn development_config() -> ChainSpec {
-    ChainSpec::from_genesis(
-        "Development",
-        "dev",
-        ChainType::Development,
-        development_config_genesis,
-        vec![],
-        None,
-        None,
-        None,
-        Some(serde_json::from_str(DEFAULT_PROPS).unwrap()),
-        Default::default(),
-    )
+    let genesis = development_config_genesis();
+    ChainSpec::builder(wasm_binary_unwrap(), Default::default())
+        .with_name("Development")
+        .with_id("dev")
+        .with_chain_type(ChainType::Development)
+        .with_genesis_config(
+            serde_json::to_value(genesis).expect("genesis config serializes"),
+        )
+        .with_properties(serde_json::from_str(DEFAULT_PROPS).unwrap())
+        .build()
 }
 
 fn local_testnet_genesis() -> GenesisConfig {
@@ -896,18 +894,16 @@ fn local_testnet_genesis() -> GenesisConfig {
 
 /// Local testnet config (multivalidator Alice + Bob)
 pub fn local_testnet_config() -> ChainSpec {
-    ChainSpec::from_genesis(
-        "Local Testnet",
-        "local_testnet",
-        ChainType::Local,
-        local_testnet_genesis,
-        vec![],
-        None,
-        None,
-        None,
-        Some(serde_json::from_str(DEFAULT_PROPS).unwrap()),
-        Default::default(),
-    )
+    let genesis = local_testnet_genesis();
+    ChainSpec::builder(wasm_binary_unwrap(), Default::default())
+        .with_name("Local Testnet")
+        .with_id("local_testnet")
+        .with_chain_type(ChainType::Local)
+        .with_genesis_config(
+            serde_json::to_value(genesis).expect("genesis config serializes"),
+        )
+        .with_properties(serde_json::from_str(DEFAULT_PROPS).unwrap())
+        .build()
 }
 
 fn generate_evm_address<W: Wordlist>(phrase: &str, index: u32) -> H160 {
@@ -963,34 +959,28 @@ pub(crate) mod tests {
 
     /// Local testnet config (single validator - Alice)
     pub fn integration_test_config_with_single_authority() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis_instant_single,
-            vec![],
-            None,
-            None,
-            None,
-            None,
-            Default::default(),
-        )
+        let genesis = local_testnet_genesis_instant_single();
+        ChainSpec::builder(wasm_binary_unwrap(), Default::default())
+            .with_name("Integration Test")
+            .with_id("test")
+            .with_chain_type(ChainType::Development)
+            .with_genesis_config(
+                serde_json::to_value(genesis).expect("genesis config serializes"),
+            )
+            .build()
     }
 
     /// Local testnet config (multivalidator Alice + Bob)
     pub fn integration_test_config_with_two_authorities() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis,
-            vec![],
-            None,
-            None,
-            None,
-            None,
-            Default::default(),
-        )
+        let genesis = local_testnet_genesis();
+        ChainSpec::builder(wasm_binary_unwrap(), Default::default())
+            .with_name("Integration Test")
+            .with_id("test")
+            .with_chain_type(ChainType::Development)
+            .with_genesis_config(
+                serde_json::to_value(genesis).expect("genesis config serializes"),
+            )
+            .build()
     }
 
     #[test]
