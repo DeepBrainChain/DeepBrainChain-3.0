@@ -22,7 +22,7 @@ use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
 use frame_support::{
     assert_ok, ord_parameter_types, parameter_types,
     traits::{
-        ConstU32, ConstU64, Currency, EitherOfDiverse, FindAuthor, Get, Hooks,
+        ConstU32, ConstU64, EitherOfDiverse, FindAuthor, Get, Hooks,
         Imbalance, OnUnbalanced, OneSessionHandler,
     },
     weights::constants::RocksDbWeight,
@@ -74,7 +74,10 @@ impl sp_runtime::BoundToRuntimeAppPublic for OtherSessionHandler {
 }
 
 pub fn is_disabled(controller: AccountId) -> bool {
-    let stash = Staking::ledger(&controller).unwrap().stash;
+    let stash = StakingLedger::<Test>::paired_account(
+        sp_staking::StakingAccount::Controller(controller),
+    )
+    .unwrap();
     let validator_index = match Session::validators().iter().position(|v| *v == stash) {
         Some(index) => index as u32,
         None => return false,
@@ -298,9 +301,10 @@ impl sp_staking::OnStakingUpdate<AccountId, Balance> for EventListenerMock {
 }
 
 impl crate::pallet::pallet::Config for Test {
-    type MaxNominations = MaxNominations;
+    type OldCurrency = Balances;
     type Currency = Balances;
     type CurrencyBalance = <Self as pallet_balances::Config>::Balance;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type UnixTime = Timestamp;
     type CurrencyToVote = sp_staking::currency_to_vote::SaturatingCurrencyToVote;
     type RewardRemainder = RewardRemainderMock;
@@ -318,6 +322,8 @@ impl crate::pallet::pallet::Config for Test {
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type GenesisElectionProvider = Self::ElectionProvider;
+    type NominationsQuota = crate::FixedNominationsQuota<16>;
+    type MaxValidatorSet = MaxWinners;
     // NOTE: consider a macro and use `UseNominatorsAndValidatorsMap<Self>` as well.
     type VoterList = VoterBagsList;
     type TargetList = UseValidatorsMap<Self>;
@@ -325,6 +331,8 @@ impl crate::pallet::pallet::Config for Test {
     type HistoryDepth = HistoryDepth;
     type EventListeners = EventListenerMock;
     type BenchmarkingConfig = TestBenchmarkingConfig;
+    type MaxControllersInDeprecationBatch = ConstU32<100>;
+    type Filter = frame_support::traits::Nothing;
     type WeightInfo = ();
     type MinimumPeriod = ConstU64<5>;
 }
@@ -445,6 +453,12 @@ impl ExtBuilder {
         sp_tracing::try_init_simple();
         let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 
+        // Note: Previously this pallet used locks and stakers could stake all their
+        // balance including ED. Now with holds, stakers are required to maintain
+        // (non-staked) ED in their accounts. Therefore, we drop an additional existential
+        // deposit to genesis stakers.
+        let ed = ExistentialDeposit::get();
+
         let _ = pallet_balances::GenesisConfig::<Test> {
             balances: vec![
                 (1, 10 * self.balance_factor),
@@ -458,21 +472,21 @@ impl ExtBuilder {
                 (40, self.balance_factor),
                 (50, self.balance_factor),
                 // stashes
-                (11, self.balance_factor * 1000),
-                (21, self.balance_factor * 2000),
-                (31, self.balance_factor * 2000),
-                (41, self.balance_factor * 2000),
-                (51, self.balance_factor * 2000),
+                (11, self.balance_factor * 1000 + ed),
+                (21, self.balance_factor * 2000 + ed),
+                (31, self.balance_factor * 2000 + ed),
+                (41, self.balance_factor * 2000 + ed),
+                (51, self.balance_factor * 2000 + ed),
                 // optional nominator
-                (100, self.balance_factor * 2000),
-                (101, self.balance_factor * 2000),
+                (100, self.balance_factor * 2000 + ed),
+                (101, self.balance_factor * 2000 + ed),
                 // aux accounts
                 (60, self.balance_factor),
-                (61, self.balance_factor * 2000),
+                (61, self.balance_factor * 2000 + ed),
                 (70, self.balance_factor),
-                (71, self.balance_factor * 2000),
+                (71, self.balance_factor * 2000 + ed),
                 (80, self.balance_factor),
-                (81, self.balance_factor * 2000),
+                (81, self.balance_factor * 2000 + ed),
                 // This allows us to have a total_payout different from 0.
                 (999, 1_000_000_000_000),
             ],
@@ -585,7 +599,7 @@ pub(crate) fn current_era() -> EraIndex {
 }
 
 pub(crate) fn bond(who: AccountId, val: Balance) {
-    let _ = Balances::make_free_balance_be(&who, val);
+    let _ = asset::set_stakeable_balance::<Test>(&who, val);
     assert_ok!(Staking::bond(RuntimeOrigin::signed(who), val, RewardDestination::Controller));
 }
 
@@ -821,5 +835,5 @@ pub(crate) fn staking_events_since_last_call() -> Vec<crate::Event<Test>> {
 }
 
 pub(crate) fn balances(who: &AccountId) -> (Balance, Balance) {
-    (Balances::free_balance(who), Balances::reserved_balance(who))
+    (asset::stakeable_balance::<Test>(who), Balances::reserved_balance(who))
 }

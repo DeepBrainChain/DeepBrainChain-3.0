@@ -50,14 +50,14 @@
 //! Based on research at <https://research.web3.foundation/en/latest/polkadot/slashing/npos.html>
 
 use crate::{
-    BalanceOf, Config, Error, Exposure, NegativeImbalanceOf, NominatorSlashInEra,
-    OffendingValidators, Pallet, Perbill, SessionInterface, SpanSlash, UnappliedSlash,
-    ValidatorSlashInEra,
+    asset, BalanceOf, Config, Error, Exposure, NegativeImbalanceOf, NominatorSlashInEra,
+    OffendingValidators, Pallet, Perbill, SessionInterface, SpanSlash, StakingLedger,
+    UnappliedSlash, ValidatorSlashInEra,
 };
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
     ensure,
-    traits::{Currency, Defensive, Get, Imbalance, OnUnbalanced},
+    traits::{Defensive, Get, Imbalance, OnUnbalanced},
 };
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -593,20 +593,15 @@ pub fn do_slash<T: Config>(
     slashed_imbalance: &mut NegativeImbalanceOf<T>,
     slash_era: EraIndex,
 ) {
-    let controller = match <Pallet<T>>::bonded(stash).defensive() {
-        None => return,
-        Some(c) => c,
+    let mut ledger = match StakingLedger::<T>::get(sp_staking::StakingAccount::Stash(stash.clone())) {
+        Ok(ledger) => ledger,
+        Err(_) => return, // nothing to do.
     };
 
-    let mut ledger = match <Pallet<T>>::ledger(&controller) {
-        Some(ledger) => ledger,
-        None => return, // nothing to do.
-    };
-
-    let value = ledger.slash(value, T::Currency::minimum_balance(), slash_era);
+    let value = ledger.slash(value, asset::existential_deposit::<T>(), slash_era);
 
     if !value.is_zero() {
-        let (imbalance, missing) = T::Currency::slash(stash, value);
+        let (imbalance, missing) = asset::slash::<T>(stash, value);
         slashed_imbalance.subsume(imbalance);
 
         if !missing.is_zero() {
@@ -614,7 +609,7 @@ pub fn do_slash<T: Config>(
             *reward_payout = reward_payout.saturating_sub(missing);
         }
 
-        <Pallet<T>>::update_ledger(&controller, &ledger);
+        let _ = ledger.update();
 
         // trigger the event
         <Pallet<T>>::deposit_event(super::Event::<T>::Slashed {
@@ -677,7 +672,7 @@ fn pay_reporters<T: Config>(
 
         // this cancels out the reporter reward imbalance internally, leading
         // to no change in total issuance.
-        T::Currency::resolve_creating(reporter, reporter_reward);
+        asset::deposit_slashed::<T>(reporter, reporter_reward);
     }
 
     // the rest goes to the on-slash imbalance handler (e.g. treasury)

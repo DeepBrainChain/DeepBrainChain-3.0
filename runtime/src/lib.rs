@@ -651,14 +651,15 @@ impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
 }
 
 impl pallet_staking::Config for Runtime {
-    type MaxNominations = MaxNominations;
+    type OldCurrency = Balances;
     type Currency = Balances;
     type CurrencyBalance = Balance;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type UnixTime = Timestamp;
     type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
-    type RewardRemainder = Treasury;
+    type RewardRemainder = (); // TODO: route to Treasury via fungible Credit adapter
     type RuntimeEvent = RuntimeEvent;
-    type Slash = Treasury; // send the slashed funds to the treasury.
+    type Slash = (); // TODO: route to Treasury via fungible Credit adapter
     type Reward = (); // rewards are minted from the void
     type SessionsPerEra = SessionsPerEra;
     type BondingDuration = BondingDuration;
@@ -674,6 +675,10 @@ impl pallet_staking::Config for Runtime {
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type ElectionProvider = ElectionProviderMultiPhase;
     type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
+    type NominationsQuota = pallet_staking::FixedNominationsQuota<16>;
+    type MaxValidatorSet = MaxActiveValidators;
+    type MaxControllersInDeprecationBatch = ConstU32<100>;
+    type Filter = frame_support::traits::Nothing;
     type VoterList = VoterList;
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;

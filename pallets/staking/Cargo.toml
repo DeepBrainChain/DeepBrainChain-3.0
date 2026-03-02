@@ -9,17 +9,16 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
-codec = { workspace = true }
-scale-info = { workspace = true }
-sp-std = { workspace = true }
+codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive", "serde"] }
+serde = { workspace = true, features = ["alloc", "derive"] }
+sp-application-crypto = { workspace = true, features = ["serde"] }
 sp-io = { workspace = true }
-sp-runtime = { workspace = true }
-sp-staking = { workspace = true }
+sp-runtime = { workspace = true, features = ["serde"] }
+sp-staking = { workspace = true, features = ["serde"] }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 pallet-authorship = { workspace = true }
-pallet-timestamp = { workspace = true }
 pallet-session = { workspace = true, features = ["historical"] }
 frame-election-provider-support = { workspace = true }
 log = { workspace = true }
@@ -27,21 +26,22 @@ log = { workspace = true }
 dbc-support = { path = "../support", default-features = false }
 
 # Optional imports for benchmarking
-
 frame-benchmarking = { workspace = true, optional = true }
 rand_chacha = { workspace = true, optional = true }
 
 [dev-dependencies]
-sp-tracing = { workspace = true, features = ["std"] }
-sp-core = { workspace = true, features = ["std"] }
-sp-npos-elections = { workspace = true, features = ["std"] }
-pallet-balances = { workspace = true, features = ["std"] }
-pallet-staking-reward-curve = { workspace = true }
-pallet-bags-list = { workspace = true, features = ["std"] }
+sp-tracing = { workspace = true, default-features = true }
+sp-core = { workspace = true, default-features = true }
+sp-npos-elections = { workspace = true, default-features = true }
+pallet-balances = { workspace = true, default-features = true }
+pallet-staking-reward-curve = { workspace = true, default-features = true }
+pallet-bags-list = { workspace = true, default-features = true }
+pallet-timestamp = { workspace = true, default-features = true }
 substrate-test-utils = { workspace = true }
-frame-benchmarking = { workspace = true, features = ["std"] }
-frame-election-provider-support = { workspace = true, features = ["std"] }
-rand_chacha = { workspace = true, features = ["std"] }
+frame-benchmarking = { workspace = true, default-features = true }
+frame-election-provider-support = { workspace = true, default-features = true }
+frame-support = { workspace = true, features = ["experimental"], default-features = true }
+rand_chacha = { workspace = true, default-features = true }
 
 [features]
 default = ["std"]
@@ -55,10 +55,9 @@ std = [
 	"frame-system/std",
 	"pallet-authorship/std",
 	"pallet-session/std",
-	"pallet-timestamp/std",
 	"serde/std",
 	"scale-info/std",
-	"sp-std/std",
+	"sp-application-crypto/std",
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-staking/std",
@@ -66,7 +65,24 @@ std = [
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-election-provider-support/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"pallet-bags-list/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-session/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
 	"rand_chacha",
+	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 ]
-try-runtime = ["frame-support/try-runtime"]
+try-runtime = [
+	"frame-election-provider-support/try-runtime",
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"pallet-authorship/try-runtime",
+	"pallet-bags-list/try-runtime",
+	"pallet-balances/try-runtime",
+	"pallet-session/try-runtime",
+	"pallet-timestamp/try-runtime",
+	"sp-runtime/try-runtime",
+]

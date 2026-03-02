@@ -28,8 +28,7 @@ use frame_support::{
     dispatch::WithPostDispatchInfo,
     pallet_prelude::*,
     traits::{
-        Currency, Defensive, DefensiveResult, EstimateNextNewSession, Get,
-        Imbalance, LockableCurrency, OnUnbalanced, TryCollect, UnixTime, WithdrawReasons,
+        Defensive, DefensiveResult, DefensiveSaturating, EstimateNextNewSession, Get, Imbalance, OnUnbalanced, UnixTime,
     },
     weights::Weight,
 };
@@ -42,17 +41,18 @@ use sp_runtime::{
 use sp_staking::{
     currency_to_vote::CurrencyToVote,
     offence::{OffenceDetails, OnOffenceHandler},
-    EraIndex, SessionIndex, Stake, StakingInterface,
+    EraIndex, SessionIndex, Stake, StakingAccount, StakingInterface,
 };
 use alloc::{boxed::Box, vec, vec::Vec};
 
 use crate::{
-    log, slashing, weights::WeightInfo, ActiveEraInfo, BalanceOf, EraPayout, Exposure, ExposureOf,
-    Forcing, IndividualExposure, MaxWinnersOf, Nominations, PositiveImbalanceOf, RewardDestination,
-    SessionInterface, StakingLedger, ValidatorPrefs,
+    asset, log, slashing, weights::WeightInfo, ActiveEraInfo, BalanceOf, EraPayout, Exposure,
+    ExposureOf, Forcing, IndividualExposure, MaxNominationsOf, MaxWinnersOf, Nominations,
+    NominationsQuota, PositiveImbalanceOf, RewardDestination, SessionInterface, StakingLedger,
+    ValidatorPrefs,
 };
 
-use super::{pallet::*, STAKING_ID};
+use super::pallet::*;
 
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
@@ -68,10 +68,20 @@ use sp_runtime::TryRuntimeError;
 const NPOS_MAX_ITERATIONS_COEFFICIENT: u32 = 2;
 
 impl<T: Config> Pallet<T> {
+    pub fn ledger(account: StakingAccount<T::AccountId>) -> Result<StakingLedger<T>, Error<T>> {
+        StakingLedger::<T>::get(account)
+    }
+
+    pub fn payee(account: StakingAccount<T::AccountId>) -> Option<RewardDestination<T::AccountId>> {
+        StakingLedger::<T>::reward_destination(account)
+    }
+
     /// The total balance that can be slashed from a stash account as of right now.
     pub fn slashable_balance_of(stash: &T::AccountId) -> BalanceOf<T> {
         // Weight note: consider making the stake accessible through stash.
-        Self::bonded(stash).and_then(Self::ledger).map(|l| l.active).unwrap_or_default()
+        StakingLedger::<T>::get(StakingAccount::Stash(stash.clone()))
+            .map(|l| l.active)
+            .unwrap_or_default()
     }
 
     /// Internal impl of [`Self::slashable_balance_of`] that returns [`VoteWeight`].
@@ -89,7 +99,7 @@ impl<T: Config> Pallet<T> {
     pub fn weight_of_fn() -> Box<dyn Fn(&T::AccountId) -> VoteWeight> {
         // NOTE: changing this to unboxed `impl Fn(..)` return type and the pallet will still
         // compile, while some types in mock fail to resolve.
-        let issuance = T::Currency::total_issuance();
+        let issuance = asset::total_issuance::<T>();
         Box::new(move |who: &T::AccountId| -> VoteWeight {
             Self::slashable_balance_of_vote_weight(who, issuance)
         })
@@ -97,7 +107,7 @@ impl<T: Config> Pallet<T> {
 
     /// Same as `weight_of_fn`, but made for one time use.
     pub fn weight_of(who: &T::AccountId) -> VoteWeight {
-        let issuance = T::Currency::total_issuance();
+        let issuance = asset::total_issuance::<T>();
         Self::slashable_balance_of_vote_weight(who, issuance)
     }
 
@@ -105,37 +115,36 @@ impl<T: Config> Pallet<T> {
         controller: &T::AccountId,
         num_slashing_spans: u32,
     ) -> Result<Weight, DispatchError> {
-        let mut ledger = Self::ledger(&controller).ok_or(Error::<T>::NotController)?;
+        let mut ledger =
+            StakingLedger::<T>::get(StakingAccount::Controller(controller.clone()))?;
         let (stash, old_total) = (ledger.stash.clone(), ledger.total);
         if let Some(current_era) = Self::current_era() {
             ledger = ledger.consolidate_unlocked(current_era)
         }
 
         let used_weight =
-            if ledger.unlocking.is_empty() && ledger.active < T::Currency::minimum_balance() {
+            if ledger.unlocking.is_empty() && ledger.active < asset::existential_deposit::<T>() {
                 // This account must have called `unbond()` with some value that caused the active
                 // portion to fall below existential deposit + will have no more unlocking chunks
                 // left. We can now safely remove all staking-related information.
                 Self::kill_stash(&stash, num_slashing_spans)?;
-                // Remove the lock.
-                T::Currency::remove_lock(STAKING_ID, &stash);
 
                 T::WeightInfo::withdraw_unbonded_kill(num_slashing_spans)
             } else {
                 // This was the consequence of a partial unbond. just update the ledger and move on.
-                Self::update_ledger(&controller, &ledger);
+                let new_total = ledger.total;
+                ledger.update()?;
 
                 // This is only an update, so we use less overall weight.
+                // `old_total` should never be less than the new total because
+                // `consolidate_unlocked` strictly subtracts balance.
+                if new_total < old_total {
+                    let value = old_total - new_total;
+                    Self::deposit_event(Event::<T>::Withdrawn { stash: stash.clone(), amount: value });
+                }
+
                 T::WeightInfo::withdraw_unbonded_update(num_slashing_spans)
             };
-
-        // `old_total` should never be less than the new total because
-        // `consolidate_unlocked` strictly subtracts balance.
-        if ledger.total < old_total {
-            // Already checked that this won't overflow by entry condition.
-            let value = old_total - ledger.total;
-            Self::deposit_event(Event::<T>::Withdrawn { stash, amount: value });
-        }
 
         Ok(used_weight)
     }
@@ -157,40 +166,43 @@ impl<T: Config> Pallet<T> {
         );
 
         // Note: if era has no reward to be claimed, era may be future. better not to update
-        // `ledger.claimed_rewards` in this case.
+        // `ledger.legacy_claimed_rewards` in this case.
         let era_payout = <ErasValidatorReward<T>>::get(&era).ok_or_else(|| {
             Error::<T>::InvalidEraToReward
                 .with_weight(T::WeightInfo::payout_stakers_alive_staked(0))
         })?;
 
-        let controller = Self::bonded(&validator_stash).ok_or_else(|| {
+        let mut ledger = StakingLedger::<T>::get(
+            StakingAccount::Stash(validator_stash.clone()),
+        )
+        .map_err(|_| {
             Error::<T>::NotStash.with_weight(T::WeightInfo::payout_stakers_alive_staked(0))
         })?;
-        let mut ledger = <Ledger<T>>::get(&controller).ok_or(Error::<T>::NotController)?;
 
         ledger
-            .claimed_rewards
+            .legacy_claimed_rewards
             .retain(|&x| x >= current_era.saturating_sub(history_depth));
 
-        match ledger.claimed_rewards.binary_search(&era) {
+        match ledger.legacy_claimed_rewards.binary_search(&era) {
             Ok(_) => {
                 return Err(Error::<T>::AlreadyClaimed
                     .with_weight(T::WeightInfo::payout_stakers_alive_staked(0)))
             },
             Err(pos) => ledger
-                .claimed_rewards
+                .legacy_claimed_rewards
                 .try_insert(pos, era)
-                // Since we retain era entries in `claimed_rewards` only upto
+                // Since we retain era entries in `legacy_claimed_rewards` only upto
                 // `HistoryDepth`, following bound is always expected to be
                 // satisfied.
                 .defensive_map_err(|_| Error::<T>::BoundNotMet)?,
         }
 
-        let exposure = <ErasStakersClipped<T>>::get(&era, &ledger.stash);
+        let stash = ledger.stash.clone();
+        let exposure = <ErasStakersClipped<T>>::get(&era, &stash);
 
         // Input data seems good, no errors allowed after this point
 
-        <Ledger<T>>::insert(&controller, &ledger);
+        ledger.update()?;
 
         // Get Era reward points. It has TOTAL and INDIVIDUAL
         // Find the fraction of the era reward that belongs to the validator
@@ -203,7 +215,7 @@ impl<T: Config> Pallet<T> {
         let total_reward_points = era_reward_points.total;
         let validator_reward_points = era_reward_points
             .individual
-            .get(&ledger.stash)
+            .get(&stash)
             .copied()
             .unwrap_or_else(Zero::zero);
 
@@ -232,16 +244,16 @@ impl<T: Config> Pallet<T> {
 
         Self::deposit_event(Event::<T>::PayoutStarted {
             era_index: era,
-            validator_stash: ledger.stash.clone(),
+            validator_stash: stash.clone(),
         });
 
         let mut total_imbalance = PositiveImbalanceOf::<T>::zero();
         // We can now make total validator payout:
         if let Some(imbalance) =
-            Self::make_payout(&ledger.stash, validator_staking_payout + validator_commission_payout)
+            Self::make_payout(&stash, validator_staking_payout + validator_commission_payout)
         {
             Self::deposit_event(Event::<T>::Rewarded {
-                stash: ledger.stash,
+                stash: stash.clone(),
                 amount: imbalance.peek(),
             });
             total_imbalance.subsume(imbalance);
@@ -275,14 +287,6 @@ impl<T: Config> Pallet<T> {
         Ok(Some(T::WeightInfo::payout_stakers_alive_staked(nominator_payout_count)).into())
     }
 
-    /// Update the ledger for a controller.
-    ///
-    /// This will also update the stash lock.
-    pub(crate) fn update_ledger(controller: &T::AccountId, ledger: &StakingLedger<T>) {
-        T::Currency::set_lock(STAKING_ID, &ledger.stash, ledger.total, WithdrawReasons::all());
-        <Ledger<T>>::insert(controller, ledger);
-    }
-
     /// Chill a stash account.
     pub(crate) fn chill_stash(stash: &T::AccountId) {
         let chilled_as_validator = Self::do_remove_validator(stash);
@@ -295,22 +299,24 @@ impl<T: Config> Pallet<T> {
     /// Actually make a payment to a staker. This uses the currency's reward function
     /// to pay the right payee for the given staker account.
     fn make_payout(stash: &T::AccountId, amount: BalanceOf<T>) -> Option<PositiveImbalanceOf<T>> {
-        let dest = Self::payee(stash);
+        let dest = StakingLedger::<T>::reward_destination(StakingAccount::Stash(stash.clone()))?;
         match dest {
             RewardDestination::Controller => Self::bonded(stash)
-                .map(|controller| T::Currency::deposit_creating(&controller, amount)),
-            RewardDestination::Stash => T::Currency::deposit_into_existing(stash, amount).ok(),
-            RewardDestination::Staked => Self::bonded(stash)
-                .and_then(|c| Self::ledger(&c).map(|l| (c, l)))
-                .and_then(|(controller, mut l)| {
-                    l.active += amount;
-                    l.total += amount;
-                    let r = T::Currency::deposit_into_existing(stash, amount).ok();
-                    Self::update_ledger(&controller, &l);
-                    r
-                }),
+                .map(|controller| asset::mint_creating::<T>(&controller, amount)),
+            RewardDestination::Stash => asset::mint_into_existing::<T>(stash, amount),
+            RewardDestination::Staked => StakingLedger::<T>::get(
+                StakingAccount::Stash(stash.clone()),
+            )
+            .ok()
+            .and_then(|mut l| {
+                l.active += amount;
+                l.total += amount;
+                let r = asset::mint_into_existing::<T>(stash, amount);
+                let _ = l.update();
+                r
+            }),
             RewardDestination::Account(dest_account) => {
-                Some(T::Currency::deposit_creating(&dest_account, amount))
+                Some(asset::mint_creating::<T>(&dest_account, amount))
             },
             RewardDestination::None => None,
         }
@@ -498,7 +504,7 @@ impl<T: Config> Pallet<T> {
 
             // Set ending era reward.
             <ErasValidatorReward<T>>::insert(&active_era.index, validator_payout);
-            T::RewardRemainder::on_unbalanced(T::Currency::issue(remainder));
+            T::RewardRemainder::on_unbalanced(asset::issue::<T>(remainder));
 
             // Clear offending validators.
             <OffendingValidators<T>>::kill();
@@ -511,7 +517,7 @@ impl<T: Config> Pallet<T> {
             return Ok(())
         }
         for (dest_account, amount) in Self::committee_team_reward_per_year().ok_or(())? {
-            let im_balance = T::Currency::deposit_creating(&dest_account, amount);
+            let im_balance = asset::mint_creating::<T>(&dest_account, amount);
             drop(im_balance);
         }
         RewardTimes::<T>::put(reward_times - 1);
@@ -534,7 +540,7 @@ impl<T: Config> Pallet<T> {
         {
             for a_foundation in foundation_reward.who.clone() {
                 let im_balance =
-                    T::Currency::deposit_creating(&a_foundation, foundation_reward.reward_amount);
+                    asset::mint_creating::<T>(&a_foundation, foundation_reward.reward_amount);
                 drop(im_balance);
             }
 
@@ -546,7 +552,7 @@ impl<T: Config> Pallet<T> {
             era_index >= treasury_reward.first_reward_era &&
             (era_index - treasury_reward.first_reward_era) % treasury_reward.reward_interval == 0
         {
-            let im_balance = T::Currency::deposit_creating(
+            let im_balance = asset::mint_creating::<T>(
                 &treasury_reward.treasury_account,
                 treasury_reward.reward_amount,
             );
@@ -705,7 +711,7 @@ impl<T: Config> Pallet<T> {
     fn collect_exposures(
         supports: BoundedSupportsOf<T::ElectionProvider>,
     ) -> BoundedVec<(T::AccountId, Exposure<T::AccountId, BalanceOf<T>>), MaxWinnersOf<T>> {
-        let total_issuance = T::Currency::total_issuance();
+        let total_issuance = asset::total_issuance::<T>();
         let to_currency = |e: frame_election_provider_support::ExtendedBalance| {
             T::CurrencyToVote::to_currency(e, total_issuance)
         };
@@ -733,7 +739,8 @@ impl<T: Config> Pallet<T> {
                 let exposure = Exposure { own, others, total };
                 (validator, exposure)
             })
-            .try_collect()
+            .collect::<Vec<_>>()
+            .try_into()
             .expect("we only map through support vector which cannot change the size; qed")
     }
 
@@ -745,14 +752,9 @@ impl<T: Config> Pallet<T> {
     /// - after a `withdraw_unbonded()` call that frees all of a stash's bonded balance.
     /// - through `reap_stash()` if the balance has fallen to zero (through slashing).
     pub(crate) fn kill_stash(stash: &T::AccountId, num_slashing_spans: u32) -> DispatchResult {
-        let controller = <Bonded<T>>::get(stash).ok_or(Error::<T>::NotStash)?;
-
         slashing::clear_stash_metadata::<T>(stash, num_slashing_spans)?;
 
-        <Bonded<T>>::remove(stash);
-        <Ledger<T>>::remove(&controller);
-
-        <Payee<T>>::remove(stash);
+        StakingLedger::<T>::kill(stash)?;
         Self::do_remove_validator(stash);
         Self::do_remove_nominator(stash);
 
@@ -1071,13 +1073,13 @@ impl<T: Config> Pallet<T> {
     /// Returns the current nominations quota for nominators.
     ///
     /// Used by the runtime API.
-    /// Note: for now, this api runtime will always return value of `T::MaxNominations` and thus it
-    /// is redundant. However, with the upcoming changes in
-    /// <https://github.com/paritytech/substrate/pull/12970>, the nominations quota will change
-    /// depending on the nominators balance. We're introducing this runtime API now to prepare the
-    /// community to use it before rolling out PR#12970.
-    pub fn api_nominations_quota(_balance: BalanceOf<T>) -> u32 {
-        T::MaxNominations::get()
+    pub fn api_nominations_quota(balance: BalanceOf<T>) -> u32 {
+        T::NominationsQuota::get_quota(balance)
+    }
+
+    /// Whether `who` is a virtual staker.
+    pub fn is_virtual_staker(who: &T::AccountId) -> bool {
+        VirtualStakers::<T>::contains_key(who)
     }
 }
 
@@ -1100,7 +1102,7 @@ impl<T: Config> PhaseReward for Pallet<T> {
 impl<T: Config> ElectionDataProvider for Pallet<T> {
     type AccountId = T::AccountId;
     type BlockNumber = BlockNumberFor<T>;
-    type MaxVotesPerVoter = T::MaxNominations;
+    type MaxVotesPerVoter = MaxNominationsOf<T>;
 
     fn desired_targets() -> data_provider::Result<u32> {
         Self::register_weight(T::DbWeight::get().reads(1));
@@ -1173,13 +1175,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         <Bonded<T>>::insert(voter.clone(), voter.clone());
         <Ledger<T>>::insert(
             voter.clone(),
-            StakingLedger {
-                stash: voter.clone(),
-                active: stake,
-                total: stake,
-                unlocking: Default::default(),
-                claimed_rewards: Default::default(),
-            },
+            StakingLedger::<T>::new(voter.clone(), stake),
         );
 
         Self::do_add_nominator(&voter, Nominations { targets, submitted_in: 0, suppressed: false });
@@ -1191,13 +1187,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         <Bonded<T>>::insert(target.clone(), target.clone());
         <Ledger<T>>::insert(
             target.clone(),
-            StakingLedger {
-                stash: target.clone(),
-                active: stake,
-                total: stake,
-                unlocking: Default::default(),
-                claimed_rewards: Default::default(),
-            },
+            StakingLedger::<T>::new(target.clone(), stake),
         );
         Self::do_add_validator(
             &target,
@@ -1232,13 +1222,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
             <Bonded<T>>::insert(v.clone(), v.clone());
             <Ledger<T>>::insert(
                 v.clone(),
-                StakingLedger {
-                    stash: v.clone(),
-                    active: stake,
-                    total: stake,
-                    unlocking: Default::default(),
-                    claimed_rewards: Default::default(),
-                },
+                StakingLedger::<T>::new(v.clone(), stake),
             );
             Self::do_add_validator(
                 &v,
@@ -1253,13 +1237,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
             <Bonded<T>>::insert(v.clone(), v.clone());
             <Ledger<T>>::insert(
                 v.clone(),
-                StakingLedger {
-                    stash: v.clone(),
-                    active: stake,
-                    total: stake,
-                    unlocking: Default::default(),
-                    claimed_rewards: Default::default(),
-                },
+                StakingLedger::<T>::new(v.clone(), stake),
             );
             Self::do_add_nominator(
                 &v,
@@ -1507,9 +1485,9 @@ impl<T: Config> ScoreProvider<T::AccountId> for Pallet<T> {
         // this will clearly results in an inconsistent state, but it should not matter for a
         // benchmark.
         let active: BalanceOf<T> = weight.try_into().map_err(|_| ()).unwrap();
-        let mut ledger = match Self::ledger(who) {
-            None => StakingLedger::default_from(who.clone()),
-            Some(l) => l,
+        let mut ledger = match StakingLedger::<T>::get(StakingAccount::Stash(who.clone())) {
+            Ok(l) => l,
+            Err(_) => StakingLedger::default_from(who.clone()),
         };
         ledger.active = active;
 
@@ -1519,7 +1497,7 @@ impl<T: Config> ScoreProvider<T::AccountId> for Pallet<T> {
         // also, we play a trick to make sure that a issuance based-`CurrencyToVote` behaves well:
         // This will make sure that total issuance is zero, thus the currency to vote will be a 1-1
         // conversion.
-        let imbalance = T::Currency::burn(T::Currency::total_issuance());
+        let imbalance = asset::burn::<T>(asset::total_issuance::<T>());
         // kinda ugly, but gets the job done. The fact that this works here is a HUGE exception.
         // Don't try this pattern in other places.
         core::mem::forget(imbalance);
@@ -1705,8 +1683,7 @@ impl<T: Config> StakingInterface for Pallet<T> {
     }
 
     fn stash_by_ctrl(controller: &Self::AccountId) -> Result<Self::AccountId, DispatchError> {
-        Self::ledger(controller)
-            .map(|l| l.stash)
+        StakingLedger::<T>::paired_account(StakingAccount::Controller(controller.clone()))
             .ok_or(Error::<T>::NotController.into())
     }
 
@@ -1725,10 +1702,9 @@ impl<T: Config> StakingInterface for Pallet<T> {
     }
 
     fn stake(who: &Self::AccountId) -> Result<Stake<BalanceOf<T>>, DispatchError> {
-        Self::bonded(who)
-            .and_then(|c| Self::ledger(c))
+        StakingLedger::<T>::get(StakingAccount::Stash(who.clone()))
             .map(|l| Stake { total: l.total, active: l.active })
-            .ok_or(Error::<T>::NotStash.into())
+            .map_err(|_| Error::<T>::NotStash.into())
     }
 
     fn bond_extra(who: &Self::AccountId, extra: Self::Balance) -> DispatchResult {
@@ -1736,34 +1712,28 @@ impl<T: Config> StakingInterface for Pallet<T> {
     }
 
     fn unbond(who: &Self::AccountId, value: Self::Balance) -> DispatchResult {
-        let ctrl = Self::bonded(who).ok_or(Error::<T>::NotStash)?;
-        Self::unbond(RawOrigin::Signed(ctrl).into(), value)
+        Self::unbond(RawOrigin::Signed(who.clone()).into(), value)
             .map_err(|with_post| with_post.error)
             .map(|_| ())
     }
 
     fn set_payee(stash: &Self::AccountId, reward_acc: &Self::AccountId) -> DispatchResult {
-        let ctrl = Self::bonded(stash).ok_or(Error::<T>::NotStash)?;
         Self::set_payee(
-            RawOrigin::Signed(ctrl).into(),
+            RawOrigin::Signed(stash.clone()).into(),
             RewardDestination::Account(reward_acc.clone()),
         )
     }
 
     fn chill(who: &Self::AccountId) -> DispatchResult {
-        // defensive-only: any account bonded via this interface has the stash set as the
-        // controller, but we have to be sure. Same comment anywhere else that we read this.
-        let ctrl = Self::bonded(who).ok_or(Error::<T>::NotStash)?;
-        Self::chill(RawOrigin::Signed(ctrl).into())
+        Self::chill(RawOrigin::Signed(who.clone()).into())
     }
 
     fn withdraw_unbonded(
         who: Self::AccountId,
         num_slashing_spans: u32,
     ) -> Result<bool, DispatchError> {
-        let ctrl = Self::bonded(who).ok_or(Error::<T>::NotStash)?;
-        Self::withdraw_unbonded(RawOrigin::Signed(ctrl.clone()).into(), num_slashing_spans)
-            .map(|_| !Ledger::<T>::contains_key(&ctrl))
+        Self::withdraw_unbonded(RawOrigin::Signed(who.clone()).into(), num_slashing_spans)
+            .map(|_| !StakingLedger::<T>::is_bonded(StakingAccount::Stash(who)))
             .map_err(|with_post| with_post.error)
     }
 
@@ -1780,9 +1750,8 @@ impl<T: Config> StakingInterface for Pallet<T> {
     }
 
     fn nominate(who: &Self::AccountId, targets: Vec<Self::AccountId>) -> DispatchResult {
-        let ctrl = Self::bonded(who).ok_or(Error::<T>::NotStash)?;
         let targets = targets.into_iter().map(T::Lookup::unlookup).collect::<Vec<_>>();
-        Self::nominate(RawOrigin::Signed(ctrl).into(), targets)
+        Self::nominate(RawOrigin::Signed(who.clone()).into(), targets)
     }
 
     fn status(
@@ -1810,8 +1779,8 @@ impl<T: Config> StakingInterface for Pallet<T> {
         }
     }
 
-    fn is_virtual_staker(_who: &Self::AccountId) -> bool {
-        false
+    fn is_virtual_staker(who: &Self::AccountId) -> bool {
+        Self::is_virtual_staker(who)
     }
 
     fn slash_reward_fraction() -> Perbill {
@@ -1847,6 +1816,46 @@ impl<T: Config> StakingInterface for Pallet<T> {
     }
 }
 
+impl<T: Config> sp_staking::StakingUnchecked for Pallet<T> {
+    fn migrate_to_virtual_staker(who: &Self::AccountId) -> DispatchResult {
+        asset::kill_stake::<T>(who)?;
+        VirtualStakers::<T>::insert(who, ());
+        Ok(())
+    }
+
+    fn virtual_bond(
+        keyless_who: &Self::AccountId,
+        value: Self::Balance,
+        payee: &Self::AccountId,
+    ) -> DispatchResult {
+        if StakingLedger::<T>::is_bonded(StakingAccount::Stash(keyless_who.clone())) {
+            return Err(Error::<T>::AlreadyBonded.into())
+        }
+
+        ensure!(keyless_who != payee, Error::<T>::RewardDestinationRestricted);
+
+        VirtualStakers::<T>::insert(keyless_who, ());
+        Self::deposit_event(Event::<T>::Bonded {
+            stash: keyless_who.clone(),
+            amount: value,
+        });
+
+        let ledger = StakingLedger::<T>::new(keyless_who.clone(), value);
+        ledger.bond(RewardDestination::Account(payee.clone()))?;
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn migrate_to_direct_staker(who: &Self::AccountId) {
+        assert!(VirtualStakers::<T>::contains_key(who));
+        let ledger =
+            StakingLedger::<T>::get(StakingAccount::Stash(who.clone())).unwrap();
+        let _ = asset::update_stake::<T>(who, ledger.total)
+            .expect("funds must be transferred to stash");
+        VirtualStakers::<T>::remove(who);
+    }
+}
+
 #[cfg(any(test, feature = "try-runtime"))]
 impl<T: Config> Pallet<T> {
     pub(crate) fn do_try_state(_: BlockNumberFor<T>) -> Result<(), TryRuntimeError> {
@@ -1873,10 +1882,9 @@ impl<T: Config> Pallet<T> {
             "wrong external count"
         );
         ensure!(
-			ValidatorCount::<T>::get() <=
-				<T::ElectionProvider as frame_election_provider_support::ElectionProvider>::MaxWinnersPerPage::get(),
-			Error::<T>::TooManyValidators
-		);
+            ValidatorCount::<T>::get() <= MaxWinnersOf::<T>::get(),
+            Error::<T>::TooManyValidators
+        );
         Ok(())
     }
 
@@ -1957,12 +1965,13 @@ impl<T: Config> Pallet<T> {
 
     fn ensure_ledger_consistent(ctrl: T::AccountId) -> Result<(), TryRuntimeError> {
         // ensures ledger.total == ledger.active + sum(ledger.unlocking).
-        let ledger = Self::ledger(ctrl.clone()).ok_or("Not a controller.")?;
+        let ledger = StakingLedger::<T>::get(StakingAccount::Controller(ctrl.clone()))
+            .map_err(|_| "Not a controller.")?;
         let real_total: BalanceOf<T> =
             ledger.unlocking.iter().fold(ledger.active, |a, c| a + c.value);
         ensure!(real_total == ledger.total, "ledger.total corrupt");
 
-        if !(ledger.active >= T::Currency::minimum_balance() || ledger.active.is_zero()) {
+        if !(ledger.active >= asset::existential_deposit::<T>() || ledger.active.is_zero()) {
             log!(warn, "ledger.active less than ED: {:?}, {:?}", ctrl, ledger)
         }
 

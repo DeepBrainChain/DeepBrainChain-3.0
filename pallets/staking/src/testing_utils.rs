@@ -54,8 +54,8 @@ pub fn create_funded_user<T: Config>(
     balance_factor: u32,
 ) -> T::AccountId {
     let user = account(string, n, SEED);
-    let balance = T::Currency::minimum_balance() * balance_factor.into();
-    let _ = T::Currency::make_free_balance_be(&user, balance);
+    let balance = asset::existential_deposit::<T>() * balance_factor.into();
+    let _ = asset::set_stakeable_balance::<T>(&user, balance);
     user
 }
 
@@ -66,7 +66,7 @@ pub fn create_funded_user_with_balance<T: Config>(
     balance: BalanceOf<T>,
 ) -> T::AccountId {
     let user = account(string, n, SEED);
-    let _ = T::Currency::make_free_balance_be(&user, balance);
+    let _ = asset::set_stakeable_balance::<T>(&user, balance);
     user
 }
 
@@ -77,7 +77,7 @@ pub fn create_stash_controller<T: Config>(
     destination: RewardDestination<T::AccountId>,
 ) -> Result<(T::AccountId, T::AccountId), &'static str> {
     let staker = create_funded_user::<T>("stash", n, balance_factor);
-    let amount = T::Currency::minimum_balance() * (balance_factor / 10).max(1).into();
+    let amount = asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into();
     Staking::<T>::bond(RawOrigin::Signed(staker.clone()).into(), amount, destination)?;
     Ok((staker.clone(), staker))
 }
@@ -96,7 +96,7 @@ pub fn create_unique_stash_controller<T: Config>(
     } else {
         create_funded_user::<T>("controller", n, balance_factor)
     };
-    let amount = T::Currency::minimum_balance() * (balance_factor / 10).max(1).into();
+    let amount = asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into();
     Staking::<T>::bond(RawOrigin::Signed(stash.clone()).into(), amount, destination)?;
 
     // update ledger to be a *different* controller to stash
@@ -129,7 +129,7 @@ pub fn create_stash_and_dead_payee<T: Config>(
     let staker = create_funded_user::<T>("stash", n, 0);
     // payee has no funds
     let payee = create_funded_user::<T>("payee", n, 0);
-    let amount = T::Currency::minimum_balance() * (balance_factor / 10).max(1).into();
+    let amount = asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into();
     Staking::<T>::bond(
         RawOrigin::Signed(staker.clone()).into(),
         amount,
