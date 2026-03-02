@@ -79,7 +79,7 @@ pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// DBC Mainnet spec config
 pub fn mainnet_config() -> Result<ChainSpec, String> {
-    ChainSpec::from_json_bytes(&include_bytes!("../res/dbc-spec-v4.json")[..])
+    ChainSpec::from_json_bytes(&include_bytes!("../res/dbc-spec-v5.json")[..])
 
     // generate_mainnet_config
     // Ok(generate_mainnet_config())
