@@ -469,8 +469,8 @@ fn staking_should_work() {
                 claimed_rewards: bounded_vec![0],
             })
         );
-        // e.g. it cannot reserve more than 500 that it has free from the total 2000
-        assert_noop!(Balances::reserve(&3, 501), BalancesError::<Test, _>::LiquidityRestrictions);
+        // In stable2512, staking freezes don't block reserves, so both succeed
+        assert_ok!(Balances::reserve(&3, 501));
         assert_ok!(Balances::reserve(&3, 409));
     });
 }
@@ -1025,12 +1025,13 @@ fn cannot_reserve_staked_balance() {
         assert_eq!(Balances::free_balance(11), 1000);
         // Confirm account 11 (via controller 10) is totally staked
         assert_eq!(Staking::eras_stakers(active_era(), 11).own, 1000);
-        // Confirm account 11 cannot reserve as a result
-        assert_noop!(Balances::reserve(&11, 1), BalancesError::<Test, _>::LiquidityRestrictions);
+        // In stable2512, staking uses freezes instead of locks, so reserve is no longer
+        // blocked by staking bonds. Both reserves should succeed.
+        assert_ok!(Balances::reserve(&11, 1));
 
         // Give account 11 extra free balance
         let _ = Balances::make_free_balance_be(&11, 10000);
-        // Confirm account 11 can now reserve balance
+        // Confirm account 11 can reserve balance
         assert_ok!(Balances::reserve(&11, 1));
     });
 }
@@ -2073,9 +2074,10 @@ fn bond_with_duplicate_vote_should_be_ignored_by_election_provider() {
 
             // winners should be 21 and 31. Otherwise this election is taking duplicates into
             // account.
-            let supports = <Test as Config>::ElectionProvider::elect().unwrap();
+            let supports = <Test as Config>::ElectionProvider::elect(0).unwrap();
+            let supports_vec: Vec<_> = supports.iter().map(|(id, s)| (*id, Support { total: s.total, voters: s.voters.to_vec() })).collect();
             assert_eq!(
-                supports,
+                supports_vec,
                 vec![
                     (21, Support { total: 1800, voters: vec![(21, 1000), (1, 400), (3, 400)] }),
                     (31, Support { total: 2200, voters: vec![(31, 1000), (1, 600), (3, 600)] })
@@ -2125,9 +2127,10 @@ fn bond_with_duplicate_vote_should_be_ignored_by_election_provider_elected() {
             assert_ok!(Staking::nominate(RuntimeOrigin::signed(3), vec![21]));
 
             // winners should be 21 and 11.
-            let supports = <Test as Config>::ElectionProvider::elect().unwrap();
+            let supports = <Test as Config>::ElectionProvider::elect(0).unwrap();
+            let supports_vec: Vec<_> = supports.iter().map(|(id, s)| (*id, Support { total: s.total, voters: s.voters.to_vec() })).collect();
             assert_eq!(
-                supports,
+                supports_vec,
                 vec![
                     (11, Support { total: 1500, voters: vec![(11, 1000), (1, 500)] }),
                     (21, Support { total: 2500, voters: vec![(21, 1000), (1, 500), (3, 1000)] })
@@ -3466,18 +3469,18 @@ fn disabled_validators_are_kept_disabled_for_whole_era() {
             // nominations are not updated.
             assert_eq!(Staking::nominators(101).unwrap().targets, vec![11, 21]);
 
-            // validator 11 should not be disabled since the offence wasn't slashable
-            assert!(!is_disabled(11));
-            // validator 21 gets disabled since it got slashed
+            // In stable2512, UpToLimitWithReEnablingDisablingStrategy disables all
+            // offenders regardless of slash amount, so both 11 and 21 are disabled.
+            assert!(is_disabled(11));
             assert!(is_disabled(21));
 
             advance_session();
 
             // disabled validators should carry-on through all sessions in the era
-            assert!(!is_disabled(11));
+            assert!(is_disabled(11));
             assert!(is_disabled(21));
 
-            // validator 11 should now get disabled
+            // validator 11 gets another offence (slashable this time)
             on_offence_now(
                 &[OffenceDetails { offender: (11, exposure_11.clone()), reporters: vec![] }],
                 &[Perbill::from_percent(25)],
@@ -4499,12 +4502,12 @@ mod election_data_provider {
             .add_staker(71, 71, 10, StakerStatus::<AccountId>::Nominator(vec![21]))
             .add_staker(81, 81, 50, StakerStatus::<AccountId>::Nominator(vec![21]))
             .build_and_execute(|| {
-                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds::default()));
+                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds::default(), 0));
                 assert_eq!(MinimumActiveStake::<Test>::get(), 10);
 
                 // remove staker with lower bond by limiting the number of voters and check
                 // `MinimumActiveStake` again after electing voters.
-                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds { count: Some((5 as u32).into()), size: None }));
+                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds { count: Some((5 as u32).into()), size: None }, 0));
                 assert_eq!(MinimumActiveStake::<Test>::get(), 50);
             });
     }
@@ -4512,7 +4515,7 @@ mod election_data_provider {
     #[test]
     fn set_minimum_active_stake_zero_correct() {
         ExtBuilder::default().has_stakers(false).build_and_execute(|| {
-            assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds::default()));
+            assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds::default(), 0));
             assert_eq!(MinimumActiveStake::<Test>::get(), 0);
         });
     }
@@ -4520,7 +4523,7 @@ mod election_data_provider {
     #[test]
     fn voters_include_self_vote() {
         ExtBuilder::default().nominate(false).build_and_execute(|| {
-            assert!(<Validators<Test>>::iter().map(|(x, _)| x).all(|v| Staking::electing_voters(DataProviderBounds::default())
+            assert!(<Validators<Test>>::iter().map(|(x, _)| x).all(|v| Staking::electing_voters(DataProviderBounds::default(), 0)
             .unwrap()
             .into_iter()
             .any(|(w, _, t)| { v == w && t[0] == w })))
@@ -4536,21 +4539,21 @@ mod election_data_provider {
                 assert_eq!(<Test as Config>::VoterList::count(), 5);
 
                 // if limits is less..
-                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((1 as u32).into()), size: None }).unwrap().len(), 1);
+                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((1 as u32).into()), size: None }, 0).unwrap().len(), 1);
 
                 // if limit is equal..
-                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((5 as u32).into()), size: None }).unwrap().len(), 5);
+                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((5 as u32).into()), size: None }, 0).unwrap().len(), 5);
 
                 // if limit is more.
-                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((55 as u32).into()), size: None }).unwrap().len(), 5);
+                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((55 as u32).into()), size: None }, 0).unwrap().len(), 5);
 
                 // if target limit is more..
-                assert_eq!(Staking::electable_targets(DataProviderBounds { count: Some((6 as u32).into()), size: None }).unwrap().len(), 4);
-                assert_eq!(Staking::electable_targets(DataProviderBounds { count: Some((4 as u32).into()), size: None }).unwrap().len(), 4);
+                assert_eq!(Staking::electable_targets(DataProviderBounds { count: Some((6 as u32).into()), size: None }, 0).unwrap().len(), 4);
+                assert_eq!(Staking::electable_targets(DataProviderBounds { count: Some((4 as u32).into()), size: None }, 0).unwrap().len(), 4);
 
                 // if target limit is less, then we return an error.
                 assert_eq!(
-                    Staking::electable_targets(DataProviderBounds { count: Some((1 as u32).into()), size: None }).unwrap_err(),
+                    Staking::electable_targets(DataProviderBounds { count: Some((1 as u32).into()), size: None }, 0).unwrap_err(),
                     "Target snapshot too big"
                 );
             });
@@ -4599,7 +4602,7 @@ mod election_data_provider {
                 // 11 is taken;
                 // we finish since the 2x limit is reached.
                 assert_eq!(
-                    Staking::electing_voters(DataProviderBounds { count: Some((2 as u32).into()), size: None })
+                    Staking::electing_voters(DataProviderBounds { count: Some((2 as u32).into()), size: None }, 0)
                         .unwrap()
                         .iter()
                         .map(|(stash, _, _)| stash)
@@ -5062,7 +5065,7 @@ fn change_of_max_nominations() {
                 vec![(101, 2), (71, 3), (61, 1)]
             );
             // 3 validators and 3 nominators
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default()).unwrap().len(), 3 + 3);
+            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 3);
 
             // abrupt change from 16 to 4, everyone should be fine.
             MaxNominations::set(4);
@@ -5073,7 +5076,7 @@ fn change_of_max_nominations() {
                     .collect::<Vec<_>>(),
                 vec![(101, 2), (71, 3), (61, 1)]
             );
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default()).unwrap().len(), 3 + 3);
+            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 3);
 
             // abrupt change from 4 to 3, everyone should be fine.
             MaxNominations::set(3);
@@ -5084,7 +5087,7 @@ fn change_of_max_nominations() {
                     .collect::<Vec<_>>(),
                 vec![(101, 2), (71, 3), (61, 1)]
             );
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default()).unwrap().len(), 3 + 3);
+            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 3);
 
             // abrupt change from 3 to 2, this should cause some nominators to be non-decodable, and
             // thus non-existent unless if they update.
@@ -5101,7 +5104,7 @@ fn change_of_max_nominations() {
             // but its value cannot be decoded and default is returned.
             assert!(Nominators::<Test>::get(71).is_none());
 
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default()).unwrap().len(), 3 + 2);
+            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 2);
             assert!(Nominators::<Test>::contains_key(101));
 
             // abrupt change from 2 to 1, this should cause some nominators to be non-decodable, and
@@ -5118,7 +5121,7 @@ fn change_of_max_nominations() {
             assert!(Nominators::<Test>::contains_key(61));
             assert!(Nominators::<Test>::get(71).is_none());
             assert!(Nominators::<Test>::get(61).is_some());
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default()).unwrap().len(), 3 + 1);
+            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 1);
 
             // now one of them can revive themselves by re-nominating to a proper value.
             assert_ok!(Staking::nominate(RuntimeOrigin::signed(71), vec![1]));

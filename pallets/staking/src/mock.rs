@@ -159,7 +159,7 @@ impl pallet_balances::Config for Test {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
-    type RuntimeHoldReason = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = ();
     type DoneSlashHandler = ();
     type FreezeIdentifier = ();
@@ -181,11 +181,15 @@ impl pallet_session::Config for Test {
     type ValidatorIdOf = crate::StashOf<Test>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type WeightInfo = ();
+    type DisablingStrategy = pallet_session::disabling::UpToLimitWithReEnablingDisablingStrategy;
+    type Currency = Balances;
+    type KeyDeposit = frame_support::traits::ConstU128<0>;
 }
 
 impl pallet_session::historical::Config for Test {
     type FullIdentification = crate::Exposure<AccountId, Balance>;
     type FullIdentificationOf = crate::ExposureOf<Test>;
+    type RuntimeEvent = RuntimeEvent;
 }
 impl pallet_authorship::Config for Test {
     type FindAuthor = Author11;
@@ -251,6 +255,7 @@ impl pallet_bags_list::Config<VoterBagsListInstance> for Test {
     type ScoreProvider = Staking;
     type BagThresholds = BagThresholds;
     type Score = VoteWeight;
+    type MaxAutoRebagPerBlock = ConstU32<0>;
 }
 
 parameter_types! {
@@ -541,6 +546,7 @@ impl ExtBuilder {
                     .map(|id| (id, id, SessionKeys { other: id.into() }))
                     .collect()
             },
+            non_authority_keys: vec![],
         }
         .assimilate_storage(&mut storage);
 
