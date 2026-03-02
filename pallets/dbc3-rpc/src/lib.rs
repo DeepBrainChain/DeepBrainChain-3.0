@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use dbc3_runtime_api::Dbc3Api as Dbc3StorageRuntimeApi;
 use jsonrpsee::{
-    core::{Error as JsonRpseeError, RpcResult},
+    core::RpcResult,
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject},
+    types::error::{ErrorCode, ErrorObject},
 };
 use parity_scale_codec::Codec;
 use sp_api::ProvideRuntimeApi;
@@ -107,12 +107,12 @@ impl<C, M> Dbc3Storage<C, M> {
     }
 }
 
-fn map_err(e: impl std::fmt::Debug) -> JsonRpseeError {
-    JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+fn map_err(e: impl std::fmt::Debug) -> jsonrpsee::types::ErrorObjectOwned {
+    ErrorObject::owned(
         ErrorCode::InternalError.code(),
         format!("{e:?}"),
         None::<()>,
-    )))
+    )
 }
 
 impl<C, Block, AccountId>

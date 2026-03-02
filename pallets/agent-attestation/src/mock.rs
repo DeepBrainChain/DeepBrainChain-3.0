@@ -14,18 +14,13 @@ pub type AccountId = u64;
 pub type BlockNumber = u64;
 
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
+    pub enum Test {
         System: frame_system,
         Balances: pallet_balances,
         AgentAttestation: pallet_agent_attestation,
     }
 );
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 parameter_types! {
@@ -68,6 +63,13 @@ impl frame_system::Config for Test {
     type SS58Prefix = ConstU16<42>;
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
+    type ExtensionsWeightInfo = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 impl pallet_balances::Config for Test {
@@ -80,10 +82,11 @@ impl pallet_balances::Config for Test {
     type MaxLocks = MaxLocks;
     type MaxReserves = ();
     type ReserveIdentifier = [u8; 8];
-    type MaxFreezes = ConstU32<0>;
-    type MaxHolds = ConstU32<0>;
-    type FreezeIdentifier = ();
     type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
+    type FreezeIdentifier = ();
+    type MaxFreezes = ConstU32<0>;
+    type DoneSlashHandler = ();
 }
 
 // Mock implementation for AttestationSettler
@@ -134,6 +137,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
             (4, 1_000_000_000_000),
             (5, 1_000_000_000_000),
         ],
+        dev_accounts: None,
     }
     .assimilate_storage(&mut t)
     .expect("balances storage assimilates");

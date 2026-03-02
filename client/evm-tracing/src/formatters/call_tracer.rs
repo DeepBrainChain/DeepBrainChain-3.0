@@ -11,7 +11,7 @@ use serde::Serialize;
 
 use ethereum_types::{H160, U256};
 use parity_scale_codec::{Decode, Encode};
-use sp_std::{cmp::Ordering, vec::Vec};
+use std::cmp::Ordering;
 
 pub struct Formatter;
 

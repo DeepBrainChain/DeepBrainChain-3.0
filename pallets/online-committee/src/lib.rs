@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 pub mod rpc;
 pub mod rpc_types;
 mod slash;
@@ -33,7 +35,7 @@ use frame_support::{
 };
 use frame_system::{ensure_signed, pallet_prelude::*};
 use sp_runtime::traits::Zero;
-use sp_std::{prelude::*, str, vec::Vec};
+use alloc::{vec, vec::Vec}; use core::str;
 
 pub use pallet::*;
 pub use types::*;

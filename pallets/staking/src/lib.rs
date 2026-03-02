@@ -282,6 +282,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
+extern crate alloc;
+
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 #[cfg(any(feature = "runtime-benchmarks", test))]
@@ -299,7 +301,7 @@ pub mod weights;
 
 pub mod pallet;
 
-use codec::{Decode, Encode, HasCompact, MaxEncodedLen};
+use codec::{Decode, DecodeWithMemTracking, Encode, HasCompact, MaxEncodedLen};
 use frame_support::{
     traits::{Currency, Defensive, Get},
     weights::Weight,
@@ -316,7 +318,7 @@ use sp_staking::{
     offence::{Offence, OffenceError, ReportOffence},
     EraIndex, OnStakingUpdate, SessionIndex,
 };
-use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+use alloc::{boxed::Box, collections::BTreeMap, vec, vec::Vec};
 pub use weights::WeightInfo;
 
 pub use pallet::{pallet::*, *};
@@ -336,7 +338,7 @@ macro_rules! log {
 
 /// Maximum number of winners (aka. active validators), as defined in the election provider of this
 /// pallet.
-pub type MaxWinnersOf<T> = <<T as Config>::ElectionProvider as frame_election_provider_support::ElectionProviderBase>::MaxWinners;
+pub type MaxWinnersOf<T> = <<T as Config>::ElectionProvider as frame_election_provider_support::ElectionProvider>::MaxWinnersPerPage;
 
 /// Counter for the number of "reward" points earned by a given validator.
 pub type RewardPoint = u32;
@@ -383,7 +385,7 @@ impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
 }
 
 /// A destination account for payment.
-#[derive(PartialEq, Eq, Copy, Clone, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(PartialEq, Eq, Copy, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum RewardDestination<AccountId> {
     /// Pay into the stash account, increasing the amount at stake accordingly.
     Staked,
@@ -404,7 +406,7 @@ impl<AccountId> Default for RewardDestination<AccountId> {
 }
 
 /// Preference of what happens regarding validation.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo, Default, MaxEncodedLen)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, codec::DecodeWithMemTracking, RuntimeDebug, TypeInfo, Default, MaxEncodedLen)]
 pub struct ValidatorPrefs {
     /// Reward that validator takes up-front; only the rest is split between themselves and
     /// nominators.
@@ -638,7 +640,7 @@ impl<T: Config> StakingLedger<T> {
                 // slightly under-slashed, by at most `MaxUnlockingChunks * ED`, which is not a big
                 // deal.
                 slash_from_target =
-                    sp_std::mem::replace(target, Zero::zero()).saturating_add(slash_from_target)
+                    core::mem::replace(target, Zero::zero()).saturating_add(slash_from_target)
             }
 
             self.total = self.total.saturating_sub(slash_from_target);
@@ -666,8 +668,9 @@ impl<T: Config> StakingLedger<T> {
         // clean unlocking chunks that are set to zero.
         self.unlocking.retain(|c| !c.value.is_zero());
 
-        T::EventListeners::on_slash(&self.stash, self.active, &slashed_unlocking);
-        pre_slash_total.saturating_sub(self.total)
+        let slashed_total = pre_slash_total.saturating_sub(self.total);
+        T::EventListeners::on_slash(&self.stash, self.active, &slashed_unlocking, slashed_total);
+        slashed_total
     }
 }
 
@@ -692,7 +695,7 @@ pub struct Nominations<T: Config> {
 }
 
 /// The amount of exposure (to slashing) than an individual nominator has.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub struct IndividualExposure<AccountId, Balance: HasCompact> {
     /// The stash account of the nominator in question.
     pub who: AccountId,
@@ -702,7 +705,7 @@ pub struct IndividualExposure<AccountId, Balance: HasCompact> {
 }
 
 /// A snapshot of the stake backing a single validator in the system.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub struct Exposure<AccountId, Balance: HasCompact> {
     /// The total balance backing this validator.
     #[codec(compact)]
@@ -826,7 +829,7 @@ impl<Balance: Default> EraPayout<Balance> for () {
 
 /// Adaptor to turn a `PiecewiseLinear` curve definition into an `EraPayout` impl, used for
 /// backwards compatibility.
-pub struct ConvertCurve<T>(sp_std::marker::PhantomData<T>);
+pub struct ConvertCurve<T>(core::marker::PhantomData<T>);
 impl<Balance: AtLeast32BitUnsigned + Clone, T: Get<&'static PiecewiseLinear<'static>>>
     EraPayout<Balance> for ConvertCurve<T>
 {
@@ -848,7 +851,7 @@ impl<Balance: AtLeast32BitUnsigned + Clone, T: Get<&'static PiecewiseLinear<'sta
 
 /// Mode of era-forcing.
 #[derive(
-    Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
+    Copy, Clone, PartialEq, Eq, Encode, Decode, codec::DecodeWithMemTracking, RuntimeDebug, TypeInfo, MaxEncodedLen,
     serde::Serialize, serde::Deserialize,
 )]
 pub enum Forcing {
@@ -872,7 +875,7 @@ impl Default for Forcing {
 
 /// A `Convert` implementation that finds the stash of the given controller account,
 /// if any.
-pub struct StashOf<T>(sp_std::marker::PhantomData<T>);
+pub struct StashOf<T>(core::marker::PhantomData<T>);
 
 impl<T: Config> Convert<T::AccountId, Option<T::AccountId>> for StashOf<T> {
     fn convert(controller: T::AccountId) -> Option<T::AccountId> {
@@ -885,7 +888,7 @@ impl<T: Config> Convert<T::AccountId, Option<T::AccountId>> for StashOf<T> {
 ///
 /// Active exposure is the exposure of the validator set currently validating, i.e. in
 /// `active_era`. It can differ from the latest planned exposure in `current_era`.
-pub struct ExposureOf<T>(sp_std::marker::PhantomData<T>);
+pub struct ExposureOf<T>(core::marker::PhantomData<T>);
 
 impl<T: Config> Convert<T::AccountId, Option<Exposure<T::AccountId, BalanceOf<T>>>>
     for ExposureOf<T>
@@ -898,7 +901,7 @@ impl<T: Config> Convert<T::AccountId, Option<Exposure<T::AccountId, BalanceOf<T>
 
 /// Filter historical offences out and only allow those from the bonding period.
 pub struct FilterHistoricalOffences<T, R> {
-    _inner: sp_std::marker::PhantomData<(T, R)>,
+    _inner: core::marker::PhantomData<(T, R)>,
 }
 
 impl<T, Reporter, Offender, R, O> ReportOffence<Reporter, Offender, O>
@@ -949,7 +952,7 @@ impl BenchmarkingConfig for TestBenchmarkingConfig {
 }
 
 // foundation reward params
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
 pub struct FoundationIssueRewards<AccountId: Ord, Balance> {
     pub who: Vec<AccountId>,
     pub left_reward_times: u32,
@@ -959,7 +962,7 @@ pub struct FoundationIssueRewards<AccountId: Ord, Balance> {
 }
 
 // Treasury issue params
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct TreasuryIssueRewards<AccountId, Balance> {
     pub treasury_account: AccountId,
     pub left_reward_times: u32,

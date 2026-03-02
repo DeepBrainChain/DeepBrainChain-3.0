@@ -1,9 +1,9 @@
 #![warn(unused_crate_dependencies)]
 
 use jsonrpsee::{
-    core::{Error as JsonRpseeError, RpcResult},
+    core::RpcResult,
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject},
+    types::error::{ErrorCode, ErrorObject},
 };
 use parity_scale_codec::Codec;
 use sp_api::ProvideRuntimeApi;
@@ -98,11 +98,11 @@ where
                 gpu_index: order_detail.gpu_index,
             })
         }
-        return Err(JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+        return Err(ErrorObject::owned(
             ErrorCode::InternalError.code(),
             "Something wrong",
             Some("NotFound"),
-        ))))
+        ))
     }
 
     fn get_rent_list(
@@ -114,11 +114,11 @@ where
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
 
         let runtime_api_result = api.get_rent_list(at_hash, renter).map_err(|e| {
-            JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+            ErrorObject::owned(
                 ErrorCode::InternalError.code(),
                 "Something wrong",
                 Some(e.to_string()),
-            )))
+            )
         })?;
 
         Ok(runtime_api_result)
@@ -136,11 +136,11 @@ where
         let machine_id = machine_id.as_bytes().to_vec();
         let runtime_api_result =
             api.is_machine_renter(at_hash, machine_id, renter).map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }
@@ -155,11 +155,11 @@ where
 
         let machine_id = machine_id.as_bytes().to_vec();
         let runtime_api_result = api.get_machine_rent_id(at_hash, machine_id).map_err(|e| {
-            JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+            ErrorObject::owned(
                 ErrorCode::InternalError.code(),
                 "Something wrong",
                 Some(e.to_string()),
-            )))
+            )
         })?;
 
         Ok(runtime_api_result)

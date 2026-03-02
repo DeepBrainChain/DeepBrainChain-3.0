@@ -3,6 +3,8 @@
 #![allow(clippy::unnecessary_mut_passed)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 use dbc_support::{
     live_machine::LiveMachine,
     machine_info::MachineInfo,
@@ -12,7 +14,7 @@ use dbc_support::{
 pub use online_profile::{rpc_types::StakerInfo, PosInfo, SysInfoDetail};
 use parity_scale_codec::Codec;
 use sp_runtime::traits::MaybeDisplay;
-use sp_std::prelude::Vec;
+use alloc::vec::Vec;
 
 // Here we declare the runtime API. It is implemented it the `impl` block in
 // runtime amalgamator file (the `runtime/src/lib.rs`)

@@ -1,11 +1,11 @@
 use crate::{ItemList, ReportId};
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Saturating, RuntimeDebug};
-use sp_std::{cmp::PartialEq, vec::Vec};
+use alloc::vec::Vec; use core::cmp::PartialEq;
 
 /// 报告人的报告记录
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
 pub struct ReporterReportList {
     pub processing_report: Vec<ReportId>,
     pub canceled_report: Vec<ReportId>,
@@ -33,7 +33,7 @@ impl ReporterReportList {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
 pub struct ReporterStakeInfo<Balance> {
     pub staked_amount: Balance,
     pub used_stake: Balance,

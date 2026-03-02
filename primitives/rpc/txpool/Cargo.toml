@@ -5,7 +5,7 @@ authors = { workspace = true }
 edition = "2021"
 
 [dependencies]
-ethereum = { workspace = true, features = [ "with-codec" ] }
+ethereum = { workspace = true, features = [ "with-scale" ] }
 
 # Substrate
 parity-scale-codec = { workspace = true }

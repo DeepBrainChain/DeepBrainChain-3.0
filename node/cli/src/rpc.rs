@@ -55,7 +55,7 @@ where
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
     C::Api: dbc_primitives_rpc_txpool::TxPoolRuntimeApi<Block>,
-    P: TransactionPool<Block = Block> + 'static,
+    P: TransactionPool<Block = Block, Hash = <Block as sp_runtime::traits::Block>::Hash> + 'static,
     A: ChainApi<Block = Block> + 'static,
     SC: SelectChain<Block> + 'static,
 
@@ -96,7 +96,7 @@ where
         pool,
         select_chain,
         chain_spec: _,
-        deny_unsafe,
+        deny_unsafe: _,
         graph,
         network,
         filter_pool,
@@ -125,11 +125,11 @@ where
         finality_provider,
     } = grandpa;
 
-    io.merge(System::new(Arc::clone(&client), Arc::clone(&pool), deny_unsafe).into_rpc())
+    io.merge(System::new(Arc::clone(&client), Arc::clone(&pool)).into_rpc())
         .ok();
     io.merge(TransactionPayment::new(Arc::clone(&client)).into_rpc()).ok();
     io.merge(
-        Babe::new(client.clone(), babe_worker_handle.clone(), keystore, select_chain, deny_unsafe)
+        Babe::new(client.clone(), babe_worker_handle.clone(), keystore, select_chain)
             .into_rpc(),
     )
     .ok();
@@ -157,10 +157,11 @@ where
         EthFilter::new(
             client.clone(),
             frontier_backend.clone(),
-            graph.clone(),
+            pool.clone(),
             filter_pool,
             500_usize, // max stored filters
             max_past_logs,
+            10_000, // max_block_range
             block_data_cache.clone(),
         )
         .into_rpc(),
@@ -212,10 +213,9 @@ where
     let convert_transaction: Option<Never> = None;
 
     io.merge(
-        Eth::<_, _, _, _, _, _, _, ()>::new(
+        Eth::<_, _, _, _, _, _, ()>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
-            graph.clone(),
             convert_transaction,
             Arc::clone(&sync_service),
             signers,

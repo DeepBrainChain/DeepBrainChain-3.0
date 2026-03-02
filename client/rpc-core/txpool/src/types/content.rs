@@ -1,5 +1,5 @@
 use crate::GetT;
-use ethereum::{TransactionAction, TransactionV2 as EthereumTransaction};
+use ethereum::{TransactionAction, TransactionV3 as EthereumTransaction};
 use ethereum_types::{H160, H256, U256};
 use fc_rpc_core::types::Bytes;
 use serde::{Serialize, Serializer};
@@ -58,6 +58,9 @@ impl GetT for Transaction {
             },
             EthereumTransaction::EIP1559(t) => {
                 (t.nonce, t.action, t.value, t.max_fee_per_gas, t.gas_limit, t.input.clone())
+            },
+            EthereumTransaction::EIP7702(t) => {
+                (t.nonce, t.destination, t.value, t.max_fee_per_gas, t.gas_limit, t.data.clone())
             },
         };
         Self {

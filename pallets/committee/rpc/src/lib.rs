@@ -3,9 +3,9 @@
 use committee::CommitteeList;
 pub use committee_runtime_api::CmRpcApi as CmStorageRuntimeApi;
 use jsonrpsee::{
-    core::{Error as JsonRpseeError, RpcResult},
+    core::RpcResult,
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject},
+    types::error::{ErrorCode, ErrorObject},
 };
 use parity_scale_codec::Codec;
 use sp_api::ProvideRuntimeApi;
@@ -47,11 +47,11 @@ where
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
 
         let runtime_api_result = api.get_committee_list(at_hash).map_err(|e| {
-            JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+            ErrorObject::owned(
                 ErrorCode::InternalError.code(),
                 "Something wrong",
                 Some(e.to_string()),
-            )))
+            )
         })?;
         Ok(runtime_api_result)
     }

@@ -15,7 +15,7 @@ use sp_runtime::{
     traits::{CheckedMul, Saturating, Zero},
     Perbill, SaturatedConversion,
 };
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn get_new_slash_id() -> u64 {

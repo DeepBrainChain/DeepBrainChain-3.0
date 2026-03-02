@@ -7,7 +7,7 @@ use dbc_support::{
 };
 use frame_support::{IterableStorageDoubleMap, IterableStorageMap};
 use frame_system::pallet_prelude::BlockNumberFor;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 use parity_scale_codec::EncodeLike;
 

@@ -7,7 +7,7 @@ use crate::{
     EraIndex, MachineId,
 };
 use frame_support::ensure;
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -15,10 +15,10 @@ use sp_runtime::{
     traits::{Saturating, Zero},
     RuntimeDebug,
 };
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 /// All details of a machine
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct MachineInfo<AccountId: Ord, BlockNumber, Balance> {

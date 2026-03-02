@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use sp_std::vec;
+use alloc::vec;
 use crate::Pallet as X402Settlement;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::Get;
@@ -87,7 +87,7 @@ frame_benchmarking::v1::benchmarks! {
         let nonce: u64 = 1;
         let replay_fingerprint = H256::from_low_u64_be(1);
         // Dummy signature — signature verification is bypassed in runtime-benchmarks
-        let sig: sp_std::vec::Vec<u8> = vec![0u8; 64];
+        let sig: alloc::vec::Vec<u8> = vec![0u8; 64];
     }: _(RawOrigin::Signed(merchant), miner, amount, nonce, replay_fingerprint, sig)
     verify {
         assert_eq!(NextIntentId::<T>::get(), 1);

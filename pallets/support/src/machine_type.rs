@@ -1,23 +1,23 @@
 #[cfg(feature = "std")]
 use super::rpc_types::serde_text;
 use super::{verify_slash::OPSlashReason, MachineId};
-use parity_scale_codec::{alloc::string::ToString, Decode, Encode};
+use parity_scale_codec::{alloc::string::ToString, Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_io::hashing::blake2_128;
 use sp_runtime::RuntimeDebug;
-use sp_std::{prelude::Box, vec, vec::Vec};
+use alloc::{boxed::Box, vec, vec::Vec};
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum Longitude {
     East(u64),
     West(u64),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum Latitude {
     South(u64),
@@ -36,7 +36,7 @@ impl Default for Latitude {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default, PartialOrd, Ord, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct CommitteeUploadInfo {
     #[cfg_attr(feature = "std", serde(with = "serde_text"))]
@@ -98,7 +98,7 @@ impl CommitteeUploadInfo {
 }
 
 // 由机器管理者自定义的提交
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct StakerCustomizeInfo {
     pub server_room: H256,
@@ -117,7 +117,7 @@ pub struct StakerCustomizeInfo {
 }
 
 /// Standard GPU rent price Per Era
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
 pub struct StandardGpuPointPrice {
     /// Standard GPU calc points
     pub gpu_point: u64,
@@ -159,13 +159,18 @@ pub enum MachineStatus<BlockNumber, AccountId> {
     Exit,
 }
 
+impl<BlockNumber: DecodeWithMemTracking, AccountId: DecodeWithMemTracking>
+    DecodeWithMemTracking for MachineStatus<BlockNumber, AccountId>
+{
+}
+
 impl<BlockNumber, AccountId> Default for MachineStatus<BlockNumber, AccountId> {
     fn default() -> Self {
         MachineStatus::AddingCustomizeInfo
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct MachineInfoDetail {
     pub committee_upload_info: CommitteeUploadInfo,

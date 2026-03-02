@@ -1,4 +1,4 @@
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 use crate::{BalanceOf, Config, MachineGPUOrder, Pallet, RentOrderId};
 use frame_system::pallet_prelude::BlockNumberFor;

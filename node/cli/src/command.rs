@@ -5,7 +5,6 @@ use crate::{
 };
 use dbc_node_common::cli_opt::{BackendType, BackendTypeConfig, RpcConfig};
 use dbc_primitives::Block as OpaqueBlock;
-use dbc_runtime::Block;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use sc_cli::SubstrateCli;
 use sc_service::PartialComponents;
@@ -147,7 +146,9 @@ pub fn run() -> sc_cli::Result<()> {
                             )
                         }
 
-                        cmd.run::<OpaqueBlock, service::HostFunctions>(config)
+                        cmd.run_with_spec::<sp_runtime::traits::BlakeTwo256, service::HostFunctions>(
+                            Some(config.chain_spec),
+                        )
                     },
                     BenchmarkCmd::Block(cmd) => {
                         let PartialComponents { client, .. } =

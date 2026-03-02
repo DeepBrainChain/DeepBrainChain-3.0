@@ -13,7 +13,7 @@ use frame_system::pallet_prelude::BlockNumberFor;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Zero;
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 /// Apply all of the migrations due to taproot.
 ///
@@ -58,7 +58,7 @@ pub struct OldRentOrderDetail<AccountId, BlockNumber, Balance> {
 pub mod deprecated {
     use crate::{migrations::OldRentOrderDetail, BalanceOf, Config, MachineId};
     use frame_support::{decl_module, decl_storage};
-    use sp_std::prelude::*;
+    use alloc::vec::Vec;
 
     decl_storage! {
         trait Store for Module<T: Config> as RentMachine {

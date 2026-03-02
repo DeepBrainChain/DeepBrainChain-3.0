@@ -5,7 +5,7 @@ use fp_evm::{
 use sp_core::{Get, U256};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
-use crate::precompiles::LOG_TARGET;
+use crate::precompiles::{LOG_TARGET, to_ethabi_u256, from_ethabi_h160};
 use alloc::format;
 use core::marker::PhantomData;
 use dbc_support::traits::MachineInfoTrait;
@@ -91,7 +91,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(calc_point)]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(calc_point))]),
                 })
             },
 
@@ -127,7 +127,7 @@ where
                     exit_status: ExitSucceed::Returned,
                     output: ethabi::encode(&[
                         ethabi::Token::Bytes(gpu_type),
-                        ethabi::Token::Uint(gpu_mem.into()),
+                        ethabi::Token::Uint(to_ethabi_u256(gpu_mem.into())),
                     ]),
                 })
             },
@@ -170,7 +170,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(cpu_rate)]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(cpu_rate))]),
                 })
             },
 
@@ -205,7 +205,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(gpu_num)]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(gpu_num))]),
                 })
             },
 
@@ -254,7 +254,7 @@ where
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
                     output: ethabi::encode(&[ethabi::Token::Uint(
-                        end_at.saturated_into::<u64>().into(),
+                        to_ethabi_u256(end_at.saturated_into::<u64>().into()),
                     )]),
                 })
             },
@@ -286,7 +286,7 @@ where
 
                 let is_owner = <rent_machine::Pallet<T> as MachineInfoTrait>::is_machine_owner(
                     machine_id.clone(),
-                    evm_address,
+                    from_ethabi_h160(evm_address),
                 )
                 .map_err(|e| PrecompileFailure::Revert {
                     exit_status: ExitRevert::Reverted,
@@ -367,7 +367,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(rent_fee.into())]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(rent_fee.into()))]),
                 })
             },
 
@@ -430,7 +430,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(rent_fee.into())]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(rent_fee.into()))]),
                 })
             },
 
@@ -493,7 +493,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(rent_fee.into())]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(rent_fee.into()))]),
                 })
             },
             Selector::GetDLCRentFeeByCalcPoint => {
@@ -566,7 +566,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(rent_fee.into())]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(rent_fee.into()))]),
                 })
             },
         }

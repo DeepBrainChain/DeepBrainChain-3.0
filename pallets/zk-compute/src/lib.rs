@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
+extern crate alloc;
 pub use pallet::*;
 pub mod weights;
 
@@ -14,7 +14,7 @@ mod tests;
 
 use frame_support::pallet_prelude::*;
 use sp_runtime::traits::AtLeast32BitUnsigned;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 pub trait VerifyZkProof {
 	fn verify(proof: &[u8], dimensions: (u32, u32, u32)) -> bool;
@@ -24,7 +24,7 @@ pub trait VerifyZkProof {
 pub mod pallet {
     use frame_support::traits::StorageVersion;
 	use super::*;
-	use frame_system::offchain::SubmitTransaction;
+	use frame_system::offchain::{CreateBare, SubmitTransaction};
 	use sp_runtime::transaction_validity::{
 		InvalidTransaction, TransactionSource, TransactionValidity, ValidTransaction,
 	};
@@ -53,7 +53,7 @@ pub mod pallet {
 		BoundedProofOf<T>,
 	>;
 
-	#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Clone, Copy, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 	pub enum ZkVerificationStatus {
 		Pending,
 		Verified,
@@ -75,7 +75,7 @@ pub mod pallet {
 	}
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + frame_system::offchain::SendTransactionTypes<Call<Self>> {
+	pub trait Config: frame_system::Config + frame_system::offchain::CreateTransactionBase<Call<Self>> + frame_system::offchain::CreateBare<Call<Self>> {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		type Currency: ReservableCurrency<Self::AccountId>;
@@ -216,7 +216,7 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub _phantom: sp_std::marker::PhantomData<T>,
+        pub _phantom: core::marker::PhantomData<T>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
@@ -480,7 +480,8 @@ pub mod pallet {
 						task_id: *task_id,
 						verified,
 					};
-					let _ = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+					let xt = T::create_bare(call.into());
+					let _ = SubmitTransaction::<T, Call<T>>::submit_transaction(xt);
 				}
 			}
 			Ok(())

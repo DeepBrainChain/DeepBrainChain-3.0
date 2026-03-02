@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -15,7 +17,7 @@ use frame_support::{
 use frame_system::pallet_prelude::*;
 use pallet_collective::Instance1;
 use pallet_elections_phragmen::SeatHolder;
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 pub use pallet::*;
 

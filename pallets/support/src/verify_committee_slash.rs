@@ -1,13 +1,13 @@
 use crate::{verify_online::OCBookResultType, MachineId};
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use sp_std::{cmp, vec::Vec};
+use alloc::vec::Vec; use core::cmp;
 
 // NOTE: If slash is from maintain committee, and reporter is slashed, but when
 // committee support the reporter's slash is canceled, reporter's slash is not canceled at the same
 // time. Mainwhile, if reporter's slash is canceled..
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub struct OCPendingSlashInfo<AccountId, BlockNumber, Balance> {
     pub machine_id: MachineId,
     pub machine_stash: Option<AccountId>,
@@ -41,7 +41,7 @@ impl<AccountId: PartialEq + cmp::Ord, BlockNumber, Balance>
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub enum OCSlashResult {
     Pending,
     Canceled,

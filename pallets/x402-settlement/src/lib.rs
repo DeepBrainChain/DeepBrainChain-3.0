@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
+extern crate alloc;
 pub use pallet::*;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -22,7 +22,7 @@ pub mod pallet {
         BoundedVec,
     };
     use frame_system::pallet_prelude::*;
-    use sp_std::vec::Vec;
+    use alloc::vec::Vec;
     use sp_core::H256;
     use crate::weights::WeightInfo;
     use sp_runtime::traits::{SaturatedConversion, Saturating};
@@ -178,7 +178,7 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub _phantom: sp_std::marker::PhantomData<T>,
+        pub _phantom: core::marker::PhantomData<T>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
@@ -195,7 +195,7 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(now: BlockNumberFor<T>) -> Weight {
-            let mut expired_ids = sp_std::vec::Vec::new();
+            let mut expired_ids = alloc::vec::Vec::new();
             let pending = PendingIntentIds::<T>::get();
             let total_checked = pending.len() as u64;
 
@@ -500,10 +500,10 @@ pub mod pallet {
                 // Construct sr25519 signature from bytes
                 let mut sig_bytes = [0u8; 64];
                 sig_bytes.copy_from_slice(&signature_bytes[..64]);
-                let signature = sp_core::sr25519::Signature(sig_bytes);
+                let signature = sp_core::sr25519::Signature::from_raw(sig_bytes);
 
                 // Get facilitator's sr25519 public key
-                let pubkey = sp_core::sr25519::Public(T::FacilitatorPublicKey::get());
+                let pubkey = sp_core::sr25519::Public::from_raw(T::FacilitatorPublicKey::get());
 
                 // Verify cryptographic signature
                 sp_io::crypto::sr25519_verify(&signature, &message, &pubkey)

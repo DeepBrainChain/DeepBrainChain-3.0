@@ -3,6 +3,7 @@ use fp_evm::{
     PrecompileResult,
 };
 use sp_core::U256;
+use crate::precompiles::to_ethabi_u256;
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
@@ -73,8 +74,8 @@ where
         };
         let encoded = ethabi::encode(&[
             ethabi::Token::Bool(active),
-            ethabi::Token::Uint(U256::from(gpu_count)),
-            ethabi::Token::Uint(U256::from(max_tasks)),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(gpu_count))),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(max_tasks))),
         ]);
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
@@ -116,8 +117,8 @@ where
         };
         let encoded = ethabi::encode(&[
             ethabi::Token::Bool(exists),
-            ethabi::Token::Uint(U256::from(pool_id)),
-            ethabi::Token::Uint(U256::from(status)),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(pool_id))),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(status))),
         ]);
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,

@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 // pub mod migrations;
 mod online_reward;
 mod rpc;
@@ -32,13 +34,8 @@ use sp_runtime::{
     traits::{CheckedAdd, CheckedMul, CheckedSub, Saturating, Zero},
     Perbill, SaturatedConversion,
 };
-use sp_std::{
-    collections::{btree_map::BTreeMap, vec_deque::VecDeque},
-    convert::From,
-    prelude::*,
-    str,
-    vec::Vec,
-};
+use alloc::{boxed::Box, collections::{BTreeMap, VecDeque}, vec, vec::Vec};
+use core::str;
 
 pub use pallet::*;
 pub use types::*;

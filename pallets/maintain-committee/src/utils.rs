@@ -7,7 +7,7 @@ use dbc_support::{
 use frame_support::{dispatch::DispatchResultWithPostInfo, ensure, traits::ReservableCurrency};
 use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::traits::{Saturating, Zero};
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 impl<T: Config> Pallet<T> {
     pub fn get_stake_per_order() -> Result<BalanceOf<T>, Error<T>> {

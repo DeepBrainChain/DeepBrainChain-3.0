@@ -1,6 +1,6 @@
 use lite_json::json::JsonValue;
 use serde_json::Value as SerdeValue;
-use sp_std::{str, vec::Vec};
+use alloc::vec::Vec; use core::str;
 
 // NOTE: 当币价低于 0.00001时，将返回None（serde_json其转为科学计数法）
 pub fn parse_price(price_str: &str) -> Option<u64> {

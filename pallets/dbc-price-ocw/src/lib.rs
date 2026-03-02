@@ -2,16 +2,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 // use alt_serde::{Deserialize, Deserializer};
 use dbc_support::traits::DbcPrice;
 use frame_support::traits::{Currency, Randomness, ReservableCurrency};
-use frame_system::offchain::SubmitTransaction;
+use frame_system::offchain::{CreateBare, SubmitTransaction};
 use sp_core::H256;
 use sp_runtime::{
     offchain::{http, Duration},
     traits::{CheckedDiv, CheckedMul, SaturatedConversion},
 };
-use sp_std::{collections::vec_deque::VecDeque, str, vec::Vec};
+use alloc::{collections::VecDeque, vec::Vec}; use core::str;
 
 pub use pallet::*;
 pub mod parse_price;
@@ -23,8 +25,8 @@ type BalanceOf<T> =
 pub mod pallet {
     use super::*;
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
-    use frame_system::{offchain::CreateSignedTransaction, pallet_prelude::*};
-    use sp_std::vec::Vec;
+    use frame_system::{offchain::{CreateSignedTransaction, CreateBare, SubmitTransaction}, pallet_prelude::*};
+    use alloc::vec::Vec;
 
     /// The type to sign and send transactions.
     pub const UNSIGNED_TXS_PRIORITY: u64 = 100;
@@ -33,7 +35,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config + CreateSignedTransaction<Call<Self>> + generic_func::Config
+        frame_system::Config + CreateSignedTransaction<Call<Self>> + CreateBare<Call<Self>> + generic_func::Config
     {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type RandomnessSource: Randomness<H256, BlockNumberFor::<Self>>;
@@ -205,7 +207,8 @@ impl<T: Config> Pallet<T> {
         let price = Self::fetch_price().map_err(|_| <Error<T>>::FetchPriceFailed)?;
 
         let call = Call::submit_price_unsigned { price };
-        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+        let xt = T::create_bare(call.into());
+        SubmitTransaction::<T, Call<T>>::submit_transaction(xt)
             .map_err(|_| <Error<T>>::OffchainUnsignedTxError)
     }
 
@@ -232,7 +235,7 @@ impl<T: Config> Pallet<T> {
         let body = response.body().collect::<Vec<u8>>();
 
         // Create a str slice from the body.
-        let body_str = sp_std::str::from_utf8(&body).map_err(|_| http::Error::Unknown)?;
+        let body_str = core::str::from_utf8(&body).map_err(|_| http::Error::Unknown)?;
 
         parse_price::parse_price(body_str).ok_or(http::Error::Unknown)
     }

@@ -3,9 +3,11 @@
 #![allow(clippy::unnecessary_mut_passed)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 use parity_scale_codec::Codec;
 use sp_runtime::traits::MaybeDisplay;
-use sp_std::prelude::Vec;
+use alloc::vec::Vec;
 
 use dbc_support::{
     live_machine::LiveMachine,

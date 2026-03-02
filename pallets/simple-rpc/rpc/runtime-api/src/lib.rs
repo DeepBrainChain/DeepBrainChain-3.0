@@ -3,9 +3,11 @@
 #![allow(clippy::unnecessary_mut_passed)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 use parity_scale_codec::Codec;
 use simple_rpc::StakerListInfo;
-use sp_std::prelude::Vec;
+use alloc::vec::Vec;
 
 sp_api::decl_runtime_apis! {
     pub trait SimpleRpcApi<AccountId, Balance> where

@@ -64,8 +64,8 @@ use sp_runtime::{
     traits::{Saturating, Zero},
     DispatchResult, RuntimeDebug,
 };
-use sp_staking::{offence::DisableStrategy, EraIndex};
-use sp_std::vec::Vec;
+use sp_staking::EraIndex;
+use alloc::{vec, vec::Vec};
 
 /// The proportion of the slashing reward to be paid out on the first slashing detection.
 /// This is f_1 in the paper.
@@ -148,7 +148,7 @@ impl SlashingSpans {
             SlashingSpan { index, start, length: Some(length) }
         });
 
-        sp_std::iter::once(last).chain(prior)
+        core::iter::once(last).chain(prior)
     }
 
     /// Yields the era index where the most recent non-zero slash occurred.
@@ -177,7 +177,7 @@ impl SlashingSpans {
         };
 
         // readjust the ongoing span, if it started before the beginning of the window.
-        self.last_start = sp_std::cmp::max(self.last_start, window_start);
+        self.last_start = core::cmp::max(self.last_start, window_start);
         pruned
     }
 }
@@ -215,8 +215,6 @@ pub(crate) struct SlashParams<'a, T: 'a + Config> {
     /// The maximum percentage of a slash that ever gets paid out.
     /// This is f_inf in the paper.
     pub(crate) reward_proportion: Perbill,
-    /// When to disable offenders.
-    pub(crate) disable_strategy: DisableStrategy,
 }
 
 /// Computes a slash of a validator and nominators. It returns an unapplied
@@ -285,8 +283,7 @@ pub(crate) fn compute_slash<T: Config>(
         }
     }
 
-    let disable_when_slashed = params.disable_strategy != DisableStrategy::Never;
-    add_offending_validator::<T>(params.stash, disable_when_slashed);
+    add_offending_validator::<T>(params.stash, true);
 
     let mut nominators_slashed = Vec::new();
     reward_payout += slash_nominators::<T>(params.clone(), prior_slash_p, &mut nominators_slashed);
@@ -319,8 +316,7 @@ fn kick_out_if_recent<T: Config>(params: SlashParams<T>) {
         <Pallet<T>>::chill_stash(params.stash);
     }
 
-    let disable_without_slash = params.disable_strategy == DisableStrategy::Always;
-    add_offending_validator::<T>(params.stash, disable_without_slash);
+    add_offending_validator::<T>(params.stash, true);
 }
 
 /// Add the given validator to the offenders list and optionally disable it.
@@ -433,7 +429,7 @@ struct InspectingSpans<'a, T: Config + 'a> {
     paid_out: &'a mut BalanceOf<T>,
     slash_of: &'a mut BalanceOf<T>,
     reward_proportion: Perbill,
-    _marker: sp_std::marker::PhantomData<T>,
+    _marker: core::marker::PhantomData<T>,
 }
 
 // fetches the slashing spans record for a stash account, initializing it if necessary.
@@ -458,7 +454,7 @@ fn fetch_spans<'a, T: Config + 'a>(
         slash_of,
         paid_out,
         reward_proportion,
-        _marker: sp_std::marker::PhantomData,
+        _marker: core::marker::PhantomData,
     }
 }
 
@@ -476,7 +472,7 @@ impl<'a, T: 'a + Config> InspectingSpans<'a, T> {
     // although `amount` may be zero, as it is only a difference.
     fn add_slash(&mut self, amount: BalanceOf<T>, slash_era: EraIndex) {
         *self.slash_of += amount;
-        self.spans.last_nonzero_slash = sp_std::cmp::max(self.spans.last_nonzero_slash, slash_era);
+        self.spans.last_nonzero_slash = core::cmp::max(self.spans.last_nonzero_slash, slash_era);
     }
 
     // find the span index of the given era, if covered.

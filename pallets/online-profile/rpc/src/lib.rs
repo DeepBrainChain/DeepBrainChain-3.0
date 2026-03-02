@@ -4,9 +4,9 @@
 use parity_scale_codec::Codec;
 
 use jsonrpsee::{
-    core::{Error as JsonRpseeError, RpcResult},
+    core::RpcResult,
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject},
+    types::error::{ErrorCode, ErrorObject},
 };
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
@@ -119,11 +119,11 @@ where
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
 
         let runtime_api_result = api.get_total_staker_num(at_hash).map_err(|e| {
-            JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+            ErrorObject::owned(
                 ErrorCode::InternalError.code(),
                 "Something wrong",
                 Some(e.to_string()),
-            )))
+            )
         })?;
         Ok(runtime_api_result)
     }
@@ -147,11 +147,11 @@ where
                 total_burn_fee: sys_info.total_burn_fee.into(),
             })
             .map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }
@@ -189,11 +189,11 @@ where
                 }
             })
             .map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
 
         Ok(runtime_api_result)
@@ -204,11 +204,11 @@ where
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
 
         let runtime_api_result = api.get_machine_list(at_hash).map_err(|e| {
-            JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+            ErrorObject::owned(
                 ErrorCode::InternalError.code(),
                 "Something wrong",
                 Some(e.to_string()),
-            )))
+            )
         })?;
 
         Ok(runtime_api_result.into())
@@ -245,11 +245,11 @@ where
                 reward_deadline: machine_info.reward_deadline,
             })
         };
-        return Err(JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+        return Err(ErrorObject::owned(
             ErrorCode::InternalError.code(),
             "Something wrong",
             Some("NotFound"),
-        ))))
+        ))
     }
 
     fn get_pos_gpu_info(
@@ -260,11 +260,11 @@ where
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
 
         let runtime_api_result = api.get_pos_gpu_info(at_hash).map_err(|e| {
-            JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+            ErrorObject::owned(
                 ErrorCode::InternalError.code(),
                 "Something wrong",
                 Some(e.to_string()),
-            )))
+            )
         })?;
         Ok(runtime_api_result)
     }
@@ -284,11 +284,11 @@ where
             .get_machine_era_reward(at_hash, machine_id, era_index)
             .map(|balance| balance.into())
             .map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }
@@ -308,11 +308,11 @@ where
             .get_machine_era_released_reward(at_hash, machine_id, era_index)
             .map(|balance| balance.into())
             .map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }
@@ -330,11 +330,11 @@ where
             .get_stash_era_reward(at_hash, stash, era_index)
             .map(|balance| balance.into())
             .map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }
@@ -352,11 +352,11 @@ where
             .get_stash_era_released_reward(at_hash, stash, era_index)
             .map(|balance| balance.into())
             .map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }

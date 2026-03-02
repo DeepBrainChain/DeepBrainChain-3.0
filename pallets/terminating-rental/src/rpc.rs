@@ -12,7 +12,7 @@ use dbc_support::{
 use frame_support::IterableStorageMap;
 use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::EncodeLike;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 impl<T: Config> Pallet<T> {
     pub fn get_total_staker_num() -> u64 {

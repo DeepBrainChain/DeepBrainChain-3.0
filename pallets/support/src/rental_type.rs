@@ -1,14 +1,14 @@
 #[cfg(feature = "std")]
 use super::rpc_types::serde_text;
 use super::{ItemList, MachineId, RentOrderId};
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
-use sp_std::{vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct RentOrderDetail<AccountId, BlockNumber, Balance> {
@@ -33,7 +33,7 @@ pub struct RentOrderDetail<AccountId, BlockNumber, Balance> {
     pub gpu_index: Vec<u32>,
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum RentStatus {
@@ -79,7 +79,7 @@ impl<A, B: Default, C: Default> RentOrderDetail<A, B, C> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct MachineGPUOrder {
@@ -117,7 +117,7 @@ impl MachineGPUOrder {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct MachineRenterRentedOrderDetail<BlockNumber> {
@@ -126,7 +126,7 @@ pub struct MachineRenterRentedOrderDetail<BlockNumber> {
     pub rent_end: BlockNumber,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, Default, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct DlcBurnDetail<AccountId, Balance, BlockNumber> {

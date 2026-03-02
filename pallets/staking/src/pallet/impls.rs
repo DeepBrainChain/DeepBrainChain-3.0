@@ -20,7 +20,8 @@
 use dbc_support::traits::PhaseReward;
 use frame_election_provider_support::{
     bounds::DataProviderBounds, data_provider, BoundedSupportsOf, ElectionDataProvider,
-    ElectionProvider, ScoreProvider, SortedListProvider, VoteWeight, VoterOf,
+    ElectionProvider, PageIndex, ScoreProvider, SortedListProvider, TryFromOtherBounds,
+    VoteWeight, VoterOf,
 };
 use frame_support::{
     defensive,
@@ -40,10 +41,10 @@ use sp_runtime::{
 };
 use sp_staking::{
     currency_to_vote::CurrencyToVote,
-    offence::{DisableStrategy, OffenceDetails, OnOffenceHandler},
+    offence::{OffenceDetails, OnOffenceHandler},
     EraIndex, SessionIndex, Stake, StakingInterface,
 };
-use sp_std::prelude::*;
+use alloc::{boxed::Box, vec, vec::Vec};
 
 use crate::{
     log, slashing, weights::WeightInfo, ActiveEraInfo, BalanceOf, EraPayout, Exposure, ExposureOf,
@@ -598,24 +599,20 @@ impl<T: Config> Pallet<T> {
         start_session_index: SessionIndex,
         is_genesis: bool,
     ) -> Option<BoundedVec<T::AccountId, MaxWinnersOf<T>>> {
-        let election_result: BoundedVec<_, MaxWinnersOf<T>> = if is_genesis {
-            let result = <T::GenesisElectionProvider>::elect().map_err(|e| {
+        let election_result = if is_genesis {
+            // This pallet only supports single page elections.
+            let result = <T::GenesisElectionProvider>::elect(0).map_err(|e| {
                 log!(warn, "genesis election provider failed due to {:?}", e);
                 Self::deposit_event(Event::StakingElectionFailed);
-            });
+            }).ok()?;
 
-            result
-                .ok()?
-                .into_inner()
-                .try_into()
-                // both bounds checked in integrity test to be equal
-                .defensive_unwrap_or_default()
+            BoundedSupportsOf::<T::ElectionProvider>::try_from_other_bounds(result).ok()?
         } else {
-            let result = <T::ElectionProvider>::elect().map_err(|e| {
+            // This pallet only supports single page elections.
+            <T::ElectionProvider>::elect(0).map_err(|e| {
                 log!(warn, "election provider failed due to {:?}", e);
                 Self::deposit_event(Event::StakingElectionFailed);
-            });
-            result.ok()?
+            }).ok()?
         };
 
         let exposures = Self::collect_exposures(election_result);
@@ -1110,7 +1107,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(Self::validator_count())
     }
 
-    fn electing_voters(bounds: DataProviderBounds) -> data_provider::Result<Vec<VoterOf<Self>>> {
+    fn electing_voters(bounds: DataProviderBounds, _page: PageIndex) -> data_provider::Result<Vec<VoterOf<Self>>> {
         let maybe_max_len = bounds.count.map(|c| c.0 as usize);
         // This can never fail -- if `maybe_max_len` is `Some(_)` we handle it.
         let voters = Self::get_npos_voters(maybe_max_len);
@@ -1119,7 +1116,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(voters)
     }
 
-    fn electable_targets(bounds: DataProviderBounds) -> data_provider::Result<Vec<T::AccountId>> {
+    fn electable_targets(bounds: DataProviderBounds, _page: PageIndex) -> data_provider::Result<Vec<T::AccountId>> {
         let maybe_max_len = bounds.count.map(|c| c.0 as usize);
         let target_count = T::TargetList::count();
 
@@ -1380,7 +1377,6 @@ where
         >],
         slash_fraction: &[Perbill],
         slash_session: SessionIndex,
-        disable_strategy: DisableStrategy,
     ) -> Weight {
         let reward_proportion = SlashRewardFraction::<T>::get();
         let mut consumed_weight = Weight::from_parts(0, 0);
@@ -1445,7 +1441,6 @@ where
                 window_start,
                 now: active_era,
                 reward_proportion,
-                disable_strategy,
             });
 
             Self::deposit_event(Event::<T>::SlashReported {
@@ -1503,8 +1498,8 @@ where
 impl<T: Config> ScoreProvider<T::AccountId> for Pallet<T> {
     type Score = VoteWeight;
 
-    fn score(who: &T::AccountId) -> Self::Score {
-        Self::weight_of(who)
+    fn score(who: &T::AccountId) -> Option<Self::Score> {
+        Some(Self::weight_of(who))
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -1527,14 +1522,14 @@ impl<T: Config> ScoreProvider<T::AccountId> for Pallet<T> {
         let imbalance = T::Currency::burn(T::Currency::total_issuance());
         // kinda ugly, but gets the job done. The fact that this works here is a HUGE exception.
         // Don't try this pattern in other places.
-        sp_std::mem::forget(imbalance);
+        core::mem::forget(imbalance);
     }
 }
 
 /// A simple sorted list implementation that does not require any additional pallets. Note, this
 /// does not provide validators in sorted order. If you desire nominators in a sorted order take
 /// a look at [`pallet-bags-list`].
-pub struct UseValidatorsMap<T>(sp_std::marker::PhantomData<T>);
+pub struct UseValidatorsMap<T>(core::marker::PhantomData<T>);
 impl<T: Config> SortedListProvider<T::AccountId> for UseValidatorsMap<T> {
     type Score = BalanceOf<T>;
     type Error = ();
@@ -1576,11 +1571,13 @@ impl<T: Config> SortedListProvider<T::AccountId> for UseValidatorsMap<T> {
     }
     fn unsafe_regenerate(
         _: impl IntoIterator<Item = T::AccountId>,
-        _: Box<dyn Fn(&T::AccountId) -> Self::Score>,
+        _: Box<dyn Fn(&T::AccountId) -> Option<Self::Score>>,
     ) -> u32 {
         // nothing to do upon regenerate.
         0
     }
+    fn lock() {}
+    fn unlock() {}
     #[cfg(feature = "try-runtime")]
     fn try_state() -> Result<(), TryRuntimeError> {
         Ok(())
@@ -1600,7 +1597,7 @@ impl<T: Config> SortedListProvider<T::AccountId> for UseValidatorsMap<T> {
 /// A simple voter list implementation that does not require any additional pallets. Note, this
 /// does not provided nominators in sorted ordered. If you desire nominators in a sorted order take
 /// a look at [`pallet-bags-list].
-pub struct UseNominatorsAndValidatorsMap<T>(sp_std::marker::PhantomData<T>);
+pub struct UseNominatorsAndValidatorsMap<T>(core::marker::PhantomData<T>);
 impl<T: Config> SortedListProvider<T::AccountId> for UseNominatorsAndValidatorsMap<T> {
     type Error = ();
     type Score = VoteWeight;
@@ -1652,11 +1649,13 @@ impl<T: Config> SortedListProvider<T::AccountId> for UseNominatorsAndValidatorsM
     }
     fn unsafe_regenerate(
         _: impl IntoIterator<Item = T::AccountId>,
-        _: Box<dyn Fn(&T::AccountId) -> Self::Score>,
+        _: Box<dyn Fn(&T::AccountId) -> Option<Self::Score>>,
     ) -> u32 {
         // nothing to do upon regenerate.
         0
     }
+    fn lock() {}
+    fn unlock() {}
 
     #[cfg(feature = "try-runtime")]
     fn try_state() -> Result<(), TryRuntimeError> {
@@ -1697,7 +1696,7 @@ impl<T: Config> StakingInterface for Pallet<T> {
     }
 
     fn election_ongoing() -> bool {
-        T::ElectionProvider::ongoing()
+        T::ElectionProvider::status().is_ok()
     }
 
     fn force_unstake(who: Self::AccountId) -> sp_runtime::DispatchResult {
@@ -1741,6 +1740,14 @@ impl<T: Config> StakingInterface for Pallet<T> {
         Self::unbond(RawOrigin::Signed(ctrl).into(), value)
             .map_err(|with_post| with_post.error)
             .map(|_| ())
+    }
+
+    fn set_payee(stash: &Self::AccountId, reward_acc: &Self::AccountId) -> DispatchResult {
+        let ctrl = Self::bonded(stash).ok_or(Error::<T>::NotStash)?;
+        Self::set_payee(
+            RawOrigin::Signed(ctrl).into(),
+            RewardDestination::Account(reward_acc.clone()),
+        )
     }
 
     fn chill(who: &Self::AccountId) -> DispatchResult {
@@ -1803,7 +1810,20 @@ impl<T: Config> StakingInterface for Pallet<T> {
         }
     }
 
+    fn is_virtual_staker(_who: &Self::AccountId) -> bool {
+        false
+    }
+
+    fn slash_reward_fraction() -> Perbill {
+        SlashRewardFraction::<T>::get()
+    }
+
     sp_staking::runtime_benchmarks_enabled! {
+        fn max_exposure_page_size() -> sp_staking::Page {
+            // This pallet does not support paged exposure, so return a large value.
+            u32::MAX
+        }
+
         fn nominations(who: &Self::AccountId) -> Option<Vec<T::AccountId>> {
             Nominators::<T>::get(who).map(|n| n.targets.into_inner())
         }
@@ -1854,7 +1874,7 @@ impl<T: Config> Pallet<T> {
         );
         ensure!(
 			ValidatorCount::<T>::get() <=
-				<T::ElectionProvider as frame_election_provider_support::ElectionProviderBase>::MaxWinners::get(),
+				<T::ElectionProvider as frame_election_provider_support::ElectionProvider>::MaxWinnersPerPage::get(),
 			Error::<T>::TooManyValidators
 		);
         Ok(())

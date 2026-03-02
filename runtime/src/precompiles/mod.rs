@@ -4,7 +4,7 @@ use pallet_evm::{
 };
 use scale_info::prelude::format;
 use sp_core::H160;
-use sp_std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use pallet_evm_precompile_blake2::Blake2F;
 use pallet_evm_precompile_bn128::{Bn128Add, Bn128Mul, Bn128Pairing};
@@ -40,6 +40,28 @@ mod x402_settlement;
 use x402_settlement::X402SettlementPrecompile;
 
 const LOG_TARGET: &str = "evm";
+
+/// Convert sp_core::U256 to ethabi's U256 (different primitive-types versions)
+pub(crate) fn to_ethabi_u256(v: sp_core::U256) -> ethabi::ethereum_types::U256 {
+    ethabi::ethereum_types::U256::from_big_endian(&v.to_big_endian())
+}
+
+/// Convert ethabi H160 to sp_core::H160
+pub(crate) fn from_ethabi_h160(v: ethabi::ethereum_types::H160) -> sp_core::H160 {
+    sp_core::H160(v.0)
+}
+
+/// Convert sp_core::H160 to ethabi's H160
+pub(crate) fn to_ethabi_h160(v: sp_core::H160) -> ethabi::ethereum_types::H160 {
+    ethabi::ethereum_types::H160(v.0)
+}
+
+/// Convert ethabi U256 to sp_core::U256
+pub(crate) fn from_ethabi_u256(v: ethabi::ethereum_types::U256) -> sp_core::U256 {
+    let mut buf = [0u8; 32];
+    v.to_big_endian(&mut buf);
+    sp_core::U256::from_big_endian(&buf)
+}
 
 pub struct DBCPrecompiles<T>(PhantomData<T>);
 
@@ -133,7 +155,7 @@ where
             a if a == hash(8) => Some(Bn128Pairing::execute(handle)),
             a if a == hash(9) => Some(Blake2F::execute(handle)),
             // Non-Frontier specific nor Ethereum precompiles :
-            a if a == hash(1024) => Some(Sha3FIPS256::execute(handle)),
+            a if a == hash(1024) => Some(Sha3FIPS256::<T, ()>::execute(handle)),
             a if a == hash(1025) => Some(Dispatch::<T>::execute(handle)),
             a if a == hash(1026) => Some(ECRecoverPublicKey::execute(handle)),
 

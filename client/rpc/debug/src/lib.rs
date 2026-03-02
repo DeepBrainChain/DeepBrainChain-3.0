@@ -11,17 +11,19 @@ use dbc_client_evm_tracing::{formatters::ResponseFormatter, types::single};
 use dbc_client_rpc_core_types::{RequestBlockId, RequestBlockTag};
 use dbc_primitives_rpc_debug::{DebugRuntimeApi, TracerInput};
 use ethereum_types::H256;
-use fc_rpc::{frontier_backend_client, internal_err, OverrideHandle};
+use fc_rpc::{frontier_backend_client, internal_err};
+use fc_storage::StorageOverride;
 use fp_rpc::EthereumRuntimeRPCApi;
 use fc_api::Backend as FrontierBackend;
 use sc_client_api::backend::{Backend, StateBackend, StorageProvider};
 use sc_utils::mpsc::TracingUnboundedSender;
-use sp_api::{ApiExt, BlockId, Core, HeaderT, ProvideRuntimeApi};
+use sp_api::{ApiExt, Core, ProvideRuntimeApi};
+use sp_runtime::generic::BlockId;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{
     Backend as BlockchainBackend, Error as BlockChainError, HeaderBackend, HeaderMetadata,
 };
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, UniqueSaturatedInto};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT, UniqueSaturatedInto};
 use std::{future::Future, marker::PhantomData, sync::Arc};
 
 pub enum RequesterInput {
@@ -124,7 +126,7 @@ where
         backend: Arc<BE>,
         frontier_backend: Arc<dyn FrontierBackend<B> + Send + Sync>,
         permit_pool: Arc<Semaphore>,
-        overrides: Arc<OverrideHandle<B>>,
+        overrides: Arc<dyn StorageOverride<B>>,
         raw_max_memory_usage: usize,
     ) -> (impl Future<Output = ()>, DebugRequester) {
         let (tx, mut rx): (DebugRequester, _) =
@@ -262,7 +264,7 @@ where
         frontier_backend: Arc<dyn FrontierBackend<B> + Send + Sync>,
         request_block_id: RequestBlockId,
         params: Option<TraceParams>,
-        overrides: Arc<OverrideHandle<B>>,
+        overrides: Arc<dyn StorageOverride<B>>,
     ) -> RpcResult<Response> {
         let (tracer_input, trace_type) = Self::handle_params(params)?;
 
@@ -306,14 +308,11 @@ where
         // Get parent blockid.
         let parent_block_hash = *header.parent_hash();
 
-        let schema = fc_storage::onchain_storage_schema::<B, C, BE>(client.as_ref(), hash);
-
         // Using storage overrides we align with `:ethereum_schema` which will result in proper
         // SCALE decoding in case of migration.
-        let statuses = match overrides.schemas.get(&schema) {
-            Some(schema) => schema.current_transaction_statuses(hash).unwrap_or_default(),
-            _ => return Err(internal_err(format!("No storage override at {:?}", reference_id))),
-        };
+        let statuses = overrides
+            .current_transaction_statuses(hash)
+            .unwrap_or_default();
 
         // Known ethereum transaction hashes.
         let eth_tx_hashes: Vec<_> = statuses.iter().map(|t| t.transaction_hash).collect();
@@ -388,7 +387,7 @@ where
         frontier_backend: Arc<dyn FrontierBackend<B> + Send + Sync>,
         transaction_hash: H256,
         params: Option<TraceParams>,
-        overrides: Arc<OverrideHandle<B>>,
+        overrides: Arc<dyn StorageOverride<B>>,
         raw_max_memory_usage: usize,
     ) -> RpcResult<Response> {
         let (tracer_input, trace_type) = Self::handle_params(params)?;
@@ -445,15 +444,9 @@ where
             return Err(internal_err("Runtime api version call failed (trace)".to_string()))
         };
 
-        let schema =
-            fc_storage::onchain_storage_schema::<B, C, BE>(client.as_ref(), reference_hash);
-
         // Get the block that contains the requested transaction. Using storage overrides we align
         // with `:ethereum_schema` which will result in proper SCALE decoding in case of migration.
-        let reference_block = match overrides.schemas.get(&schema) {
-            Some(schema) => schema.current_block(reference_hash),
-            _ => return Err(internal_err(format!("No storage override at {:?}", reference_hash))),
-        };
+        let reference_block = overrides.current_block(reference_hash);
 
         // Get the actual ethereum transaction.
         if let Some(block) = reference_block {
@@ -476,7 +469,7 @@ where
                     } else {
                         // Pre-london update, legacy transactions.
                         let _result = match transaction {
-                            ethereum::TransactionV2::Legacy(tx) =>
+                            ethereum::TransactionV3::Legacy(tx) =>
                             {
                                 #[allow(deprecated)]
                                 api.trace_transaction_before_version_4(parent_block_hash, exts, &tx)

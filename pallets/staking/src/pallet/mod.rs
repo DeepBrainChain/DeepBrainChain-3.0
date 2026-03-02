@@ -18,7 +18,7 @@
 //! Staking FRAME Pallet.
 
 use frame_election_provider_support::{
-    ElectionProvider, ElectionProviderBase, SortedListProvider, VoteWeight,
+    ElectionProvider, SortedListProvider, VoteWeight,
 };
 use codec::Codec;
 use frame_support::{
@@ -37,7 +37,7 @@ use sp_runtime::{
     ArithmeticError, Perbill, Percent,
 };
 use sp_staking::{EraIndex, SessionIndex};
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 
 mod impls;
 
@@ -72,7 +72,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     /// Possible operations on the configuration values of this pallet.
-    #[derive(TypeInfo, Debug, Clone, Encode, Decode, PartialEq)]
+    #[derive(TypeInfo, Debug, Clone, Encode, Decode, codec::DecodeWithMemTracking, PartialEq)]
     pub enum ConfigOp<T: Default + Codec> {
         /// Don't change.
         Noop,
@@ -96,7 +96,7 @@ pub mod pallet {
             + codec::FullCodec
             + Copy
             + MaybeSerializeDeserialize
-            + sp_std::fmt::Debug
+            + core::fmt::Debug
             + Default
             + From<u64>
             + TypeInfo
@@ -699,7 +699,7 @@ pub mod pallet {
                 });
                 assert!(
                     ValidatorCount::<T>::get() <=
-                        <T::ElectionProvider as ElectionProviderBase>::MaxWinners::get()
+                        <T::ElectionProvider as ElectionProvider>::MaxWinnersPerPage::get()
                 );
             }
 
@@ -905,11 +905,12 @@ pub mod pallet {
 
             // ensure election results are always bounded with the same value
             assert!(
-                <T::ElectionProvider as ElectionProviderBase>::MaxWinners::get() ==
-                    <T::GenesisElectionProvider as ElectionProviderBase>::MaxWinners::get()
+                <T::ElectionProvider as ElectionProvider>::MaxWinnersPerPage::get() ==
+                    <T::GenesisElectionProvider as ElectionProvider>::MaxWinnersPerPage::get()
             );
 
-            sp_std::if_std! {
+            #[cfg(feature = "std")]
+            {
                 sp_io::TestExternalities::new_empty().execute_with(||
                     assert!(
                         T::SlashDeferDuration::get() < T::BondingDuration::get() || T::BondingDuration::get() == 0,
@@ -1382,7 +1383,7 @@ pub mod pallet {
             // ensure new validator count does not exceed maximum winners
             // support by election provider.
             ensure!(
-                new <= <T::ElectionProvider as ElectionProviderBase>::MaxWinners::get(),
+                new <= <T::ElectionProvider as ElectionProvider>::MaxWinnersPerPage::get(),
                 Error::<T>::TooManyValidators
             );
             ValidatorCount::<T>::put(new);
@@ -1390,7 +1391,7 @@ pub mod pallet {
         }
 
         /// Increments the ideal number of validators upto maximum of
-        /// `ElectionProviderBase::MaxWinners`.
+        /// `ElectionProvider::MaxWinnersPerPage`.
         ///
         /// The dispatch origin must be Root.
         ///
@@ -1406,7 +1407,7 @@ pub mod pallet {
             let old = ValidatorCount::<T>::get();
             let new = old.checked_add(additional).ok_or(ArithmeticError::Overflow)?;
             ensure!(
-                new <= <T::ElectionProvider as ElectionProviderBase>::MaxWinners::get(),
+                new <= <T::ElectionProvider as ElectionProvider>::MaxWinnersPerPage::get(),
                 Error::<T>::TooManyValidators
             );
 
@@ -1415,7 +1416,7 @@ pub mod pallet {
         }
 
         /// Scale up the ideal number of validators by a factor upto maximum of
-        /// `ElectionProviderBase::MaxWinners`.
+        /// `ElectionProvider::MaxWinnersPerPage`.
         ///
         /// The dispatch origin must be Root.
         ///
@@ -1429,7 +1430,7 @@ pub mod pallet {
             let new = old.checked_add(factor.mul_floor(old)).ok_or(ArithmeticError::Overflow)?;
 
             ensure!(
-                new <= <T::ElectionProvider as ElectionProviderBase>::MaxWinners::get(),
+                new <= <T::ElectionProvider as ElectionProvider>::MaxWinnersPerPage::get(),
                 Error::<T>::TooManyValidators
             );
 

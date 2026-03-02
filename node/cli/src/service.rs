@@ -29,26 +29,27 @@ use dbc_node_common::{
 use dbc_primitives::Block;
 use dbc_runtime::RuntimeApi;
 use fc_db::Backend;
+use fc_api;
 use fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy};
+use sc_executor::WasmExecutor;
 use fc_rpc::EthTask;
 use fc_rpc_core::types::{FeeHistoryCache, FilterPool};
 use futures::prelude::*;
 use jsonrpsee::RpcModule;
 use sc_client_api::{BlockBackend, BlockchainEvents};
 use sc_consensus_babe::{self, SlotProportion};
-use sc_executor::WasmExecutor;
 use sc_network::{
-    config::FullNetworkConfiguration, event::Event, NetworkEventStream, NetworkService,
+    config::FullNetworkConfiguration, event::Event, NetworkEventStream,
 };
-use sc_network_sync::{warp::WarpSyncParams, SyncingService};
+use sc_network_sync::{strategy::warp::WarpSyncConfig, SyncingService};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use sp_consensus_babe::inherents::BabeCreateInherentDataProviders;
 use sc_rpc_api::DenyUnsafe;
 use sc_service::{
     config::Configuration, error::Error as ServiceError, RpcHandlers, SpawnTaskHandle, TaskManager,
 };
 use sc_telemetry::{Telemetry, TelemetryWorker};
-use sp_api::NumberFor;
-use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::{Block as BlockT, NumberFor};
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
 /// Host functions required by the runtime.
@@ -56,6 +57,7 @@ use std::{collections::BTreeMap, sync::Arc, time::Duration};
 pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     frame_benchmarking::benchmarking::HostFunctions,
+    cumulus_primitives_proof_size_hostfunction::storage_proof_size::HostFunctions,
 );
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -63,6 +65,7 @@ pub type HostFunctions = (
     sp_io::SubstrateHostFunctions,
     frame_benchmarking::benchmarking::HostFunctions,
     dbc_primitives_ext::tracing_ext::HostFunctions,
+    cumulus_primitives_proof_size_hostfunction::storage_proof_size::HostFunctions,
 );
 
 /// The full client type definition.
@@ -74,12 +77,25 @@ type FullBackend = sc_service::TFullBackend<Block>;
 /// The full select chain type definition.
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
+/// The full chain API type for the transaction pool.
+type FullChainApi = sc_transaction_pool::FullChainApi<FullClient, Block>;
+
 /// The transaction pool type definition.
-pub type TransactionPool = sc_transaction_pool::FullPool<Block, FullClient>;
+pub type TransactionPool = sc_transaction_pool::BasicPool<FullChainApi, Block>;
 
 /// The block import type definition.
 type FullGrandpaBlockImport =
     sc_consensus_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>;
+
+/// Clone a frontier backend by cloning each variant's inner Arc.
+/// This is needed because the derive(Clone) on fc_db::Backend requires C: Clone,
+/// but FullClient does not implement Clone.
+fn clone_frontier_backend(backend: &fc_db::Backend<Block, FullClient>) -> fc_db::Backend<Block, FullClient> {
+    match backend {
+        fc_db::Backend::KeyValue(b) => fc_db::Backend::KeyValue(b.clone()),
+        fc_db::Backend::Sql(b) => fc_db::Backend::Sql(b.clone()),
+    }
+}
 
 /// Builds a new service for a full client.
 pub fn new_full(config: Configuration, rpc_config: RpcConfig) -> Result<TaskManager, ServiceError> {
@@ -93,7 +109,7 @@ pub struct NewFullBase {
     /// The client instance of the node.
     pub client: Arc<FullClient>,
     /// The networking service of the node.
-    pub network: Arc<NetworkService<Block, <Block as BlockT>::Hash>>,
+    pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     /// The transaction pool of the node.
     pub transaction_pool: Arc<TransactionPool>,
     /// The rpc handlers of the node.
@@ -114,8 +130,8 @@ pub struct RpcExtensionsBuilder<'a> {
     pub backend: Arc<FullBackend>,
     pub select_chain: FullSelectChain,
     pub transaction_pool: Arc<TransactionPool>,
-    pub network: Arc<NetworkService<Block, <Block as BlockT>::Hash>>,
-    pub frontier_backend: fc_db::Backend<Block>,
+    pub network: Arc<dyn sc_network::service::traits::NetworkService>,
+    pub frontier_backend: fc_db::Backend<Block, FullClient>,
     pub sync_service: Arc<SyncingService<Block>>,
 
     pub babe: BabeDeps,
@@ -131,21 +147,18 @@ pub fn new_partial(
         FullBackend,
         FullSelectChain,
         sc_consensus::DefaultImportQueue<Block>,
-        sc_transaction_pool::FullPool<Block, FullClient>,
+        sc_transaction_pool::BasicPool<FullChainApi, Block>,
         (
-            sc_consensus_babe::BabeBlockImport<Block, FullClient, FullGrandpaBlockImport>,
+            sc_consensus_babe::BabeBlockImport<Block, FullClient, FullGrandpaBlockImport, BabeCreateInherentDataProviders<Block>, FullSelectChain>,
             sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
             sc_consensus_babe::BabeLink<Block>,
             sc_consensus_babe::BabeWorkerHandle<Block>,
-            fc_db::Backend<Block>,
+            fc_db::Backend<Block, FullClient>,
             Option<Telemetry>,
         ),
     >,
     ServiceError,
 > {
-    // Use ethereum style for subscription ids
-    config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
-
     let telemetry = config
         .telemetry_endpoints
         .clone()
@@ -157,11 +170,7 @@ pub fn new_partial(
         })
         .transpose()?;
 
-    let executor = WasmExecutor::builder()
-        .with_execution_method(config.wasm_method)
-        .with_max_runtime_instances(config.max_runtime_instances)
-        .with_runtime_cache_size(config.runtime_cache_size)
-        .build();
+    let executor = sc_service::new_wasm_executor(&config.executor);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -178,13 +187,13 @@ pub fn new_partial(
 
     let select_chain = sc_consensus::LongestChain::new(backend.clone());
 
-    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-        config.transaction_pool.clone(),
+    let transaction_pool = Arc::new(sc_transaction_pool::BasicPool::new_full(
+        Default::default(),
         config.role.is_authority().into(),
         config.prometheus_registry(),
         task_manager.spawn_essential_handle(),
         client.clone(),
-    );
+    ));
 
     let frontier_backend = open_frontier_backend(client.clone(), config, &rpc_config)?;
 
@@ -197,37 +206,35 @@ pub fn new_partial(
     )?;
     let justification_import = grandpa_block_import.clone();
 
+    let babe_config = sc_consensus_babe::configuration(&*client)?;
+    let slot_duration = babe_config.slot_duration();
     let (babe_block_import, babe_link) = sc_consensus_babe::block_import(
-        sc_consensus_babe::configuration(&*client)?,
+        babe_config,
         grandpa_block_import,
         client.clone(),
+        Arc::new(move |_, ()| async move {
+            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+            let slot =
+                sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+                    *timestamp,
+                    slot_duration,
+                );
+            Ok((slot, timestamp))
+        }) as BabeCreateInherentDataProviders<Block>,
+        select_chain.clone(),
+        OffchainTransactionPoolFactory::new(transaction_pool.clone()),
     )?;
 
-    let slot_duration = babe_link.config().slot_duration();
     let (import_queue, babe_worker_handle) =
         sc_consensus_babe::import_queue(sc_consensus_babe::ImportQueueParams {
             link: babe_link.clone(),
             block_import: babe_block_import.clone(),
             justification_import: Some(Box::new(justification_import)),
             client: client.clone(),
-            select_chain: select_chain.clone(),
-            create_inherent_data_providers: move |_, ()| async move {
-                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-
-                let slot =
-                    sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-                        *timestamp,
-                        slot_duration,
-                    );
-
-                Ok((slot, timestamp))
-            },
+            slot_duration,
             spawner: &task_manager.spawn_essential_handle(),
             registry: config.prometheus_registry(),
             telemetry: telemetry.as_ref().map(|x| x.handle()),
-            offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(
-                transaction_pool.clone(),
-            ),
         })?;
 
     Ok(sc_service::PartialComponents {
@@ -273,7 +280,14 @@ pub fn new_full_base(
             ),
     } = new_partial(&mut config, &rpc_config)?;
 
-    let mut net_config = FullNetworkConfiguration::new(&config.network);
+    let mut net_config = FullNetworkConfiguration::<
+        Block,
+        <Block as BlockT>::Hash,
+        sc_network::NetworkWorker<Block, <Block as BlockT>::Hash>,
+    >::new(
+        &config.network,
+        config.prometheus_registry().cloned(),
+    );
 
     let shared_voter_state = sc_consensus_grandpa::SharedVoterState::empty();
     let auth_disc_publish_non_global_ips = config.network.allow_non_globals_in_dht;
@@ -282,9 +296,20 @@ pub fn new_full_base(
         &config.chain_spec,
     );
 
-    net_config.add_notification_protocol(sc_consensus_grandpa::grandpa_peers_set_config(
-        grandpa_protocol_name.clone(),
-    ));
+    let peer_store_handle = net_config.peer_store_handle();
+    let grandpa_notification_metrics = sc_network::NotificationMetrics::new(
+        config.prometheus_registry(),
+    );
+    let (grandpa_protocol_config, grandpa_notification_service) =
+        sc_consensus_grandpa::grandpa_peers_set_config::<
+            Block,
+            sc_network::NetworkWorker<Block, <Block as BlockT>::Hash>,
+        >(
+            grandpa_protocol_name.clone(),
+            grandpa_notification_metrics,
+            Arc::clone(&peer_store_handle),
+        );
+    net_config.add_notification_protocol(grandpa_protocol_config);
 
     let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
         backend.clone(),
@@ -292,7 +317,10 @@ pub fn new_full_base(
         Vec::default(),
     ));
 
-    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+    let metrics = sc_network::NotificationMetrics::new(
+        config.prometheus_registry(),
+    );
+    let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
             net_config,
@@ -301,8 +329,9 @@ pub fn new_full_base(
             spawn_handle: task_manager.spawn_handle(),
             import_queue,
             block_announce_validator_builder: None,
-            warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
+            warp_sync_config: Some(WarpSyncConfig::WithProvider(warp_sync)),
             block_relay: None,
+            metrics,
         })?;
 
     // Note: offchain workers are handled by sc_service::spawn_tasks internally in v1.2.0
@@ -329,7 +358,7 @@ pub fn new_full_base(
             select_chain: select_chain.clone(),
             transaction_pool: transaction_pool.clone(),
             network: network.clone(),
-            frontier_backend: frontier_backend.clone(),
+            frontier_backend: clone_frontier_backend(&frontier_backend),
             sync_service: sync_service.clone(),
             babe: BabeDeps {
                 keystore: keystore_container.keystore(),
@@ -351,6 +380,7 @@ pub fn new_full_base(
         tx_handler_controller,
         sync_service: sync_service.clone(),
         telemetry: telemetry.as_mut(),
+        tracing_execute_block: None,
     })
     .ok();
 
@@ -427,10 +457,11 @@ pub fn new_full_base(
                     ..Default::default()
                 },
                 client.clone(),
-                network.clone(),
+                Arc::new(network.clone()),
                 Box::pin(dht_event_stream),
                 authority_discovery_role,
                 prometheus_registry.clone(),
+                task_manager.spawn_handle(),
             );
 
         task_manager.spawn_handle().spawn(
@@ -468,6 +499,7 @@ pub fn new_full_base(
             link: grandpa_link,
             network: network.clone(),
             sync: Arc::new(sync_service.clone()),
+            notification_service: grandpa_notification_service,
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
             prometheus_registry,
@@ -486,7 +518,6 @@ pub fn new_full_base(
         );
     }
 
-    network_starter.start_network();
     Ok(NewFullBase { task_manager, client, network, transaction_pool, rpc_handlers })
 }
 
@@ -494,7 +525,7 @@ pub fn build_rpc_extensions_builder(
     config: &Configuration,
     rpc_config: RpcConfig,
     builder: RpcExtensionsBuilder,
-) -> impl Fn(DenyUnsafe, sc_rpc::SubscriptionTaskExecutor) -> Result<RpcModule<()>, sc_service::Error>
+) -> impl Fn(sc_rpc::SubscriptionTaskExecutor) -> Result<RpcModule<()>, sc_service::Error>
 {
     let justification_stream = builder.justification_stream.clone();
     let shared_authority_set = builder.shared_authority_set.clone();
@@ -510,7 +541,7 @@ pub fn build_rpc_extensions_builder(
     let select_chain = builder.select_chain.clone();
     let chain_spec = config.chain_spec.cloned_box();
     let backend = builder.backend.clone();
-    let frontier_backend = builder.frontier_backend.clone();
+    let frontier_backend = clone_frontier_backend(&builder.frontier_backend);
     let is_authority = config.role.is_authority();
     let prometheus_registry = config.prometheus_registry().cloned();
     let sync_service = builder.sync_service.clone();
@@ -519,7 +550,7 @@ pub fn build_rpc_extensions_builder(
     let filter_pool: FilterPool = Arc::new(std::sync::Mutex::new(BTreeMap::new()));
     let ethapi_cmd = rpc_config.ethapi.clone();
 
-    let overrides = dbc_node_common::rpc::overrides_handle(client.clone());
+    let overrides = dbc_node_common::rpc::storage_override(client.clone());
 
     let block_data_cache = Arc::new(fc_rpc::EthBlockDataCacheTask::new(
         builder.spawn_handle,
@@ -565,7 +596,7 @@ pub fn build_rpc_extensions_builder(
         ),
     );
 
-    match frontier_backend.clone() {
+    match clone_frontier_backend(&frontier_backend) {
         Backend::KeyValue(b) => {
             // Frontier offchain DB task. Essential.
             // Maps emulated ethereum data to substrate native data.
@@ -578,7 +609,7 @@ pub fn build_rpc_extensions_builder(
                     client.clone(),
                     backend.clone(),
                     overrides.clone(),
-                    Arc::new(b),
+                    b,
                     3,
                     0,
                     SyncStrategy::Normal,
@@ -595,7 +626,7 @@ pub fn build_rpc_extensions_builder(
                 fc_mapping_sync::sql::SyncWorker::run(
                     client.clone(),
                     backend.clone(),
-                    Arc::new(b),
+                    b,
                     client.import_notification_stream(),
                     fc_mapping_sync::sql::SyncWorkerConfig {
                         read_notification_timeout: Duration::from_secs(10),
@@ -618,7 +649,7 @@ pub fn build_rpc_extensions_builder(
                     task_manager: &builder.task_manager,
                     client: client.clone(),
                     substrate_backend: backend.clone(),
-                    frontier_backend: frontier_backend.clone(),
+                    frontier_backend: clone_frontier_backend(&frontier_backend),
                     filter_pool: Some(filter_pool.clone()),
                     overrides: overrides.clone(),
                     fee_history_limit: rpc_config.fee_history_limit,
@@ -630,22 +661,22 @@ pub fn build_rpc_extensions_builder(
         }
     };
 
-    let rpc_extensions_builder = move |deny_unsafe, subscription_executor| {
+    let rpc_extensions_builder = move |subscription_executor| {
         let deps = FullDeps {
             client: client.clone(),
             pool: pool.clone(),
             graph: pool.pool().clone(),
             select_chain: select_chain.clone(),
             chain_spec: chain_spec.cloned_box(),
-            deny_unsafe,
+            deny_unsafe: DenyUnsafe::No,
             is_authority,
             filter_pool: filter_pool.clone(),
             ethapi_cmd: ethapi_cmd.clone(),
             network: network.clone(),
             backend: backend.clone(),
-            frontier_backend: match frontier_backend.clone() {
-                fc_db::Backend::KeyValue(b) => Arc::new(b),
-                fc_db::Backend::Sql(b) => Arc::new(b),
+            frontier_backend: match clone_frontier_backend(&frontier_backend) {
+                fc_db::Backend::KeyValue(b) => b as Arc<dyn fc_api::Backend<Block> + Send + Sync>,
+                fc_db::Backend::Sql(b) => b as Arc<dyn fc_api::Backend<Block> + Send + Sync>,
             },
             fee_history_limit: rpc_config.fee_history_limit,
             fee_history_cache: fee_history_cache.clone(),

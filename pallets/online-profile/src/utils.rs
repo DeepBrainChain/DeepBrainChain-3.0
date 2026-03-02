@@ -7,11 +7,8 @@ use frame_support::{dispatch::DispatchResultWithPostInfo, ensure};
 use frame_system::pallet_prelude::BlockNumberFor;
 use sp_core::crypto::ByteArray;
 use sp_runtime::{traits::Verify, SaturatedConversion};
-use sp_std::{
-    convert::{TryFrom, TryInto},
-    str,
-    vec::Vec,
-};
+use alloc::vec::Vec;
+use core::str;
 
 impl<T: Config> Pallet<T> {
     pub fn pay_fixed_tx_fee(who: T::AccountId) -> DispatchResultWithPostInfo {

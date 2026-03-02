@@ -220,11 +220,9 @@ mod tests {
         type MaxLocks = MaxLocks;
         type MaxReserves = ();
         type ReserveIdentifier = [u8; 8];
-        type MaxFreezes = ConstU32<0>;
-        type MaxHolds = ConstU32<0>;
-        type FreezeIdentifier = ();
         type RuntimeHoldReason = ();
-    }
+        type RuntimeFreezeReason = ();
+        type DoneSlashHandler = ();    }
 
     // REAL WIRING: TaskMode uses ComputePoolScheduler for compute scheduling
     impl pallet_task_mode::Config for Test {

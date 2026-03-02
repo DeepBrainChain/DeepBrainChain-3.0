@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
+extern crate alloc;
 pub use pallet::*;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -22,7 +22,7 @@ pub mod pallet {
         BoundedVec,
     };
     use frame_system::pallet_prelude::*;
-    use sp_std::vec::Vec;
+    use alloc::vec::Vec;
     use sp_runtime::{traits::{CheckedAdd, SaturatedConversion}, Percent};
 
     use crate::weights::WeightInfo;
@@ -203,7 +203,7 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub _phantom: sp_std::marker::PhantomData<T>,
+        pub _phantom: core::marker::PhantomData<T>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {

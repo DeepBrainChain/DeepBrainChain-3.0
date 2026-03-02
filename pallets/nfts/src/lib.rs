@@ -28,6 +28,8 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod migration;
@@ -44,7 +46,7 @@ mod types;
 pub mod macros;
 pub mod weights;
 
-use codec::{alloc::string::ToString, Decode, Encode};
+use codec::{alloc::string::ToString, Decode, DecodeWithMemTracking, Encode};
 use frame_support::traits::{
     tokens::Locker, BalanceStatus::Reserved, Currency, EnsureOriginWithArg, ReservableCurrency,
 };
@@ -53,7 +55,7 @@ use sp_runtime::{
     traits::{IdentifyAccount, Saturating, StaticLookup, Verify, Zero},
     RuntimeDebug, SaturatedConversion,
 };
-use sp_std::prelude::*;
+use alloc::{vec, vec::Vec};
 
 pub use pallet::*;
 pub use types::*;

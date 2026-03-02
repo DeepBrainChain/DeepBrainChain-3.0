@@ -3,6 +3,7 @@ use fp_evm::{
     PrecompileResult,
 };
 use sp_core::U256;
+use crate::precompiles::{to_ethabi_u256, from_ethabi_h160};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
@@ -24,6 +25,7 @@ pub enum Selector {
 impl<T> Precompile for AttestationPrecompile<T>
 where
     T: pallet_evm::Config + pallet_agent_attestation::Config,
+    pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     fn execute(handle: &mut impl PrecompileHandle) -> PrecompileResult {
         let input = handle.input();
@@ -49,6 +51,7 @@ where
 impl<T> AttestationPrecompile<T>
 where
     T: pallet_evm::Config + pallet_agent_attestation::Config,
+    pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     fn query_node(handle: &mut impl PrecompileHandle) -> PrecompileResult {
         handle.record_cost(T::GasWeightMapping::weight_to_gas(
@@ -66,7 +69,7 @@ where
             exit_status: ExitRevert::Reverted,
             output: "decode address failed".into(),
         })?;
-        let account: T::AccountId = T::AddressMapping::into_account_id(addr);
+        let account: T::AccountId = T::AddressMapping::into_account_id(from_ethabi_h160(addr)).into();
         let node = pallet_agent_attestation::Nodes::<T>::get(&account);
         let (registered, reputation) = match node {
             Some(n) => (true, n.tflops),
@@ -74,7 +77,7 @@ where
         };
         let encoded = ethabi::encode(&[
             ethabi::Token::Bool(registered),
-            ethabi::Token::Uint(U256::from(reputation)),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(reputation))),
         ]);
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
@@ -86,7 +89,7 @@ where
         handle.record_cost(T::GasWeightMapping::weight_to_gas(
             Weight::from_parts(50_000, 0),
         ))?;
-        let from = T::AddressMapping::into_account_id(handle.context().caller);
+        let from: T::AccountId = T::AddressMapping::into_account_id(handle.context().caller).into();
         let origin = frame_system::RawOrigin::Signed(from);
         pallet_agent_attestation::Pallet::<T>::heartbeat(
             origin.into(),

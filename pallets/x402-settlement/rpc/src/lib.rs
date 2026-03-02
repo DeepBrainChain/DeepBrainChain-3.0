@@ -3,7 +3,7 @@
 use jsonrpsee::{
     core::RpcResult,
     proc_macros::rpc,
-    types::error::{CallError, ErrorObject},
+    types::error::ErrorObject,
 };
 use parity_scale_codec::Codec;
 pub use x402_settlement_runtime_api::X402SettlementApi as X402SettlementRuntimeApi;
@@ -67,7 +67,7 @@ where
         api.get_payment_intent(at_hash, intent_id)
             .map(|opt| opt.map(|bytes| format!("0x{}", hex::encode(bytes))))
             .map_err(|e| {
-                CallError::Custom(ErrorObject::owned(1, "Runtime error", Some(e.to_string()))).into()
+                ErrorObject::owned(1, "Runtime error", Some(e.to_string()))
             })
     }
 
@@ -82,7 +82,7 @@ where
         api.get_settlement_receipt(at_hash, intent_id)
             .map(|opt| opt.map(|bytes| format!("0x{}", hex::encode(bytes))))
             .map_err(|e| {
-                CallError::Custom(ErrorObject::owned(1, "Runtime error", Some(e.to_string()))).into()
+                ErrorObject::owned(1, "Runtime error", Some(e.to_string()))
             })
     }
 
@@ -97,7 +97,7 @@ where
 
         api.is_nonce_used(at_hash, account, nonce)
             .map_err(|e| {
-                CallError::Custom(ErrorObject::owned(1, "Runtime error", Some(e.to_string()))).into()
+                ErrorObject::owned(1, "Runtime error", Some(e.to_string()))
             })
     }
 
@@ -110,7 +110,7 @@ where
 
         api.get_next_intent_id(at_hash)
             .map_err(|e| {
-                CallError::Custom(ErrorObject::owned(1, "Runtime error", Some(e.to_string()))).into()
+                ErrorObject::owned(1, "Runtime error", Some(e.to_string()))
             })
     }
 
@@ -123,7 +123,7 @@ where
 
         api.get_pending_intents_count(at_hash)
             .map_err(|e| {
-                CallError::Custom(ErrorObject::owned(1, "Runtime error", Some(e.to_string()))).into()
+                ErrorObject::owned(1, "Runtime error", Some(e.to_string()))
             })
     }
 }

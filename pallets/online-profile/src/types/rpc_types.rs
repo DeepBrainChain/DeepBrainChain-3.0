@@ -14,7 +14,7 @@ use dbc_support::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 #[cfg(feature = "std")]
 use std::convert::From;
 

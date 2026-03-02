@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 mod traits;
 
 use frame_support::{
@@ -16,7 +18,7 @@ use rand_chacha::{
 };
 use sp_core::H256;
 use sp_runtime::traits::Saturating;
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 
 pub use pallet::*;
 

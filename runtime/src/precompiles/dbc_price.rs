@@ -5,7 +5,7 @@ use fp_evm::{
 use sp_core::{Get, U256};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
-use crate::precompiles::LOG_TARGET;
+use crate::precompiles::{LOG_TARGET, to_ethabi_u256};
 use alloc::format;
 use core::marker::PhantomData;
 use dbc_support::traits::DbcPrice;
@@ -72,7 +72,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(value)]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(value))]),
                 })
             },
             Selector::GetDBCAmountByValue => {
@@ -111,7 +111,7 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(amount)]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(amount))]),
                 })
             },
         }

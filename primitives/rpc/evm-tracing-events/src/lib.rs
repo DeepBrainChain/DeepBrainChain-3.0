@@ -25,7 +25,6 @@ pub use runtime::RuntimeEvent;
 
 use ethereum_types::{H160, U256};
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime_interface::pass_by::PassByCodec;
 
 environmental::environmental!(listener: dyn Listener + 'static);
 
@@ -36,10 +35,25 @@ pub fn using<R, F: FnOnce() -> R>(l: &mut (dyn Listener + 'static), f: F) -> R {
 /// Allow to configure which data of the Step event
 /// we want to keep or discard. Not discarding the data requires cloning the data
 /// in the runtime which have a significant cost for each step.
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Encode, Decode, Default, PassByCodec)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Encode, Decode, Default)]
 pub struct StepEventFilter {
     pub enable_stack: bool,
     pub enable_memory: bool,
+}
+
+impl StepEventFilter {
+    /// Pack into a u32 for FFI boundary (PassByCodec removed in stable2512).
+    pub fn to_u32(&self) -> u32 {
+        (self.enable_stack as u32) | ((self.enable_memory as u32) << 1)
+    }
+
+    /// Unpack from a u32.
+    pub fn from_u32(v: u32) -> Self {
+        Self {
+            enable_stack: (v & 1) != 0,
+            enable_memory: (v & 2) != 0,
+        }
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode)]

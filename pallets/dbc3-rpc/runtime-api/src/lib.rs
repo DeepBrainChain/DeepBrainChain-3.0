@@ -2,9 +2,11 @@
 #![allow(clippy::too_many_arguments)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 use parity_scale_codec::Codec;
 use sp_runtime::traits::MaybeDisplay;
-use sp_std::prelude::Vec;
+use alloc::vec::Vec;
 
 sp_api::decl_runtime_apis! {
     /// Consolidated runtime API for all DBC 3.0 pallets.

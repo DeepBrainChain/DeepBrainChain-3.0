@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 // mod migrations;
 mod slash;
 mod types;
@@ -33,7 +35,7 @@ use frame_support::{
 use frame_system::pallet_prelude::*;
 use parity_scale_codec::alloc::string::ToString;
 use sp_runtime::traits::{Saturating, Zero};
-use sp_std::{str, vec, vec::Vec};
+use alloc::{vec, vec::Vec}; use core::str;
 
 pub use pallet::*;
 use types::*;

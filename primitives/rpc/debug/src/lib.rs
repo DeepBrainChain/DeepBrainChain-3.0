@@ -1,9 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
-use ethereum::{TransactionV0 as LegacyTransaction, TransactionV2 as Transaction};
+extern crate alloc;
+use ethereum::{TransactionV0 as LegacyTransaction, TransactionV3 as Transaction};
 use ethereum_types::H256;
 use parity_scale_codec::{Decode, Encode};
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 sp_api::decl_runtime_apis! {
     // Api version is virtually 4.

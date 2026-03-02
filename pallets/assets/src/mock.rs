@@ -33,18 +33,13 @@ use sp_runtime::{
     BuildStorage,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
-        System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
-        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-        Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
+    pub enum Test {
+        System: frame_system,
+        Balances: pallet_balances,
+        Assets: pallet_assets,
     }
 );
 
@@ -75,6 +70,13 @@ impl frame_system::Config for Test {
     type SS58Prefix = ();
     type OnSetCode = ();
     type MaxConsumers = ConstU32<3>;
+    type RuntimeTask = RuntimeTask;
+    type ExtensionsWeightInfo = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 impl pallet_balances::Config for Test {
@@ -88,9 +90,10 @@ impl pallet_balances::Config for Test {
     type MaxReserves = ();
     type ReserveIdentifier = [u8; 8];
     type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
     type FreezeIdentifier = ();
-    type MaxHolds = ();
-    type MaxFreezes = ();
+    type MaxFreezes = ConstU32<0>;
 }
 
 pub struct AssetsCallbackHandle;

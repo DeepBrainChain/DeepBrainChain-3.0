@@ -14,7 +14,7 @@ use sp_runtime::{
     traits::{CheckedMul, Saturating, Zero},
     Perbill, SaturatedConversion,
 };
-use sp_std::{collections::btree_map::BTreeMap, prelude::Vec};
+use alloc::{collections::BTreeMap, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn get_account_from_str(addr: &[u8]) -> Option<T::AccountId> {

@@ -140,6 +140,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod migration;
@@ -162,7 +163,7 @@ use sp_runtime::{
     traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Saturating, StaticLookup, Zero},
     ArithmeticError, DispatchError, TokenError,
 };
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 
 use frame_support::{
     dispatch::DispatchResult,
@@ -205,6 +206,7 @@ impl<AssetId, AccountId> AssetsCallback<AssetId, AccountId> for () {}
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
+    use codec::HasCompact;
     use frame_support::{
         pallet_prelude::*,
         traits::{AccountTouch, ContainsPair},
@@ -244,7 +246,8 @@ pub mod pallet {
             + Copy
             + MaybeSerializeDeserialize
             + MaxEncodedLen
-            + TypeInfo;
+            + TypeInfo
+            + HasCompact<Type: DecodeWithMemTracking>;
 
         /// Max number of items to destroy per `destroy_accounts` and `destroy_approvals` call.
         ///
@@ -1912,8 +1915,22 @@ pub mod pallet {
             T::AssetAccountDeposit::get()
         }
 
-        fn touch(asset: T::AssetId, who: T::AccountId, depositor: T::AccountId) -> DispatchResult {
-            Self::do_touch(asset, who, depositor, false)
+        fn should_touch(asset: T::AssetId, who: &T::AccountId) -> bool {
+            match Asset::<T, I>::get(&asset) {
+                // refer to the [`Self::new_account`] function for more details.
+                Some(info) if info.is_sufficient => false,
+                Some(_) if frame_system::Pallet::<T>::can_accrue_consumers(who, 2) => false,
+                Some(_) => !Account::<T, I>::contains_key(asset, who),
+                _ => true,
+            }
+        }
+
+        fn touch(
+            asset: T::AssetId,
+            who: &T::AccountId,
+            depositor: &T::AccountId,
+        ) -> DispatchResult {
+            Self::do_touch(asset, who.clone(), depositor.clone(), false)
         }
     }
 

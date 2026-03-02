@@ -2,6 +2,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 // pub mod migrations;
 mod rpc;
 
@@ -29,7 +31,7 @@ use sp_runtime::{
     traits::{CheckedAdd, CheckedSub, SaturatedConversion, Saturating, Zero},
     Perbill,
 };
-use sp_std::{prelude::*, str, vec::Vec};
+use alloc::vec::Vec; use core::str;
 
 type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -453,7 +455,7 @@ impl<T: Config> Pallet<T> {
             renter,
             machine_id,
             rent_gpu_num,
-            duration.into(),
+            duration,
             rent_fee,
         ));
         Ok(().into())

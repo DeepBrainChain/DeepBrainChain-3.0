@@ -1,6 +1,6 @@
 use crate::{BalanceOf, Config, NextSlashId, Pallet};
 use dbc_support::{custom_err::VerifyErr, traits::ManageCommittee};
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 impl<T: Config> Pallet<T> {
     pub fn get_new_slash_id() -> u64 {

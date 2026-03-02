@@ -3,6 +3,7 @@ use fp_evm::{
     PrecompileResult,
 };
 use sp_core::U256;
+use crate::precompiles::to_ethabi_u256;
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
@@ -24,6 +25,7 @@ pub enum Selector {
 impl<T> Precompile for ZkComputePrecompile<T>
 where
     T: pallet_evm::Config + pallet_zk_compute::Config,
+    pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     fn execute(handle: &mut impl PrecompileHandle) -> PrecompileResult {
         let input = handle.input();
@@ -49,6 +51,7 @@ where
 impl<T> ZkComputePrecompile<T>
 where
     T: pallet_evm::Config + pallet_zk_compute::Config,
+    pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     fn query_task(handle: &mut impl PrecompileHandle) -> PrecompileResult {
         handle.record_cost(T::GasWeightMapping::weight_to_gas(
@@ -84,10 +87,10 @@ where
             None => (255u8, 0u32, 0u32, 0u32),
         };
         let encoded = ethabi::encode(&[
-            ethabi::Token::Uint(U256::from(status)),
-            ethabi::Token::Uint(U256::from(m)),
-            ethabi::Token::Uint(U256::from(n)),
-            ethabi::Token::Uint(U256::from(k)),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(status))),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(m))),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(n))),
+            ethabi::Token::Uint(to_ethabi_u256(U256::from(k))),
         ]);
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
@@ -116,7 +119,7 @@ where
             exit_status: ExitRevert::Reverted,
             output: "invalid task_id".into(),
         })?;
-        let from = T::AddressMapping::into_account_id(handle.context().caller);
+        let from: T::AccountId = T::AddressMapping::into_account_id(handle.context().caller).into();
         let origin = frame_system::RawOrigin::Signed(from);
         pallet_zk_compute::Pallet::<T>::claim_reward(
             origin.into(),

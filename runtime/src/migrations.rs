@@ -12,7 +12,7 @@ pub mod v1 {
     use sp_runtime::traits::Saturating;
 
     #[allow(dead_code)]
-    pub struct AssetLockMigration<T>(sp_std::marker::PhantomData<T>);
+    pub struct AssetLockMigration<T>(core::marker::PhantomData<T>);
     impl<T: frame_system::Config> OnRuntimeUpgrade for AssetLockMigration<T> {
         fn on_runtime_upgrade() -> Weight {
             const DLC: u32 = 88;
@@ -75,7 +75,7 @@ pub mod v1 {
     }
 
     #[allow(dead_code)]
-    pub struct DemocracyMigration<T>(sp_std::marker::PhantomData<T>);
+    pub struct DemocracyMigration<T>(core::marker::PhantomData<T>);
     impl<T: frame_system::Config> OnRuntimeUpgrade for DemocracyMigration<T> {
         fn on_runtime_upgrade() -> Weight {
             const DEMOCRACY_ID: LockIdentifier = *b"democrac";
@@ -111,7 +111,7 @@ pub mod v2 {
     use dbc_support::ItemList;
 
     #[allow(dead_code)]
-    pub struct RentMachineMigration<T>(sp_std::marker::PhantomData<T>);
+    pub struct RentMachineMigration<T>(core::marker::PhantomData<T>);
     impl<T: frame_system::Config> OnRuntimeUpgrade for RentMachineMigration<T> {
         fn on_runtime_upgrade() -> Weight {
             const FORK_BLOCK: u32 = 3683563;

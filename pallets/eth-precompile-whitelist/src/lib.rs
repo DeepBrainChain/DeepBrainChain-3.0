@@ -2,10 +2,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_crate_dependencies)]
 
+extern crate alloc;
+
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use sp_core::H160;
-use sp_std::prelude::*;
+use alloc::vec::Vec;
 
 pub use pallet::*;
 

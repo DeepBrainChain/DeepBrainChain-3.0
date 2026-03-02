@@ -2,9 +2,9 @@
 
 use dbc_support::rpc_types::RpcBalance;
 use jsonrpsee::{
-    core::{Error as JsonRpseeError, RpcResult},
+    core::RpcResult,
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject},
+    types::error::{ErrorCode, ErrorObject},
 };
 use parity_scale_codec::Codec;
 use simple_rpc::StakerListInfo;
@@ -62,7 +62,7 @@ where
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
 
         let runtime_api_result = api.get_staker_identity(at_hash, account).map_err(|e| {
-            CallError::Custom(ErrorObject::owned(1, "Something wrong", Some(e.to_string())))
+            ErrorObject::owned(1, "Something wrong", Some(e.to_string()))
         })?;
         Ok(String::from_utf8_lossy(&runtime_api_result).to_string())
     }
@@ -96,11 +96,11 @@ where
                 .collect::<Vec<_>>()
             })
             .map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }

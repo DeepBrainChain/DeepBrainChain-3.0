@@ -15,18 +15,13 @@ pub type Balance = u64;
 pub type BlockNumber = u64;
 
 construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
+	pub enum Test {
 		System: frame_system,
 		Balances: pallet_balances,
 		ZkCompute: pallet_zk_compute,
 	}
 );
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 parameter_types! {
@@ -50,7 +45,38 @@ parameter_types! {
 	pub const ScorePenaltyOnFailure: u32 = 20;
 }
 
-impl system::Config for Test {	type BaseCallFilter = frame_support::traits::Everything;	type BlockWeights = ();	type BlockLength = ();	type DbWeight = ();	type RuntimeOrigin = RuntimeOrigin;	type RuntimeCall = RuntimeCall;	type Nonce = u64;	type Hash = H256;	type Hashing = sp_runtime::traits::BlakeTwo256;	type AccountId = AccountId;	type Lookup = IdentityLookup<Self::AccountId>;	type Block = Block;	type RuntimeEvent = RuntimeEvent;	type BlockHashCount = BlockHashCount;	type Version = ();	type PalletInfo = PalletInfo;	type AccountData = pallet_balances::AccountData<Balance>;	type OnNewAccount = ();	type OnKilledAccount = ();	type SystemWeightInfo = ();	type SS58Prefix = ConstU16<42>;	type OnSetCode = ();	type MaxConsumers = ConstU32<16>;}
+impl system::Config for Test {
+	type BaseCallFilter = frame_support::traits::Everything;
+	type BlockWeights = ();
+	type BlockLength = ();
+	type DbWeight = ();
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
+	type Nonce = u64;
+	type Hash = H256;
+	type Hashing = sp_runtime::traits::BlakeTwo256;
+	type AccountId = AccountId;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Block = Block;
+	type RuntimeEvent = RuntimeEvent;
+	type BlockHashCount = BlockHashCount;
+	type Version = ();
+	type PalletInfo = PalletInfo;
+	type AccountData = pallet_balances::AccountData<Balance>;
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
+	type SystemWeightInfo = ();
+	type SS58Prefix = ConstU16<42>;
+	type OnSetCode = ();
+	type MaxConsumers = ConstU32<16>;
+	type RuntimeTask = RuntimeTask;
+	type ExtensionsWeightInfo = ();
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
+}
 
 impl pallet_balances::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
@@ -62,10 +88,11 @@ impl pallet_balances::Config for Test {
 	type MaxLocks = MaxLocks;
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];
-	type MaxFreezes = ConstU32<0>;
-	type MaxHolds = ConstU32<0>;
-	type FreezeIdentifier = ();
 	type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
+    type FreezeIdentifier = ();
+    type MaxFreezes = ConstU32<0>;
+    type DoneSlashHandler = ();
 }
 
 pub struct MockZkVerifier;
@@ -79,9 +106,15 @@ impl VerifyZkProof for MockZkVerifier {
 	}
 }
 
-impl frame_system::offchain::SendTransactionTypes<crate::Call<Test>> for Test {
+impl frame_system::offchain::CreateTransactionBase<crate::Call<Test>> for Test {
+    type RuntimeCall = RuntimeCall;
     type Extrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-    type OverarchingCall = RuntimeCall;
+}
+
+impl frame_system::offchain::CreateBare<crate::Call<Test>> for Test {
+    fn create_bare(call: Self::RuntimeCall) -> Self::Extrinsic {
+        sp_runtime::generic::UncheckedExtrinsic::new_bare(call)
+    }
 }
 
 impl pallet_zk_compute::Config for Test {
@@ -122,6 +155,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			(3, 1_000_000),
 			(pallet_account, 1_000_000),
 		],
+		dev_accounts: None,
 	}
 	.assimilate_storage(&mut storage)
 	.expect("balances storage assimilates");

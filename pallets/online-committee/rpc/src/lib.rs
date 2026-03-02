@@ -1,9 +1,9 @@
 #![warn(unused_crate_dependencies)]
 
 use jsonrpsee::{
-    core::{Error as JsonRpseeError, RpcResult},
+    core::RpcResult,
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject},
+    types::error::{ErrorCode, ErrorObject},
 };
 use parity_scale_codec::Codec;
 use sp_api::ProvideRuntimeApi;
@@ -76,11 +76,11 @@ where
 
         let runtime_api_result =
             api.get_committee_machine_list(at_hash, committee).map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result.into())
     }
@@ -108,11 +108,11 @@ where
                 machine_info: ops.machine_info,
             })
         }
-        return Err(JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+        return Err(ErrorObject::owned(
             ErrorCode::InternalError.code(),
             "Something wrong",
             Some("NotFound"),
-        ))))
+        ))
     }
 
     fn get_machine_committee_list(
@@ -126,11 +126,11 @@ where
 
         let runtime_api_result =
             api.get_machine_committee_list(at_hash, machine_id).map_err(|e| {
-                JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+                ErrorObject::owned(
                     ErrorCode::InternalError.code(),
                     "Something wrong",
                     Some(e.to_string()),
-                )))
+                )
             })?;
         Ok(runtime_api_result)
     }

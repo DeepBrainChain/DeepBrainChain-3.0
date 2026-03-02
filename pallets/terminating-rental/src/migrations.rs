@@ -8,7 +8,7 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
-use sp_std::vec::Vec;
+use alloc::vec::Vec;
 
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 struct OldOCPendingSlashInfo<AccountId, BlockNumber, Balance> {
@@ -57,7 +57,6 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use Config;
 
 use crate::*;
-use sp_std::prelude::*;
 
 const TARGET: &'static str = "terminating-rental-migration";
 
