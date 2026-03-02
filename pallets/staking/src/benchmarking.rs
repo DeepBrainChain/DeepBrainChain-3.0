@@ -132,7 +132,7 @@ pub fn create_validator_with_nominators<T: Config>(
     ErasRewardPoints::<T>::insert(current_era, reward);
 
     // Create reward pool
-    let total_payout = asset::existential_deposit::<T>()
+    let total_payout = asset::existential_deposit::<T>().max(One::one())
         .saturating_mul(upper_bound.into())
         .saturating_mul(1000u32.into());
     <ErasValidatorReward<T>>::insert(current_era, total_payout);
@@ -223,7 +223,7 @@ benchmarks! {
     bond {
         let stash = create_funded_user::<T>("stash", USER_SEED, 100);
         let reward_destination = RewardDestination::Staked;
-        let amount = asset::existential_deposit::<T>() * 10u32.into();
+        let amount = (asset::existential_deposit::<T>() * 10u32.into()).max(One::one());
         whitelist_account!(stash);
     }: _(RawOrigin::Signed(stash.clone()), amount, reward_destination)
     verify {
@@ -235,7 +235,7 @@ benchmarks! {
         // clean up any existing state.
         clear_validators_and_nominators::<T>();
 
-        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>());
+        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>()).max(One::one());
 
         // setup the worst case list scenario.
 
@@ -292,7 +292,7 @@ benchmarks! {
         let s in 0 .. MAX_SPANS;
         let (stash, controller) = create_stash_controller::<T>(0, 100, Default::default())?;
         add_slashing_spans::<T>(&stash, s);
-        let amount = asset::existential_deposit::<T>() * 5u32.into(); // Half of total
+        let amount = (asset::existential_deposit::<T>() * 5u32.into()).max(One::one()); // Half of total
         Staking::<T>::unbond(RawOrigin::Signed(controller.clone()).into(), amount)?;
         CurrentEra::<T>::put(EraIndex::max_value());
         let ledger = Ledger::<T>::get(&controller).ok_or("ledger not created before")?;
@@ -306,13 +306,14 @@ benchmarks! {
     }
 
     // Worst case scenario, everything is removed after the bonding duration
+    #[extra]
     withdraw_unbonded_kill {
         // Slashing Spans
         let s in 0 .. MAX_SPANS;
         // clean up any existing state.
         clear_validators_and_nominators::<T>();
 
-        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>());
+        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>()).max(One::one());
 
         // setup a worst case list scenario. Note that we don't care about the setup of the
         // destination position because we are doing a removal from the list but no insert.
@@ -422,7 +423,7 @@ benchmarks! {
         // clean up any existing state.
         clear_validators_and_nominators::<T>();
 
-        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>());
+        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>()).max(One::one());
 
         // setup a worst case list scenario. Note we don't care about the destination position, because
         // we are just doing an insert into the origin position.
@@ -448,7 +449,7 @@ benchmarks! {
         // clean up any existing state.
         clear_validators_and_nominators::<T>();
 
-        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>());
+        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>()).max(One::one());
 
         // setup a worst case list scenario. Note that we don't care about the setup of the
         // destination position because we are doing a removal from the list but no insert.
@@ -465,11 +466,11 @@ benchmarks! {
 
     set_payee {
         let (stash, controller) = create_stash_controller::<T>(USER_SEED, 100, Default::default())?;
-        assert_eq!(Payee::<T>::get(&stash), RewardDestination::Staked);
+        assert_eq!(Payee::<T>::get(&stash), Some(RewardDestination::Staked));
         whitelist_account!(controller);
     }: _(RawOrigin::Signed(controller), RewardDestination::Controller)
     verify {
-        assert_eq!(Payee::<T>::get(&stash), RewardDestination::Controller);
+        assert_eq!(Payee::<T>::get(&stash), Some(RewardDestination::Controller));
     }
 
     set_controller {
@@ -519,7 +520,7 @@ benchmarks! {
         // Clean up any existing state.
         clear_validators_and_nominators::<T>();
 
-        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>());
+        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>()).max(One::one());
 
         // setup a worst case list scenario. Note that we don't care about the setup of the
         // destination position because we are doing a removal from the list but no insert.
@@ -551,6 +552,7 @@ benchmarks! {
         assert_eq!(UnappliedSlashes::<T>::get(&era).len(), (MAX_SLASHES - s) as usize);
     }
 
+    #[extra]
     payout_stakers_dead_controller {
         let n in 0 .. T::MaxNominatorRewardedPerValidator::get() as u32;
         let (validator, nominators) = create_validator_with_nominators::<T>(
@@ -585,6 +587,7 @@ benchmarks! {
         }
     }
 
+    #[extra]
     payout_stakers_alive_staked {
         let n in 0 .. T::MaxNominatorRewardedPerValidator::get() as u32;
         let (validator, nominators) = create_validator_with_nominators::<T>(
@@ -670,12 +673,13 @@ benchmarks! {
         assert!(original_bonded < new_bonded);
     }
 
+    #[extra]
     reap_stash {
         let s in 1 .. MAX_SPANS;
         // clean up any existing state.
         clear_validators_and_nominators::<T>();
 
-        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>());
+        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>()).max(One::one());
 
         // setup a worst case list scenario. Note that we don't care about the setup of the
         // destination position because we are doing a removal from the list but no insert.
@@ -698,6 +702,7 @@ benchmarks! {
         assert!(!T::VoterList::contains(&stash));
     }
 
+    #[extra]
     new_era {
         let v in 1 .. 10;
         let n in 0 .. 100;
@@ -705,7 +710,7 @@ benchmarks! {
         create_validators_with_nominators_for_era::<T>(
             v,
             n,
-            <T as Config>::MaxNominations::get() as usize,
+            MaxNominationsOf::<T>::get() as usize,
             false,
             None,
         )?;
@@ -723,7 +728,7 @@ benchmarks! {
         create_validators_with_nominators_for_era::<T>(
             v,
             n,
-            <T as Config>::MaxNominations::get() as usize,
+            MaxNominationsOf::<T>::get() as usize,
             false,
             None,
         )?;
@@ -751,7 +756,7 @@ benchmarks! {
         ErasRewardPoints::<T>::insert(current_era, reward);
 
         // Create reward pool
-        let total_payout = asset::existential_deposit::<T>() * 1000u32.into();
+        let total_payout = asset::existential_deposit::<T>().max(One::one()) * 1000u32.into();
         <ErasValidatorReward<T>>::insert(current_era, total_payout);
 
         let caller: T::AccountId = whitelisted_caller();
@@ -871,7 +876,7 @@ benchmarks! {
         // clean up any existing state.
         clear_validators_and_nominators::<T>();
 
-        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>());
+        let origin_weight = MinNominatorBond::<T>::get().max(asset::existential_deposit::<T>()).max(One::one());
 
         // setup a worst case list scenario. Note that we don't care about the setup of the
         // destination position because we are doing a removal from the list but no insert.
