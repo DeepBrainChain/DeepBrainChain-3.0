@@ -51,7 +51,7 @@ pub mod v1 {
     pub struct MigrateToV1<T>(core::marker::PhantomData<T>);
     impl<T: Config> OnRuntimeUpgrade for MigrateToV1<T> {
         fn on_runtime_upgrade() -> Weight {
-            let current_version = Pallet::<T>::current_storage_version();
+            let current_version = Pallet::<T>::in_code_storage_version();
             let onchain_version = Pallet::<T>::on_chain_storage_version();
 
             log::info!(
@@ -94,7 +94,7 @@ pub mod v1 {
 
         #[cfg(feature = "try-runtime")]
         fn pre_upgrade() -> Result<Vec<u8>, TryRuntimeError> {
-            let current_version = Pallet::<T>::current_storage_version();
+            let current_version = Pallet::<T>::in_code_storage_version();
             let onchain_version = Pallet::<T>::on_chain_storage_version();
             ensure!(onchain_version == 0 && current_version == 1, "migration from version 0 to 1.");
             let prev_count = Collection::<T>::iter().count();

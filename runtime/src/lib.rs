@@ -83,7 +83,6 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_runtime::{
-    create_runtime_str,
     curve::PiecewiseLinear,
     generic, impl_opaque_keys,
     traits::{
@@ -150,8 +149,8 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 /// Runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("DeepBrainChain"),
-    impl_name: create_runtime_str!("DeepBrainChain"),
+    spec_name: alloc::borrow::Cow::Borrowed("DeepBrainChain"),
+    impl_name: alloc::borrow::Cow::Borrowed("DeepBrainChain"),
     authoring_version: 1,
     // Per convention: if the runtime behavior changes, increment spec_version
     // and set impl_version to 0. If only runtime
@@ -1992,7 +1991,6 @@ pub type Executive = frame_executive::Executive<
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
 extern crate frame_benchmarking;
 
 #[cfg(feature = "runtime-benchmarks")]

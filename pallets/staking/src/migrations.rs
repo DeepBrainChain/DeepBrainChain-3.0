@@ -73,7 +73,7 @@ pub mod v13 {
         }
 
         fn on_runtime_upgrade() -> Weight {
-            let current = Pallet::<T>::current_storage_version();
+            let current = Pallet::<T>::in_code_storage_version();
             let onchain = StorageVersion::<T>::get();
 
             if current == 13 && onchain == ObsoleteReleases::V12_0_0 {

@@ -66,7 +66,7 @@ pub mod v1 {
     pub struct MigrateToV1<T>(core::marker::PhantomData<T>);
     impl<T: Config> OnRuntimeUpgrade for MigrateToV1<T> {
         fn on_runtime_upgrade() -> Weight {
-            let current_version = Pallet::<T>::current_storage_version();
+            let current_version = Pallet::<T>::in_code_storage_version();
             let onchain_version = Pallet::<T>::on_chain_storage_version();
             if onchain_version == 0 && current_version == 1 {
                 let mut translated = 0u64;
@@ -115,7 +115,7 @@ pub mod v1 {
                 "the asset count before and after the migration should be the same"
             );
 
-            let current_version = Pallet::<T>::current_storage_version();
+            let current_version = Pallet::<T>::in_code_storage_version();
             let onchain_version = Pallet::<T>::on_chain_storage_version();
 
             frame_support::ensure!(current_version == 1, "must_upgrade");

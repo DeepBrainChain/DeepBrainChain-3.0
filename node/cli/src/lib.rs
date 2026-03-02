@@ -32,7 +32,6 @@
 
 pub mod chain_spec;
 
-#[macro_use]
 pub mod service;
 mod cli;
 mod command;

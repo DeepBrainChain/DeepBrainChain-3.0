@@ -112,7 +112,7 @@ pub mod v1 {
         #[cfg(feature = "try-runtime")]
         fn pre_upgrade() -> Result<Vec<u8>, TryRuntimeError> {
             log::info!("pre_upgrade ok");
-            let current_version = Pallet::<T>::current_storage_version();
+            let current_version = Pallet::<T>::in_code_storage_version();
             let on_chain_version = Pallet::<T>::on_chain_storage_version();
 
             log::info!("c : {:?} ", current_version);
