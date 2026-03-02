@@ -1988,12 +1988,16 @@ pub type SignedPayload = generic::SignedPayload<RuntimeCall, TxExtension>;
 pub type CheckedExtrinsic =
     fp_self_contained::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension, H160>;
 /// Executive: handles dispatch to the various modules.
+/// Migrations to run on runtime upgrade.
+type Migrations = (pallet_staking::migrations::v16::MigrateV13ToV16<Runtime>,);
+
 pub type Executive = frame_executive::Executive<
     Runtime,
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
+    Migrations,
 >;
 
 #[cfg(feature = "runtime-benchmarks")]

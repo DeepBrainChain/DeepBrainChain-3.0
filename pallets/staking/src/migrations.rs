@@ -57,6 +57,62 @@ impl Default for ObsoleteReleases {
 #[storage_alias]
 type StorageVersion<T: Config> = StorageValue<Pallet<T>, ObsoleteReleases, ValueQuery>;
 
+/// DBC-specific migration from v13 to v16.
+///
+/// The upstream v14-v16 migrations deal with:
+/// - v14: version bump only (paged exposures)
+/// - v15: OffendingValidators Vec<(u32,bool)> → DisabledValidators Vec<u32>
+/// - v16: DisabledValidators Vec<u32> → Vec<(u32, OffenceSeverity)>
+///
+/// DBC keeps its own `OffendingValidators` (still actively used in slashing.rs/impls.rs)
+/// and has a custom `DisabledValidators<BoundedVec<AccountId, _>>` for admin-controlled
+/// disabling. These are different from upstream's types, so the upstream data migrations
+/// are not applicable. We only bump the storage version.
+pub mod v16 {
+    use super::*;
+
+    pub struct MigrateV13ToV16<T>(core::marker::PhantomData<T>);
+    impl<T: Config> OnRuntimeUpgrade for MigrateV13ToV16<T> {
+        fn on_runtime_upgrade() -> Weight {
+            let on_chain = Pallet::<T>::on_chain_storage_version();
+
+            if on_chain == 13 {
+                let target: frame_support::traits::StorageVersion =
+                    frame_support::traits::StorageVersion::new(16);
+                target.put::<Pallet<T>>();
+
+                log!(info, "staking v13→v16 version bump applied successfully");
+                T::DbWeight::get().reads_writes(1, 1)
+            } else {
+                log!(
+                    warn,
+                    "staking v13→v16 skipped: on-chain version is {:?}, expected 13",
+                    on_chain
+                );
+                T::DbWeight::get().reads(1)
+            }
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn pre_upgrade() -> Result<Vec<u8>, TryRuntimeError> {
+            frame_support::ensure!(
+                Pallet::<T>::on_chain_storage_version() == 13,
+                "Expected on-chain storage version 13"
+            );
+            Ok(Default::default())
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn post_upgrade(_state: Vec<u8>) -> Result<(), TryRuntimeError> {
+            frame_support::ensure!(
+                Pallet::<T>::on_chain_storage_version() == 16,
+                "Storage version not bumped to 16"
+            );
+            Ok(())
+        }
+    }
+}
+
 pub mod v13 {
     use super::*;
 
