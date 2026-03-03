@@ -314,7 +314,6 @@ mod tests {
     }
 
     impl pallet_x402_settlement::Config for Test {
-        type RuntimeEvent = RuntimeEvent;
         type Currency = Balances;
         type FacilitatorAccount = FacilitatorAccount;
         type FacilitatorPublicKey = FacilitatorPublicKeyValue;

@@ -88,7 +88,6 @@ impl pallet_balances::Config for Test {
 }
 
 impl crate::pallet::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type FacilitatorAccount = FacilitatorAccount;
     type MaxSignatureLen = MaxSignatureLen;
