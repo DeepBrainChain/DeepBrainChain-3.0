@@ -24,7 +24,7 @@ pub trait VerifyZkProof {
 pub mod pallet {
     use frame_support::traits::StorageVersion;
 	use super::*;
-	use frame_system::offchain::{CreateBare, SubmitTransaction};
+	use frame_system::offchain::SubmitTransaction;
 	use sp_runtime::transaction_validity::{
 		InvalidTransaction, TransactionSource, TransactionValidity, ValidTransaction,
 	};
@@ -547,5 +547,4 @@ pub mod pallet {
 		}
 	}
 }
-
 
