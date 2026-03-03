@@ -1064,8 +1064,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             #[pallet::compact] value: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let controller = ensure_signed(origin)?;
-            let ledger = Self::ledger(StakingAccount::Controller(controller.clone()))?;
+            let who = ensure_signed(origin)?;
+            let ledger = Self::ledger_for_signed(&who)?;
             let stash = ledger.stash.clone();
 
             // if there are no unlocking chunks available, try to withdraw chunks older than
@@ -1165,9 +1165,9 @@ pub mod pallet {
             origin: OriginFor<T>,
             num_slashing_spans: u32,
         ) -> DispatchResultWithPostInfo {
-            let controller = ensure_signed(origin)?;
+            let who = ensure_signed(origin)?;
 
-            let actual_weight = Self::do_withdraw_unbonded(&controller, num_slashing_spans)?;
+            let actual_weight = Self::do_withdraw_unbonded(&who, num_slashing_spans)?;
             Ok(Some(actual_weight).into())
         }
 
@@ -1179,9 +1179,8 @@ pub mod pallet {
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::validate())]
         pub fn validate(origin: OriginFor<T>, prefs: ValidatorPrefs) -> DispatchResult {
-            let controller = ensure_signed(origin)?;
-
-            let ledger = Self::ledger(StakingAccount::Controller(controller))?;
+            let who = ensure_signed(origin)?;
+            let ledger = Self::ledger_for_signed(&who)?;
 
             ensure!(ledger.active >= MinValidatorBond::<T>::get(), Error::<T>::InsufficientBond);
             let stash = &ledger.stash;
@@ -1228,9 +1227,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             targets: Vec<AccountIdLookupOf<T>>,
         ) -> DispatchResult {
-            let controller = ensure_signed(origin)?;
-
-            let ledger = Self::ledger(StakingAccount::Controller(controller))?;
+            let who = ensure_signed(origin)?;
+            let ledger = Self::ledger_for_signed(&who)?;
             ensure!(ledger.active >= MinNominatorBond::<T>::get(), Error::<T>::InsufficientBond);
             let stash = &ledger.stash;
 
@@ -1293,8 +1291,8 @@ pub mod pallet {
         #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::chill())]
         pub fn chill(origin: OriginFor<T>) -> DispatchResult {
-            let controller = ensure_signed(origin)?;
-            let ledger = Self::ledger(StakingAccount::Controller(controller))?;
+            let who = ensure_signed(origin)?;
+            let ledger = Self::ledger_for_signed(&who)?;
             Self::chill_stash(&ledger.stash);
             Ok(())
         }
@@ -1317,8 +1315,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             payee: RewardDestination<T::AccountId>,
         ) -> DispatchResult {
-            let controller = ensure_signed(origin)?;
-            let ledger = Self::ledger(StakingAccount::Controller(controller.clone()))?;
+            let who = ensure_signed(origin)?;
+            let ledger = Self::ledger_for_signed(&who)?;
             ledger.set_payee(payee)?;
             Ok(())
         }
@@ -1575,8 +1573,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             #[pallet::compact] value: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let controller = ensure_signed(origin)?;
-            let ledger = Self::ledger(StakingAccount::Controller(controller))?;
+            let who = ensure_signed(origin)?;
+            let ledger = Self::ledger_for_signed(&who)?;
             ensure!(!ledger.unlocking.is_empty(), Error::<T>::NoUnlockChunk);
 
             let stash = ledger.stash.clone();

@@ -766,8 +766,8 @@ fn nominators_also_get_slashed_pro_rata() {
 fn double_staking_should_fail() {
     // should test (in the same order):
     // * an account already bonded as stash cannot be be stashed again.
-    // * an account already bonded as stash cannot nominate.
-    // * an account already bonded as controller can nominate.
+    // * during controller deprecation, a bonded stash can nominate.
+    // * an account already bonded as controller can still nominate.
     ExtBuilder::default().build_and_execute(|| {
         let arbitrary_value = 5;
         let (stash, controller) = testing_utils::create_unique_stash_controller::<Test>(
@@ -787,11 +787,8 @@ fn double_staking_should_fail() {
             ),
             Error::<Test>::AlreadyBonded,
         );
-        // stash => attempting to nominate should fail.
-        assert_noop!(
-            Staking::nominate(RuntimeOrigin::signed(stash), vec![1]),
-            Error::<Test>::NotController
-        );
+        // stash => nominating should work during controller deprecation.
+        assert_ok!(Staking::nominate(RuntimeOrigin::signed(stash), vec![1]));
         // controller => nominating should work.
         assert_ok!(Staking::nominate(RuntimeOrigin::signed(controller), vec![1]));
     });

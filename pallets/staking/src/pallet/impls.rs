@@ -72,6 +72,20 @@ impl<T: Config> Pallet<T> {
         StakingLedger::<T>::get(account)
     }
 
+    /// Resolve a ledger from a signer during the controller deprecation period.
+    ///
+    /// Prefer controller lookup (legacy behavior), then fall back to stash lookup to support
+    /// stash-controlled accounts.
+    pub(super) fn ledger_for_signed(who: &T::AccountId) -> Result<StakingLedger<T>, Error<T>> {
+        if let Ok(ledger) = Self::ledger(StakingAccount::Controller(who.clone())) {
+            return Ok(ledger)
+        }
+        if StakingLedger::<T>::is_bonded(StakingAccount::Stash(who.clone())) {
+            return Self::ledger(StakingAccount::Stash(who.clone()))
+        }
+        Err(Error::<T>::NotController)
+    }
+
     pub fn payee(account: StakingAccount<T::AccountId>) -> Option<RewardDestination<T::AccountId>> {
         StakingLedger::<T>::reward_destination(account)
     }
@@ -112,11 +126,10 @@ impl<T: Config> Pallet<T> {
     }
 
     pub(super) fn do_withdraw_unbonded(
-        controller: &T::AccountId,
+        who: &T::AccountId,
         num_slashing_spans: u32,
     ) -> Result<Weight, DispatchError> {
-        let mut ledger =
-            StakingLedger::<T>::get(StakingAccount::Controller(controller.clone()))?;
+        let mut ledger = Self::ledger_for_signed(who)?;
         let (stash, old_total) = (ledger.stash.clone(), ledger.total);
         if let Some(current_era) = Self::current_era() {
             ledger = ledger.consolidate_unlocked(current_era)
