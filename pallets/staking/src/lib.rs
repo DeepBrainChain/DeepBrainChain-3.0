@@ -41,7 +41,8 @@
 //! - Nominating: The process of placing staked funds behind one or more validators in order to
 //!   share in any reward, and punishment, they take.
 //! - Stash account: The account holding an owner's funds used for staking.
-//! - Controller account: The account that controls an owner's funds for staking.
+//! - Controller account: Legacy control account used during controller deprecation. The target
+//!   model is stash-controlled staking.
 //! - Era: A (whole) number of sessions, which is the period that the validator set (and each
 //!   validator's active nominator set) is recalculated and where rewards are paid out.
 //! - Slash: The punishment of a staker by reducing its funds.
@@ -62,13 +63,14 @@
 //! Almost any interaction with the Staking pallet requires a process of _**bonding**_ (also known
 //! as being a _staker_). To become *bonded*, a fund-holding register known as the _stash account_,
 //! which holds some or all of the funds that become frozen in place as part of the staking process,
-//! is paired with an active **controller** account, which issues instructions on how they shall be
-//! used.
+//! is paired with a control account. During controller deprecation this can be either a legacy
+//! controller account or the stash itself.
 //!
 //! An account pair can become bonded using the [`bond`](Call::bond) call.
 //!
-//! Stash accounts can update their associated controller back to the stash account using the
-//! [`set_controller`](Call::set_controller) call.
+//! Stash accounts can migrate legacy controller pairs to stash-controlled ledgers with
+//! [`set_controller`](Call::set_controller), or operators can do this in batch via
+//! [`deprecate_controller_batch`](Call::deprecate_controller_batch).
 //!
 //! There are three possible roles that any staked account pair can be in: `Validator`, `Nominator`
 //! and `Idle` (defined in [`StakerStatus`]). There are three
@@ -236,7 +238,7 @@
 //! [`Payee`] storage item (see
 //! [`set_payee`](Call::set_payee)), to be one of the following:
 //!
-//! - Controller account, (obviously) not increasing the staked value.
+//! - Legacy controller account (for non-migrated pairs), not increasing the staked value.
 //! - Stash account, not increasing the staked value.
 //! - Stash account, also increasing the staked value.
 //!
@@ -244,7 +246,7 @@
 //!
 //! Any funds already placed into stash can be the target of the following operations:
 //!
-//! The controller account can free a portion (or all) of the funds using the
+//! The active control account can free a portion (or all) of the funds using the
 //! [`unbond`](Call::unbond) call. Note that the funds are not immediately
 //! accessible. Instead, a duration denoted by
 //! [`Config::BondingDuration`] (in number of eras) must
@@ -432,7 +434,7 @@ pub enum RewardDestination<AccountId> {
     Staked,
     /// Pay into the stash account, not increasing the amount at stake.
     Stash,
-    /// Pay into the controller account.
+    /// Pay into the legacy controller account (for non-migrated pairs).
     Controller,
     /// Pay into a specified account.
     Account(AccountId),

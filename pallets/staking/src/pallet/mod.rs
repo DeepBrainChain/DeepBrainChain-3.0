@@ -289,7 +289,10 @@ pub mod pallet {
     #[pallet::unbounded]
     pub type Invulnerables<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
-    /// Map from all locked "stash" accounts to the controller account.
+    /// Map from all locked "stash" accounts to the active control account.
+    ///
+    /// During controller deprecation this can be either a legacy controller account or the stash
+    /// itself once migrated.
     ///
     /// TWOX-NOTE: SAFE since `AccountId` is a secure hash.
     #[pallet::storage]
@@ -1041,7 +1044,7 @@ pub mod pallet {
         /// period ends. If this leaves an amount actively bonded less than
         /// T::Currency::minimum_balance(), then it is increased to the full amount.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+        /// The dispatch origin for this call must be _Signed_ by the active control account.
         ///
         /// Once the unlock period is done, you can call `withdraw_unbonded` to actually move
         /// the funds out of management ready for transfer.
@@ -1150,7 +1153,7 @@ pub mod pallet {
         /// This essentially frees up that balance to be used by the stash account to do
         /// whatever it wants.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the controller.
+        /// The dispatch origin for this call must be _Signed_ by the active control account.
         ///
         /// Emits `Withdrawn`.
         ///
@@ -1171,11 +1174,11 @@ pub mod pallet {
             Ok(Some(actual_weight).into())
         }
 
-        /// Declare the desire to validate for the origin controller.
+        /// Declare the desire to validate for the signer.
         ///
         /// Effects will be felt at the beginning of the next era.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+        /// The dispatch origin for this call must be _Signed_ by the active control account.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::validate())]
         pub fn validate(origin: OriginFor<T>, prefs: ValidatorPrefs) -> DispatchResult {
@@ -1211,11 +1214,11 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Declare the desire to nominate `targets` for the origin controller.
+        /// Declare the desire to nominate `targets` for the signer.
         ///
         /// Effects will be felt at the beginning of the next era.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+        /// The dispatch origin for this call must be _Signed_ by the active control account.
         ///
         /// ## Complexity
         /// - The transaction's complexity is proportional to the size of `targets` (N)
@@ -1282,7 +1285,7 @@ pub mod pallet {
         ///
         /// Effects will be felt at the beginning of the next era.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+        /// The dispatch origin for this call must be _Signed_ by the active control account.
         ///
         /// ## Complexity
         /// - Independent of the arguments. Insignificant complexity.
@@ -1297,11 +1300,11 @@ pub mod pallet {
             Ok(())
         }
 
-        /// (Re-)set the payment target for a controller.
+        /// (Re-)set the payment target for a staker.
         ///
         /// Effects will be felt instantly (as soon as this function is completed successfully).
         ///
-        /// The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+        /// The dispatch origin for this call must be _Signed_ by the active control account.
         ///
         /// ## Complexity
         /// - O(1)
@@ -1562,7 +1565,7 @@ pub mod pallet {
 
         /// Rebond a portion of the stash scheduled to be unlocked.
         ///
-        /// The dispatch origin must be signed by the controller.
+        /// The dispatch origin must be signed by the active control account.
         ///
         /// ## Complexity
         /// - Time complexity: O(L), where L is unlocking chunks
@@ -1644,7 +1647,7 @@ pub mod pallet {
         ///
         /// Effects will be felt at the beginning of the next era.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+        /// The dispatch origin for this call must be _Signed_ by the stash.
         ///
         /// - `who`: A list of nominator stash accounts who are nominating this validator which
         ///   should no longer be nominating this validator.
