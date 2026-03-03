@@ -1609,7 +1609,6 @@ impl pallet_task_mode::Config for Runtime {
 }
 
 impl pallet_zk_compute::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type TaskId = u64;
     type MaxProofSize = MaxProofSize;

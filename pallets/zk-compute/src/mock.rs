@@ -118,7 +118,6 @@ impl frame_system::offchain::CreateBare<crate::Call<Test>> for Test {
 }
 
 impl pallet_zk_compute::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type TaskId = u64;
 	type ZkVerifier = MockZkVerifier;

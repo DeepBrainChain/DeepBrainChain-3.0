@@ -76,8 +76,6 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + frame_system::offchain::CreateTransactionBase<Call<Self>> + frame_system::offchain::CreateBare<Call<Self>> {
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
 		type Currency: ReservableCurrency<Self::AccountId>;
 
 		type TaskId: Parameter
@@ -547,4 +545,3 @@ pub mod pallet {
 		}
 	}
 }
-
