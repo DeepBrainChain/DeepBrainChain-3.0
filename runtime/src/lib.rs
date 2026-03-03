@@ -1441,7 +1441,6 @@ impl pallet_nfts::Config for Runtime {
 
 impl generic_func::Config for Runtime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RandomnessSource = RandomnessCollectiveFlip;
     type FixedTxFee = Treasury;
     type Slash = Treasury;
@@ -1855,7 +1854,6 @@ impl pallet_ethereum::Config for Runtime {
 }
 
 impl eth_precompile_whitelist::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type WhitelistLimit = ConstU32<10>;
 }
 

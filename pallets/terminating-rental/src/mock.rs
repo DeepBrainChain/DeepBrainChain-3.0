@@ -92,7 +92,6 @@ impl pallet_insecure_randomness_collective_flip::Config for TestRuntime {}
 
 impl generic_func::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RandomnessSource = RandomnessCollectiveFlip;
     type FixedTxFee = Treasury;
     type Slash = Treasury;

@@ -200,7 +200,6 @@ impl dbc_price_ocw::Config for TestRuntime {
 
 impl generic_func::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RandomnessSource = RandomnessCollectiveFlip;
     type FixedTxFee = Treasury;
     type Slash = Treasury;

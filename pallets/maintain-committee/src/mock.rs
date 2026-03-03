@@ -150,7 +150,6 @@ impl frame_system::offchain::SigningTypes for TestRuntime {
 
 impl generic_func::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RandomnessSource = RandomnessCollectiveFlip;
     type FixedTxFee = Treasury;
     type Slash = Treasury;
