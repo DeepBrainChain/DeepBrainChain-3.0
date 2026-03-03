@@ -28,7 +28,7 @@ use rand_chacha::{
 use sp_io::hashing::blake2_256;
 
 use frame_election_provider_support::SortedListProvider;
-use frame_support::{pallet_prelude::*, traits::Currency};
+use frame_support::pallet_prelude::*;
 use sp_runtime::traits::One;
 use sp_runtime::{traits::StaticLookup, Perbill};
 use alloc::vec::Vec;

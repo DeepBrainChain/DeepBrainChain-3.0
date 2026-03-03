@@ -32,7 +32,7 @@ use sp_core::H256;
 use sp_io;
 use sp_runtime::{
     curve::PiecewiseLinear,
-    testing::{Header, UintAuthorityId},
+    testing::UintAuthorityId,
     traits::{IdentityLookup, Zero},
     BuildStorage,
 };

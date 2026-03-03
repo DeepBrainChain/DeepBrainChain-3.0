@@ -4085,7 +4085,7 @@ fn bond_during_era_correctly_populates_legacy_claimed_rewards() {
 
         // make sure only era upto history depth is stored
         let current_era = 99;
-        let last_reward_era = 99 - HistoryDepth::get();
+        let _last_reward_era = 99 - HistoryDepth::get();
         mock::start_active_era(current_era);
         bond_validator(13, 1000);
         assert_eq!(
