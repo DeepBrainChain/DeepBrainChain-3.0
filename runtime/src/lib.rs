@@ -1411,7 +1411,6 @@ parameter_types! {
 }
 
 impl pallet_nfts::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type CollectionId = u32;
     type ItemId = u32;
     type Currency = Balances;

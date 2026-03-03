@@ -101,7 +101,6 @@ parameter_types! {
 }
 
 impl Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type CollectionId = u32;
     type ItemId = u32;
     type Currency = Balances;
