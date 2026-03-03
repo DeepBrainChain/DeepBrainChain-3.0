@@ -242,7 +242,6 @@ parameter_types! {
 
 impl online_profile::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type BondingDuration = BondingDuration;
     type DbcPrice = DBCPriceOCW;
     type ManageCommittee = Committee;

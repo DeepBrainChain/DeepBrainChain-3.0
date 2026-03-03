@@ -188,7 +188,6 @@ impl committee::Config for TestRuntime {
 
 impl online_profile::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type BondingDuration = BondingDuration;
     // type ProfitReleaseDuration = ProfitReleaseDuration;
     type DbcPrice = DBCPriceOCW;
@@ -217,7 +216,6 @@ impl online_committee::Config for TestRuntime {
 
 impl rent_machine::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RTOps = OnlineProfile;
     type DbcPrice = DBCPriceOCW;
 }

@@ -54,7 +54,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config + generic_func::Config {
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: ReservableCurrency<Self::AccountId>;
         type BondingDuration: Get<EraIndex>;
         type DbcPrice: DbcPrice<Balance = BalanceOf<Self>>;

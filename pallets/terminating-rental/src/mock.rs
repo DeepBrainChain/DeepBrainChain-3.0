@@ -136,7 +136,6 @@ impl committee::Config for TestRuntime {
 }
 
 impl terminating_rental::Config for TestRuntime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Slash = Treasury;
     type ManageCommittee = Committee;

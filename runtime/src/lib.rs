@@ -1677,7 +1677,6 @@ impl pallet_x402_settlement::Config for Runtime {
 
 impl online_profile::Config for Runtime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type BondingDuration = BondingDuration;
     type DbcPrice = DBCPriceOCW;
     type ManageCommittee = Committee;
@@ -1703,7 +1702,6 @@ impl online_committee::Config for Runtime {
 
 impl rent_machine::Config for Runtime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RTOps = OnlineProfile;
     type DbcPrice = DBCPriceOCW;
 }
@@ -1719,7 +1717,6 @@ impl maintain_committee::Config for Runtime {
 }
 
 impl terminating_rental::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Slash = Treasury;
     type ManageCommittee = Committee;
