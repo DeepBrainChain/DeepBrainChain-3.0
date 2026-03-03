@@ -2024,6 +2024,38 @@ pub mod pallet {
                 Ok(())
             })
         }
+
+        /// Batch-migrate legacy controller accounts to stash-controlled ledgers.
+        ///
+        /// This call is intended for runtime administrators to accelerate controller deprecation by
+        /// applying the same migration as [`Self::set_controller`] over many stashes.
+        ///
+        /// Existing stash-controlled ledgers are skipped.
+        #[pallet::call_index(38)]
+        #[pallet::weight(
+            T::WeightInfo::set_controller().saturating_mul(stashes.len() as u64)
+        )]
+        pub fn deprecate_controller_batch(
+            origin: OriginFor<T>,
+            stashes: Vec<AccountIdLookupOf<T>>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            ensure!(
+                stashes.len() as u32 <= T::MaxControllersInDeprecationBatch::get(),
+                Error::<T>::BoundNotMet
+            );
+
+            for stash in stashes.into_iter().map(T::Lookup::lookup).collect::<Result<Vec<_>, _>>()? {
+                if Bonded::<T>::get(&stash) == Some(stash.clone()) {
+                    continue
+                }
+
+                let ledger = StakingLedger::<T>::get(StakingAccount::Stash(stash))?;
+                ledger.set_controller_to_stash()?;
+            }
+
+            Ok(())
+        }
     }
 }
 
