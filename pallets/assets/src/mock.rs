@@ -150,7 +150,6 @@ parameter_types! {
 }
 
 impl Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Balance = u64;
     type AssetId = u32;
     type AssetIdParameter = u32;

@@ -1368,7 +1368,6 @@ parameter_types! {
 }
 
 impl pallet_assets::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Balance = u128;
     type AssetId = u32;
     type AssetIdParameter = Compact<u32>;
