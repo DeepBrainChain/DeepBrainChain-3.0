@@ -127,7 +127,6 @@ impl pallet_balances::Config for Test {
 }
 
 impl crate::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type DbcPriceProvider = DBCPriceOCW;
     type TreasuryAccount = TreasuryAccount;

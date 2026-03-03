@@ -1593,7 +1593,6 @@ impl pallet_zk_compute::VerifyZkProof for HashCommitmentZkVerifier {
 }
 
 impl pallet_task_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type DbcPriceProvider = DBCPriceOCW;
     type TreasuryAccount = TreasuryPalletAccount;

@@ -235,7 +235,6 @@ mod tests {
 
     // REAL WIRING: TaskMode uses ComputePoolScheduler for compute scheduling
     impl pallet_task_mode::Config for Test {
-        type RuntimeEvent = RuntimeEvent;
         type Currency = Balances;
         type DbcPriceProvider = MockDbcPriceProvider;
         type TreasuryAccount = TreasuryAccount;
