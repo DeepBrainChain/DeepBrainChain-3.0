@@ -107,7 +107,6 @@ impl dbc_support::traits::AttestationSettler for MockAttestationSettler {
 }
 
 impl crate::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type AttestationDeposit = AttestationDeposit;
     type ChallengeWindow = ChallengeWindow;

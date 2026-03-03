@@ -274,7 +274,6 @@ mod tests {
 
     // REAL WIRING: AgentAttestation triggers X402Settlement on attestation confirmation
     impl pallet_agent_attestation::Config for Test {
-        type RuntimeEvent = RuntimeEvent;
         type Currency = Balances;
         type AttestationDeposit = AttestationDeposit;
         type ChallengeWindow = ChallengeWindow;

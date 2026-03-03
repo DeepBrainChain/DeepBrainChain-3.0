@@ -1650,7 +1650,6 @@ impl pallet_compute_pool_scheduler::Config for Runtime {
 }
 
 impl pallet_agent_attestation::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type AdminOrigin = frame_system::EnsureSigned<AccountId>;
     type AttestationDeposit = AttestationDeposit;
