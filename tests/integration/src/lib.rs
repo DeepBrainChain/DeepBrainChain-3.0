@@ -11,12 +11,10 @@ mod tests {
     };
     use sp_core::H256;
     use sp_runtime::{
-        generic::Header,
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Percent,
     };
     use std::cell::RefCell;
-    use codec;
     use sp_io;
 
     use dbc_support::traits::DbcPrice;
@@ -29,11 +27,7 @@ mod tests {
     // construct_runtime! with all 4 DBC 3.0 pallets wired together
     // ================================================================
     construct_runtime!(
-        pub enum Test where
-            Block = Block,
-            NodeBlock = Block,
-            UncheckedExtrinsic = UncheckedExtrinsic,
-        {
+        pub enum Test {
             System: frame_system,
             Balances: pallet_balances,
             TaskMode: pallet_task_mode,
@@ -174,10 +168,15 @@ mod tests {
         }
     }
 
-    // SendTransactionTypes for ZK OCW
-    impl frame_system::offchain::SendTransactionTypes<pallet_zk_compute::Call<Test>> for Test {
+    impl frame_system::offchain::CreateTransactionBase<pallet_zk_compute::Call<Test>> for Test {
         type Extrinsic = UncheckedExtrinsic;
-        type OverarchingCall = RuntimeCall;
+        type RuntimeCall = RuntimeCall;
+    }
+
+    impl frame_system::offchain::CreateBare<pallet_zk_compute::Call<Test>> for Test {
+        fn create_bare(call: Self::RuntimeCall) -> Self::Extrinsic {
+            sp_runtime::generic::UncheckedExtrinsic::new_bare(call)
+        }
     }
 
     // ================================================================
@@ -208,6 +207,13 @@ mod tests {
         type SS58Prefix = ConstU16<42>;
         type OnSetCode = ();
         type MaxConsumers = ConstU32<16>;
+        type RuntimeTask = RuntimeTask;
+        type ExtensionsWeightInfo = ();
+        type SingleBlockMigrations = ();
+        type MultiBlockMigrator = ();
+        type PreInherents = ();
+        type PostInherents = ();
+        type PostTransactions = ();
     }
 
     impl pallet_balances::Config for Test {
@@ -222,7 +228,10 @@ mod tests {
         type ReserveIdentifier = [u8; 8];
         type RuntimeHoldReason = ();
         type RuntimeFreezeReason = ();
-        type DoneSlashHandler = ();    }
+        type FreezeIdentifier = ();
+        type MaxFreezes = ConstU32<0>;
+        type DoneSlashHandler = ();
+    }
 
     // REAL WIRING: TaskMode uses ComputePoolScheduler for compute scheduling
     impl pallet_task_mode::Config for Test {
@@ -338,6 +347,7 @@ mod tests {
                 (99, 1_000_000_000_000), // treasury
                 (100, 1_000_000_000_000), // facilitator
             ],
+            dev_accounts: None,
         }
         .assimilate_storage(&mut t)
         .expect("balances storage assimilates");
