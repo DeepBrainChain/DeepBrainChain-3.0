@@ -51,7 +51,6 @@ pub mod pallet {
     pub trait Config:
         frame_system::Config + online_profile::Config + generic_func::Config + committee::Config
     {
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: ReservableCurrency<Self::AccountId>;
         type OCOps: OCOps<
             AccountId = Self::AccountId,

@@ -53,7 +53,6 @@ pub mod pallet {
     pub trait Config:
         frame_system::Config + online_profile::Config + generic_func::Config + rent_machine::Config
     {
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: ReservableCurrency<Self::AccountId>;
         type ManageCommittee: ManageCommittee<
             AccountId = Self::AccountId,

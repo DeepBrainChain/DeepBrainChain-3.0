@@ -1689,13 +1689,11 @@ impl online_profile::Config for Runtime {
 
 impl committee::Config for Runtime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     // type WeightInfo = committee::weights::SubstrateWeight<Runtime>;
 }
 
 impl online_committee::Config for Runtime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type OCOps = OnlineProfile;
     type ManageCommittee = Committee;
     type CancelSlashOrigin =
@@ -1712,7 +1710,6 @@ impl rent_machine::Config for Runtime {
 
 impl maintain_committee::Config for Runtime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type ManageCommittee = Committee;
     type MTOps = OnlineProfile;
     type Slash = Treasury;

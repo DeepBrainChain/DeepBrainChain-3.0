@@ -77,7 +77,6 @@ impl pallet_balances::Config for TestRuntime {
 
 impl committee::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     // type WeightInfo = ();
 }
 

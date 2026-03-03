@@ -223,12 +223,10 @@ impl pallet_timestamp::Config for TestRuntime {
 
 impl committee::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     // type WeightInfo = ();
 }
 
 impl online_committee::Config for TestRuntime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OCOps = OnlineProfile;
     type ManageCommittee = Committee;
@@ -256,7 +254,6 @@ impl online_profile::Config for TestRuntime {
 
 impl maintain_committee::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type ManageCommittee = Committee;
     type MTOps = OnlineProfile;
     type Slash = Treasury;
