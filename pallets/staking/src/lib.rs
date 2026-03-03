@@ -308,10 +308,9 @@ use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, HasCompact, MaxEncodedLen};
 use frame_election_provider_support::ElectionProvider;
 use frame_support::{
-    defensive, defensive_assert,
     traits::{
         tokens::fungible::{Credit, Debt},
-        ConstU32, Contains, Defensive, DefensiveMax, DefensiveSaturating, Get, LockIdentifier,
+        ConstU32, Defensive, DefensiveSaturating, Get,
     },
     weights::Weight,
     BoundedVec, CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
@@ -331,7 +330,6 @@ pub use weights::WeightInfo;
 
 pub use pallet::{pallet::*, UseNominatorsAndValidatorsMap, UseValidatorsMap};
 
-pub(crate) const STAKING_ID: LockIdentifier = *b"staking ";
 pub(crate) const LOG_TARGET: &str = "runtime::staking";
 
 // syntactic sugar for logging.
@@ -523,20 +521,6 @@ pub struct StakingLedger<T: Config> {
     pub controller: Option<T::AccountId>,
 }
 
-/// State of a ledger with regards with its data and metadata integrity.
-#[derive(PartialEq, Debug)]
-enum LedgerIntegrityState {
-    /// Ledger, bond and corresponding staking lock is OK.
-    Ok,
-    /// Ledger and/or bond is corrupted. This means that the bond has a ledger with a different
-    /// stash than the bonded stash.
-    Corrupted,
-    /// Ledger was corrupted and it has been killed.
-    CorruptedKilled,
-    /// Ledger and bond are OK, however the ledger's stash lock is out of sync.
-    LockCorrupted,
-}
-
 impl<T: Config> StakingLedger<T> {
     /// Remove entries from `unlocking` that are sufficiently old and reduce the
     /// total by the sum of their balances.
@@ -567,52 +551,6 @@ impl<T: Config> StakingLedger<T> {
             legacy_claimed_rewards: self.legacy_claimed_rewards,
             controller: self.controller,
         }
-    }
-
-    /// Sets ledger total to the `new_total`.
-    ///
-    /// Removes entries from `unlocking` upto `amount` starting from the oldest first.
-    fn update_total_stake(mut self, new_total: BalanceOf<T>) -> Self {
-        let old_total = self.total;
-        self.total = new_total;
-        debug_assert!(
-            new_total <= old_total,
-            "new_total {:?} must be <= old_total {:?}",
-            new_total,
-            old_total
-        );
-
-        let to_withdraw = old_total.defensive_saturating_sub(new_total);
-        // accumulator to keep track of how much is withdrawn.
-        // First we take out from active.
-        let mut withdrawn = BalanceOf::<T>::zero();
-
-        // first we try to remove stake from active
-        if self.active >= to_withdraw {
-            self.active -= to_withdraw;
-            return self
-        } else {
-            withdrawn += self.active;
-            self.active = BalanceOf::<T>::zero();
-        }
-
-        // start removing from the oldest chunk.
-        while let Some(last) = self.unlocking.last_mut() {
-            if withdrawn.defensive_saturating_add(last.value) <= to_withdraw {
-                withdrawn += last.value;
-                self.unlocking.pop();
-            } else {
-                let diff = to_withdraw.defensive_saturating_sub(withdrawn);
-                withdrawn += diff;
-                last.value -= diff;
-            }
-
-            if withdrawn >= to_withdraw {
-                break
-            }
-        }
-
-        self
     }
 
     /// Re-bond funds that were scheduled for unlocking.

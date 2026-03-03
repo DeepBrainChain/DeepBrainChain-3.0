@@ -33,7 +33,7 @@
 
 use frame_support::{defensive, ensure, traits::Defensive};
 use sp_runtime::DispatchResult;
-use sp_staking::{StakingAccount, StakingInterface};
+use sp_staking::StakingAccount;
 
 use crate::{
 	asset, BalanceOf, Bonded, Config, Error, Ledger, Pallet, Payee, RewardDestination,

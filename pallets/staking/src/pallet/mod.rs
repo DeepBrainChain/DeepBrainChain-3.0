@@ -25,7 +25,7 @@ use frame_support::{
     pallet_prelude::*,
     traits::{
         tokens::fungible::{
-            hold::Mutate as FunHoldMutate, Inspect as FunInspect, Mutate as FunMutate,
+            hold::Mutate as FunHoldMutate, Mutate as FunMutate,
         },
         Contains, Defensive, DefensiveSaturating, EnsureOrigin,
         EstimateNextNewSession, Get, InspectLockableCurrency, OnUnbalanced,
@@ -178,9 +178,6 @@ pub mod pallet {
         /// Tokens have been minted and are unused for validator-reward.
         /// See [Era payout](./index.html#era-payout).
         type RewardRemainder: OnUnbalanced<NegativeImbalanceOf<Self>>;
-
-        /// The overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         /// Handler for the unbalanced reduction when slashing a staker.
         type Slash: OnUnbalanced<NegativeImbalanceOf<Self>>;
@@ -1068,7 +1065,7 @@ pub mod pallet {
             #[pallet::compact] value: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let controller = ensure_signed(origin)?;
-            let mut ledger = Self::ledger(StakingAccount::Controller(controller.clone()))?;
+            let ledger = Self::ledger(StakingAccount::Controller(controller.clone()))?;
             let stash = ledger.stash.clone();
 
             // if there are no unlocking chunks available, try to withdraw chunks older than

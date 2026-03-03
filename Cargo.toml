@@ -46,6 +46,7 @@ members = [
   "pallets/zk-compute",
   "pallets/compute-pool-scheduler",
   "pallets/nfts",
+  "pallets/delegated-staking",
   "pallets/eth-precompile-whitelist",
   "pallets/x402-settlement",
   "pallets/x402-settlement/rpc/runtime-api",
@@ -329,5 +330,4 @@ fs_extra = { version = "1" }
 quote = { version = "1.0.20" }
 syn = { version = "1.0.98" }
 proc-macro2 = { version = "1.0.40" }
-
 

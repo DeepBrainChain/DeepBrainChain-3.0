@@ -300,6 +300,15 @@ impl sp_staking::OnStakingUpdate<AccountId, Balance> for EventListenerMock {
     }
 }
 
+pub struct MockNominationsQuota;
+impl crate::NominationsQuota<Balance> for MockNominationsQuota {
+    type MaxNominations = MaxNominations;
+
+    fn curve(_: Balance) -> u32 {
+        MaxNominations::get()
+    }
+}
+
 impl crate::pallet::pallet::Config for Test {
     type OldCurrency = Balances;
     type Currency = Balances;
@@ -308,7 +317,6 @@ impl crate::pallet::pallet::Config for Test {
     type UnixTime = Timestamp;
     type CurrencyToVote = sp_staking::currency_to_vote::SaturatingCurrencyToVote;
     type RewardRemainder = RewardRemainderMock;
-    type RuntimeEvent = RuntimeEvent;
     type Slash = ();
     type Reward = MockReward;
     type SessionsPerEra = SessionsPerEra;
@@ -322,7 +330,7 @@ impl crate::pallet::pallet::Config for Test {
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type GenesisElectionProvider = Self::ElectionProvider;
-    type NominationsQuota = crate::FixedNominationsQuota<16>;
+    type NominationsQuota = MockNominationsQuota;
     type MaxValidatorSet = MaxWinners;
     // NOTE: consider a macro and use `UseNominatorsAndValidatorsMap<Self>` as well.
     type VoterList = VoterBagsList;

@@ -57,7 +57,7 @@ use crate::{
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
     ensure,
-    traits::{Defensive, Get, Imbalance, OnUnbalanced},
+    traits::{Get, Imbalance, OnUnbalanced},
 };
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -65,7 +65,7 @@ use sp_runtime::{
     DispatchResult, RuntimeDebug,
 };
 use sp_staking::EraIndex;
-use alloc::{vec, vec::Vec};
+use alloc::vec::Vec;
 
 /// The proportion of the slashing reward to be paid out on the first slashing detection.
 /// This is f_1 in the paper.

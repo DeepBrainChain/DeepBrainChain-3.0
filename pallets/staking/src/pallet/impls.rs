@@ -28,7 +28,7 @@ use frame_support::{
     dispatch::WithPostDispatchInfo,
     pallet_prelude::*,
     traits::{
-        Defensive, DefensiveResult, DefensiveSaturating, EstimateNextNewSession, Get, Imbalance, OnUnbalanced, UnixTime,
+        Defensive, DefensiveResult, EstimateNextNewSession, Get, Imbalance, OnUnbalanced, UnixTime,
     },
     weights::Weight,
 };

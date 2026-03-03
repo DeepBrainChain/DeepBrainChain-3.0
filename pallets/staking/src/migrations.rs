@@ -351,11 +351,10 @@ pub mod v10 {
 
 pub mod v9 {
     use super::*;
-    use alloc::boxed::Box;
     #[cfg(feature = "try-runtime")]
     use frame_support::codec::{Decode, Encode};
     #[cfg(feature = "try-runtime")]
-    use alloc::{boxed::Box, vec::Vec};
+    use alloc::vec::Vec;
 
     /// Migration implementation that injects all validators into sorted list.
     ///

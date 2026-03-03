@@ -658,7 +658,6 @@ impl pallet_staking::Config for Runtime {
     type UnixTime = Timestamp;
     type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
     type RewardRemainder = frame_support::traits::tokens::imbalance::ResolveTo<TreasuryAccount, Balances>;
-    type RuntimeEvent = RuntimeEvent;
     type Slash = frame_support::traits::tokens::imbalance::ResolveTo<TreasuryAccount, Balances>;
     type Reward = (); // rewards are minted from the void
     type SessionsPerEra = SessionsPerEra;
@@ -683,7 +682,7 @@ impl pallet_staking::Config for Runtime {
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
-    type EventListeners = NominationPools;
+    type EventListeners = (NominationPools, DelegatedStaking);
     type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
@@ -874,6 +873,8 @@ impl pallet_bags_list::Config<VoterBagsListInstance> for Runtime {
 }
 
 parameter_types! {
+    pub const DelegatedStakingPalletId: PalletId = PalletId(*b"py/dlstk");
+    pub const SlashRewardFraction: Perbill = Perbill::from_percent(1);
     pub const PostUnbondPoolsWindow: u32 = 4;
     pub const NominationPoolsPalletId: PalletId = PalletId(*b"py/nopls");
     pub const MaxPointsToBalance: u8 = 10;
@@ -902,8 +903,8 @@ impl pallet_nomination_pools::Config for Runtime {
     type RewardCounter = FixedU128;
     type BalanceToU256 = BalanceToU256;
     type U256ToBalance = U256ToBalance;
-    #[allow(deprecated)]
-    type StakeAdapter = pallet_nomination_pools::adapter::TransferStake<Self, Staking>;
+    type StakeAdapter =
+        pallet_nomination_pools::adapter::DelegateStake<Self, Staking, DelegatedStaking>;
     type PostUnbondingPoolsWindow = PostUnbondPoolsWindow;
     type MaxMetadataLen = ConstU32<256>;
     type MaxUnbonding = ConstU32<8>;
@@ -915,6 +916,16 @@ impl pallet_nomination_pools::Config for Runtime {
     >;
     type BlockNumberProvider = System;
     type Filter = frame_support::traits::Nothing;
+}
+
+impl pallet_delegated_staking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type PalletId = DelegatedStakingPalletId;
+    type Currency = Balances;
+    type OnSlash = ();
+    type SlashRewardFraction = SlashRewardFraction;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type CoreStaking = Staking;
 }
 
 parameter_types! {
@@ -1923,6 +1934,7 @@ construct_runtime!(
         VoterList: pallet_bags_list::<Instance1> = 31,
         NominationPools: pallet_nomination_pools = 32,
         Sudo: pallet_sudo = 33,
+        DelegatedStaking: pallet_delegated_staking = 34,
 
         // Evm
         Ethereum: pallet_ethereum = 50,

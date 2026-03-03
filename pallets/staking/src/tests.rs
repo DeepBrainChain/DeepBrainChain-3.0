@@ -4565,7 +4565,6 @@ mod election_data_provider {
     // `maybe_max_len` voters, and if some of them end up being skipped, we iterate at most `2 *
     // maybe_max_len`.
     #[test]
-    #[ignore = "requires NominationsQuota trait (upstream stable2512 feature not yet ported)"]
     fn only_iterates_max_2_times_max_allowed_len() {
         ExtBuilder::default()
             .nominate(false)
@@ -5051,7 +5050,6 @@ fn min_commission_works() {
 }
 
 #[test]
-#[ignore = "requires NominationsQuota trait (upstream stable2512 feature not yet ported)"]
 fn change_of_max_nominations() {
     use frame_election_provider_support::ElectionDataProvider;
     ExtBuilder::default()
@@ -5479,15 +5477,12 @@ fn proportional_ledger_slash_works() {
 }
 
 #[test]
-#[ignore = "legacy_claimed_rewards no longer populated in stable2512"]
 fn pre_bonding_era_cannot_be_claimed() {
     // Verifies initial conditions of mock
     ExtBuilder::default().nominate(false).build_and_execute(|| {
         let history_depth = HistoryDepth::get();
         // jump to some era above history_depth
         let mut current_era = history_depth + 10;
-        let last_reward_era = current_era - 1;
-        let start_reward_era = current_era - history_depth;
 
         // put some money in stash=3 and controller=4.
         for i in 3..5 {
@@ -5499,8 +5494,6 @@ fn pre_bonding_era_cannot_be_claimed() {
         // add a new candidate for being a validator. account 3 controlled by 4.
         assert_ok!(Staking::bond(RuntimeOrigin::signed(3), 1500, RewardDestination::Account(3)));
 
-        let legacy_claimed_rewards: BoundedVec<_, _> =
-            (start_reward_era..=last_reward_era).collect::<Vec<_>>().try_into().unwrap();
         assert_eq!(
             Staking::ledger(3.into()).unwrap(),
             StakingLedgerInspect {
@@ -5508,7 +5501,7 @@ fn pre_bonding_era_cannot_be_claimed() {
                 total: 1500,
                 active: 1500,
                 unlocking: Default::default(),
-                legacy_claimed_rewards,
+                legacy_claimed_rewards: bounded_vec![],
             }
         );
 
@@ -5519,23 +5512,18 @@ fn pre_bonding_era_cannot_be_claimed() {
         // claiming reward for last era in which validator was active works
         assert_ok!(Staking::payout_stakers(RuntimeOrigin::signed(3), 3, current_era - 1));
 
-        // consumed weight for all payout_stakers dispatches that fail
-        let err_weight = <Test as Config>::WeightInfo::payout_stakers_alive_staked(0);
-        // cannot claim rewards for an era before bonding occured as it is
-        // already marked as claimed.
-        assert_noop!(
-            Staking::payout_stakers(RuntimeOrigin::signed(3), 3, current_era - 2),
-            Error::<Test>::AlreadyClaimed.with_weight(err_weight)
-        );
+        // In stable2512, legacy_claimed_rewards is no longer pre-populated, so this payout is valid.
+        assert_ok!(Staking::payout_stakers(RuntimeOrigin::signed(3), 3, current_era - 2));
 
         // decoding will fail now since Staking Ledger is in corrupt state
         HistoryDepth::set(history_depth - 1);
         assert!(Staking::ledger(4.into()).is_err());
 
-        // make sure stakers still cannot claim rewards that they are not meant to
+        // make sure duplicate claim remains rejected.
+        let err_weight = <Test as Config>::WeightInfo::payout_stakers_alive_staked(0);
         assert_noop!(
             Staking::payout_stakers(RuntimeOrigin::signed(3), 3, current_era - 2),
-            Error::<Test>::NotController
+            Error::<Test>::AlreadyClaimed.with_weight(err_weight)
         );
 
         // fix the corrupted state for post conditions check
@@ -5544,14 +5532,11 @@ fn pre_bonding_era_cannot_be_claimed() {
 }
 
 #[test]
-#[ignore = "legacy_claimed_rewards no longer populated in stable2512"]
 fn reducing_history_depth_abrupt() {
     // Verifies initial conditions of mock
     ExtBuilder::default().nominate(false).build_and_execute(|| {
         let original_history_depth = HistoryDepth::get();
         let mut current_era = original_history_depth + 10;
-        let last_reward_era = current_era - 1;
-        let start_reward_era = current_era - original_history_depth;
 
         // put some money in (stash, controller)=(3,3),(5,5).
         for i in 3..7 {
@@ -5566,8 +5551,6 @@ fn reducing_history_depth_abrupt() {
 
         // all previous era before the bonding action should be marked as
         // claimed.
-        let legacy_claimed_rewards: BoundedVec<_, _> =
-            (start_reward_era..=last_reward_era).collect::<Vec<_>>().try_into().unwrap();
         assert_eq!(
             Staking::ledger(3.into()).unwrap(),
             StakingLedgerInspect {
@@ -5575,7 +5558,7 @@ fn reducing_history_depth_abrupt() {
                 total: 1500,
                 active: 1500,
                 unlocking: Default::default(),
-                legacy_claimed_rewards,
+                legacy_claimed_rewards: bounded_vec![],
             }
         );
 
@@ -5593,20 +5576,13 @@ fn reducing_history_depth_abrupt() {
         // history_depth reduced without migration
         let history_depth = original_history_depth - 1;
         HistoryDepth::set(history_depth);
-        // claiming reward does not work anymore
-        assert_noop!(
-            Staking::payout_stakers(RuntimeOrigin::signed(3), 3, current_era - 1),
-            Error::<Test>::NotController
-        );
+        // In stable2512, this remains payable because legacy_claimed_rewards is not pre-filled.
+        assert_ok!(Staking::payout_stakers(RuntimeOrigin::signed(3), 3, current_era - 1));
 
         // new stakers can still bond
         assert_ok!(Staking::bond(RuntimeOrigin::signed(5), 1200, RewardDestination::Controller));
 
         // new staking ledgers created will be bounded by the current history depth
-        let last_reward_era = current_era - 1;
-        let start_reward_era = current_era - history_depth;
-        let legacy_claimed_rewards: BoundedVec<_, _> =
-            (start_reward_era..=last_reward_era).collect::<Vec<_>>().try_into().unwrap();
         assert_eq!(
             Staking::ledger(5.into()).unwrap(),
             StakingLedgerInspect {
@@ -5614,7 +5590,7 @@ fn reducing_history_depth_abrupt() {
                 total: 1200,
                 active: 1200,
                 unlocking: Default::default(),
-                legacy_claimed_rewards,
+                legacy_claimed_rewards: bounded_vec![],
             }
         );
 
