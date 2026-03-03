@@ -252,7 +252,6 @@ mod tests {
 
     // REAL WIRING: ComputePoolScheduler notifies AgentAttestation on task completion
     impl pallet_compute_pool_scheduler::Config for Test {
-        type RuntimeEvent = RuntimeEvent;
         type Currency = Balances;
         type PoolDeposit = PoolDeposit;
         type TaskDeposit = TaskDeposit;

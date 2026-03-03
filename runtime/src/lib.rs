@@ -1630,7 +1630,6 @@ impl pallet_zk_compute::Config for Runtime {
 }
 
 impl pallet_compute_pool_scheduler::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type PoolDeposit = PoolDeposit;
     type TaskDeposit = TaskDeposit;

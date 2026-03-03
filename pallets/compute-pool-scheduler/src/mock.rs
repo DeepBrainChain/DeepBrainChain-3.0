@@ -113,7 +113,6 @@ impl dbc_support::traits::TaskCompletionHandler for MockTaskCompletionHandler {
 }
 
 impl crate::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type PoolDeposit = PoolDeposit;
     type TaskDeposit = TaskDeposit;
