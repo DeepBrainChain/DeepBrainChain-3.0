@@ -325,7 +325,7 @@ benchmarks! {
 
         let ed = asset::existential_deposit::<T>();
         let mut ledger = Ledger::<T>::get(&controller).unwrap();
-        ledger.active = ed - One::one();
+        ledger.active = ed.saturating_sub(One::one());
         Ledger::<T>::insert(&controller, ledger);
         CurrentEra::<T>::put(EraIndex::max_value());
 
@@ -570,9 +570,10 @@ benchmarks! {
         let caller = whitelisted_caller();
         let validator_controller = <Bonded<T>>::get(&validator).unwrap();
         let balance_before = asset::total_balance::<T>(&validator_controller);
+        let mut nominator_balances_before = Vec::new();
         for (_, controller) in &nominators {
             let balance = asset::total_balance::<T>(controller);
-            ensure!(balance.is_zero(), "Controller has balance, but should be dead.");
+            nominator_balances_before.push(balance);
         }
     }: payout_stakers(RawOrigin::Signed(caller), validator, current_era)
     verify {
@@ -581,9 +582,9 @@ benchmarks! {
             balance_before < balance_after,
             "Balance of validator controller should have increased after payout.",
         );
-        for (_, controller) in &nominators {
-            let balance = asset::total_balance::<T>(controller);
-            ensure!(!balance.is_zero(), "Payout not given to controller.");
+        for ((_, controller), balance_before) in nominators.iter().zip(nominator_balances_before.iter()) {
+            let balance_after = asset::total_balance::<T>(controller);
+            ensure!(balance_after > *balance_before, "Payout not given to controller.");
         }
     }
 
@@ -689,7 +690,7 @@ benchmarks! {
 
         add_slashing_spans::<T>(&stash, s);
         let ed = asset::existential_deposit::<T>();
-        let l = StakingLedger::<T>::new(stash.clone(), ed - One::one());
+        let l = StakingLedger::<T>::new(stash.clone(), ed.saturating_sub(One::one()));
         Ledger::<T>::insert(&controller, l);
 
         assert!(Bonded::<T>::contains_key(&stash));
@@ -960,7 +961,7 @@ mod tests {
             create_validators_with_nominators_for_era::<Test>(
                 v,
                 n,
-                <Test as Config>::MaxNominations::get() as usize,
+                MaxNominationsOf::<Test>::get() as usize,
                 false,
                 None,
             )
@@ -1051,15 +1052,12 @@ mod tests {
                 (frame_benchmarking::BenchmarkParameter::v, v),
                 (frame_benchmarking::BenchmarkParameter::n, n),
             ];
-            let closure_to_benchmark =
-                <SelectedBenchmark as frame_benchmarking::BenchmarkingSetup<Test>>::instance(
+            assert_ok!(
+                <SelectedBenchmark as frame_benchmarking::BenchmarkingSetup<Test>>::unit_test_instance(
                     &selected_benchmark,
                     &c,
-                    true,
                 )
-                .unwrap();
-
-            assert_ok!(closure_to_benchmark());
+            );
         });
     }
 }

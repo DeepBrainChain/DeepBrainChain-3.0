@@ -93,7 +93,7 @@ pub fn create_unique_stash_controller<T: Config>(
     let stash = create_funded_user::<T>("stash", n, balance_factor);
 
     let controller = if dead_controller {
-        create_funded_user::<T>("controller", n, 0)
+        create_funded_user_with_balance::<T>("controller", n, Zero::zero())
     } else {
         create_funded_user::<T>("controller", n, balance_factor)
     };

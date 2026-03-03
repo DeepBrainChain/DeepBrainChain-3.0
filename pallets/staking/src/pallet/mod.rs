@@ -1626,11 +1626,15 @@ pub mod pallet {
             let _ = ensure_signed(origin)?;
 
             let ed = asset::existential_deposit::<T>();
-            let reapable = asset::total_balance::<T>(&stash) < ed ||
-                StakingLedger::<T>::get(StakingAccount::Stash(stash.clone()))
-                    .map(|l| l.total)
-                    .unwrap_or_default() <
-                    ed;
+            let total_balance = asset::total_balance::<T>(&stash);
+            let ledger_total = StakingLedger::<T>::get(StakingAccount::Stash(stash.clone()))
+                .map(|l| l.total)
+                .unwrap_or_default();
+            let reapable = if ed.is_zero() {
+                total_balance.is_zero() || ledger_total.is_zero()
+            } else {
+                total_balance < ed || ledger_total < ed
+            };
             ensure!(reapable, Error::<T>::FundedTarget);
 
             Self::kill_stash(&stash, num_slashing_spans)?;

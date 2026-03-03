@@ -122,8 +122,14 @@ impl<T: Config> Pallet<T> {
             ledger = ledger.consolidate_unlocked(current_era)
         }
 
-        let used_weight =
-            if ledger.unlocking.is_empty() && ledger.active < asset::existential_deposit::<T>() {
+        let ed = asset::existential_deposit::<T>();
+        let should_kill = if ed.is_zero() {
+            ledger.unlocking.is_empty() && ledger.active.is_zero()
+        } else {
+            ledger.unlocking.is_empty() && ledger.active < ed
+        };
+
+        let used_weight = if should_kill {
                 // This account must have called `unbond()` with some value that caused the active
                 // portion to fall below existential deposit + will have no more unlocking chunks
                 // left. We can now safely remove all staking-related information.
