@@ -317,5 +317,93 @@
       ],
       "type": "bool"
     }
+  },
+  "dbc3": {
+    "getDelegatedAgent": {
+      "description": "Get delegated staking agent ledger (SCALE-encoded bytes)",
+      "params": [
+        {
+          "name": "agent",
+          "type": "AccountId"
+        },
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Option<Vec<u8>>"
+    },
+    "getDelegatorState": {
+      "description": "Get delegator state for delegated staking (SCALE-encoded bytes)",
+      "params": [
+        {
+          "name": "delegator",
+          "type": "AccountId"
+        },
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Option<Vec<u8>>"
+    },
+    "getDelegatedAgentCount": {
+      "description": "Get total number of delegated staking agents",
+      "params": [
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "u64"
+    },
+    "getTotalDelegatedStake": {
+      "description": "Get total delegated stake amount",
+      "params": [
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Balance"
+    },
+    "listDelegatedAgents": {
+      "description": "List delegated staking agents (SCALE-encoded bytes)",
+      "params": [
+        {
+          "name": "limit",
+          "type": "u32"
+        },
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Vec<u8>"
+    },
+    "listAgentDelegators": {
+      "description": "List delegators for a given agent (SCALE-encoded bytes)",
+      "params": [
+        {
+          "name": "agent",
+          "type": "AccountId"
+        },
+        {
+          "name": "limit",
+          "type": "u32"
+        },
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Vec<u8>"
+    }
   }
 }

@@ -263,3 +263,75 @@ content-type: application/json
   "method": "rentMachine_getMachineRentId",
   "params": ["{{machine_id}}"]
 }
+
+###
+# 5.1 获取 delegated-staking Agent 账本（SCALE bytes）
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_getDelegatedAgent",
+  "params": ["{{stash}}"]
+}
+
+###
+# 5.2 获取 delegated-staking Delegator 状态（SCALE bytes）
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_getDelegatorState",
+  "params": ["{{renter}}"]
+}
+
+###
+# 5.3 获取 delegated-staking Agent 数量
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_getDelegatedAgentCount",
+  "params": []
+}
+
+###
+# 5.4 获取 delegated-staking 总委托额
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_getTotalDelegatedStake",
+  "params": []
+}
+
+###
+# 5.5 列举 delegated-staking Agent（返回 SCALE bytes）
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_listDelegatedAgents",
+  "params": [20]
+}
+
+###
+# 5.6 列举某 Agent 的 delegator（返回 SCALE bytes）
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_listAgentDelegators",
+  "params": ["{{stash}}", 20]
+}
