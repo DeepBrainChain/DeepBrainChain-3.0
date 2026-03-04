@@ -558,8 +558,8 @@ benchmarks! {
         let (validator, nominators) = create_validator_with_nominators::<T>(
             n,
             T::MaxNominatorRewardedPerValidator::get() as u32,
-            true,
-            true,
+            false,
+            false,
             RewardDestination::Controller,
         )?;
 
@@ -595,7 +595,7 @@ benchmarks! {
             n,
             T::MaxNominatorRewardedPerValidator::get() as u32,
             false,
-            true,
+            false,
             RewardDestination::Staked,
         )?;
 
