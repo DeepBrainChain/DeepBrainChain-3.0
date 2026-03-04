@@ -122,7 +122,6 @@ parameter_types! {
 	pub const SlashRewardFraction: Perbill = Perbill::from_percent(10);
 }
 impl delegated_staking::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
 	type PalletId = DelegatedStakingPalletId;
 	type Currency = Balances;
 	type OnSlash = ();

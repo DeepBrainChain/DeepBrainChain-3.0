@@ -37,7 +37,6 @@ pub mod pallet {
     pub trait Config:
         frame_system::Config + CreateSignedTransaction<Call<Self>> + CreateBare<Call<Self>> + generic_func::Config
     {
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type RandomnessSource: Randomness<H256, BlockNumberFor::<Self>>;
         type Currency: ReservableCurrency<Self::AccountId>;
     }

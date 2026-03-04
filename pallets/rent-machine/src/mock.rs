@@ -200,7 +200,6 @@ impl online_profile::Config for TestRuntime {
 
 impl dbc_price_ocw::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RandomnessSource = RandomnessCollectiveFlip;
 }
 

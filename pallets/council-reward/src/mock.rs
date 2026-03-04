@@ -194,7 +194,6 @@ impl pallet_elections_phragmen::Config for TestRuntime {
 
 impl dbc_price_ocw::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RandomnessSource = RandomnessCollectiveFlip;
 }
 
@@ -257,7 +256,6 @@ parameter_types! {
 }
 
 impl council_reward::Config for TestRuntime {
-    type RuntimeEvent = RuntimeEvent;
     type DbcPrice = DBCPriceOCW;
     type Currency = Balances;
     type RewardFrequency = RewardFrequency;

@@ -103,7 +103,6 @@ impl pallet_insecure_randomness_collective_flip::Config for TestRuntime {}
 
 impl dbc_price_ocw::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RandomnessSource = RandomnessCollectiveFlip;
 }
 

@@ -34,7 +34,6 @@ pub mod pallet {
         + pallet_collective::Config<Instance1>
         + pallet_elections_phragmen::Config
     {
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type DbcPrice: DbcPrice<Balance = BalanceOf<Self>>;
         type Currency: Currency<Self::AccountId>;
 
