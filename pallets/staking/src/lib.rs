@@ -434,7 +434,7 @@ pub enum RewardDestination<AccountId> {
     Staked,
     /// Pay into the stash account, not increasing the amount at stake.
     Stash,
-    /// Pay into the legacy controller account (for non-migrated pairs).
+    /// Deprecated: treated as `Stash` for compatibility.
     Controller,
     /// Pay into a specified account.
     Account(AccountId),

@@ -317,8 +317,9 @@ impl<T: Config> Pallet<T> {
     fn make_payout(stash: &T::AccountId, amount: BalanceOf<T>) -> Option<PositiveImbalanceOf<T>> {
         let dest = StakingLedger::<T>::reward_destination(StakingAccount::Stash(stash.clone()))?;
         match dest {
-            RewardDestination::Controller => Self::bonded(stash)
-                .map(|controller| asset::mint_creating::<T>(&controller, amount)),
+            // Controller accounts are deprecated. Keep accepting this payee value for
+            // compatibility, but route rewards to stash balance.
+            RewardDestination::Controller => asset::mint_into_existing::<T>(stash, amount),
             RewardDestination::Stash => asset::mint_into_existing::<T>(stash, amount),
             RewardDestination::Staked => StakingLedger::<T>::get(
                 StakingAccount::Stash(stash.clone()),
