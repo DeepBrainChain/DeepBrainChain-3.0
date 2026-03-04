@@ -1044,7 +1044,7 @@ pub mod pallet {
         /// period ends. If this leaves an amount actively bonded less than
         /// T::Currency::minimum_balance(), then it is increased to the full amount.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the active control account.
+        /// The dispatch origin for this call must be _Signed_ by the stash account.
         ///
         /// Once the unlock period is done, you can call `withdraw_unbonded` to actually move
         /// the funds out of management ready for transfer.
@@ -1153,7 +1153,7 @@ pub mod pallet {
         /// This essentially frees up that balance to be used by the stash account to do
         /// whatever it wants.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the active control account.
+        /// The dispatch origin for this call must be _Signed_ by the stash account.
         ///
         /// Emits `Withdrawn`.
         ///
@@ -1178,7 +1178,7 @@ pub mod pallet {
         ///
         /// Effects will be felt at the beginning of the next era.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the active control account.
+        /// The dispatch origin for this call must be _Signed_ by the stash account.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::validate())]
         pub fn validate(origin: OriginFor<T>, prefs: ValidatorPrefs) -> DispatchResult {
@@ -1218,7 +1218,7 @@ pub mod pallet {
         ///
         /// Effects will be felt at the beginning of the next era.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the active control account.
+        /// The dispatch origin for this call must be _Signed_ by the stash account.
         ///
         /// ## Complexity
         /// - The transaction's complexity is proportional to the size of `targets` (N)
@@ -1285,7 +1285,7 @@ pub mod pallet {
         ///
         /// Effects will be felt at the beginning of the next era.
         ///
-        /// The dispatch origin for this call must be _Signed_ by the active control account.
+        /// The dispatch origin for this call must be _Signed_ by the stash account.
         ///
         /// ## Complexity
         /// - Independent of the arguments. Insignificant complexity.
@@ -1304,7 +1304,7 @@ pub mod pallet {
         ///
         /// Effects will be felt instantly (as soon as this function is completed successfully).
         ///
-        /// The dispatch origin for this call must be _Signed_ by the active control account.
+        /// The dispatch origin for this call must be _Signed_ by the stash account.
         ///
         /// ## Complexity
         /// - O(1)
@@ -1565,7 +1565,7 @@ pub mod pallet {
 
         /// Rebond a portion of the stash scheduled to be unlocked.
         ///
-        /// The dispatch origin must be signed by the active control account.
+        /// The dispatch origin must be signed by the stash account.
         ///
         /// ## Complexity
         /// - Time complexity: O(L), where L is unlocking chunks

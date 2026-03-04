@@ -62,9 +62,9 @@
 //!
 //! Almost any interaction with the Staking pallet requires a process of _**bonding**_ (also known
 //! as being a _staker_). To become *bonded*, a fund-holding register known as the _stash account_,
-//! which holds some or all of the funds that become frozen in place as part of the staking process,
-//! is paired with a control account. During controller deprecation this can be either a legacy
-//! controller account or the stash itself.
+//! which holds some or all of the funds that become frozen in place as part of the staking process.
+//! Legacy stash/controller pairs can still exist in storage, but staking control calls are
+//! stash-signed only.
 //!
 //! An account pair can become bonded using the [`bond`](Call::bond) call.
 //!
@@ -246,7 +246,7 @@
 //!
 //! Any funds already placed into stash can be the target of the following operations:
 //!
-//! The active control account can free a portion (or all) of the funds using the
+//! The stash account can free a portion (or all) of the funds using the
 //! [`unbond`](Call::unbond) call. Note that the funds are not immediately
 //! accessible. Instead, a duration denoted by
 //! [`Config::BondingDuration`] (in number of eras) must
