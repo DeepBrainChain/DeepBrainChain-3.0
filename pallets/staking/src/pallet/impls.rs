@@ -72,14 +72,11 @@ impl<T: Config> Pallet<T> {
         StakingLedger::<T>::get(account)
     }
 
-    /// Resolve a ledger from a signer during the controller deprecation period.
+    /// Resolve a ledger from a signer.
     ///
-    /// Prefer controller lookup (legacy behavior), then fall back to stash lookup to support
-    /// stash-controlled accounts.
+    /// Controller accounts are deprecated and no longer accepted for active-control calls.
+    /// Only stash accounts can operate staking control flows.
     pub(super) fn ledger_for_signed(who: &T::AccountId) -> Result<StakingLedger<T>, Error<T>> {
-        if let Ok(ledger) = Self::ledger(StakingAccount::Controller(who.clone())) {
-            return Ok(ledger)
-        }
         if StakingLedger::<T>::is_bonded(StakingAccount::Stash(who.clone())) {
             return Self::ledger(StakingAccount::Stash(who.clone()))
         }

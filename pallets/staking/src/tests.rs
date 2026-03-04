@@ -247,8 +247,11 @@ fn change_controller_works() {
         // ensure `stash` and `controller` are bonded as stash controller pair.
         assert_eq!(Staking::bonded(&stash), Some(controller));
 
-        // `controller` can control `stash` who is initially a validator.
-        assert_ok!(Staking::chill(RuntimeOrigin::signed(controller)));
+        // legacy controller can no longer control staking flows directly.
+        assert_noop!(
+            Staking::chill(RuntimeOrigin::signed(controller)),
+            Error::<Test>::NotController,
+        );
 
         // sets controller back to `stash`.
         assert_ok!(Staking::set_controller(RuntimeOrigin::signed(stash)));
@@ -809,8 +812,8 @@ fn nominators_also_get_slashed_pro_rata() {
 fn double_staking_should_fail() {
     // should test (in the same order):
     // * an account already bonded as stash cannot be be stashed again.
-    // * during controller deprecation, a bonded stash can nominate.
-    // * an account already bonded as controller can still nominate.
+    // * a bonded stash can nominate.
+    // * a legacy controller can no longer nominate directly.
     ExtBuilder::default().build_and_execute(|| {
         let arbitrary_value = 5;
         let (stash, controller) = testing_utils::create_unique_stash_controller::<Test>(
@@ -830,10 +833,13 @@ fn double_staking_should_fail() {
             ),
             Error::<Test>::AlreadyBonded,
         );
-        // stash => nominating should work during controller deprecation.
+        // stash => nominating should work.
         assert_ok!(Staking::nominate(RuntimeOrigin::signed(stash), vec![1]));
-        // controller => nominating should work.
-        assert_ok!(Staking::nominate(RuntimeOrigin::signed(controller), vec![1]));
+        // controller => nominating is no longer allowed.
+        assert_noop!(
+            Staking::nominate(RuntimeOrigin::signed(controller), vec![1]),
+            Error::<Test>::NotController,
+        );
     });
 }
 
