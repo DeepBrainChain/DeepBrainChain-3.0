@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Tests for the module.
+#![allow(dead_code)]
 
 use super::{ConfigOp, Event, *};
 use crate::{asset, ledger::StakingLedgerInspect};

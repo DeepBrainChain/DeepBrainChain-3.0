@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Test utilities
+#![allow(dead_code)]
 
 use crate::{self as pallet_staking, *};
 use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
