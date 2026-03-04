@@ -3,6 +3,7 @@
 #![warn(unused_crate_dependencies)]
 
 extern crate alloc;
+use sp_std as _;
 
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;

@@ -4,6 +4,7 @@
 #![warn(unused_crate_dependencies)]
 
 extern crate alloc;
+use sp_std as _;
 
 use dbc_support::{
     live_machine::LiveMachine,

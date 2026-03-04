@@ -27,6 +27,7 @@ const TARGET: &'static str = "runtime";
 
 // Fix `unused_crate_dependencies` warnings.
 use dbc_evm_tracer as _;
+use sp_std as _;
 pub use dbc_primitives::{
     AccountId, AccountIndex, Balance, BlockNumber, Hash, Index, Moment, Signature,
 };

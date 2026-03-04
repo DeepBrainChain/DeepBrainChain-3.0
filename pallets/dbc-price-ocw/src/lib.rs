@@ -3,6 +3,7 @@
 #![warn(unused_crate_dependencies)]
 
 extern crate alloc;
+use sp_std as _;
 
 // use alt_serde::{Deserialize, Deserializer};
 use dbc_support::traits::DbcPrice;

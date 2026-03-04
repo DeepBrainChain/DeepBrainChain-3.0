@@ -4,6 +4,7 @@
 #![warn(unused_crate_dependencies)]
 
 extern crate alloc;
+use sp_std as _;
 
 use parity_scale_codec::Codec;
 use sp_runtime::traits::MaybeDisplay;
