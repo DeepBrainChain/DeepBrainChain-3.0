@@ -7,7 +7,7 @@ extern crate alloc;
 // use alt_serde::{Deserialize, Deserializer};
 use dbc_support::traits::DbcPrice;
 use frame_support::traits::{Currency, Randomness, ReservableCurrency};
-use frame_system::offchain::{CreateBare, SubmitTransaction};
+use frame_system::offchain::SubmitTransaction;
 use sp_core::H256;
 use sp_runtime::{
     offchain::{http, Duration},
@@ -25,7 +25,7 @@ type BalanceOf<T> =
 pub mod pallet {
     use super::*;
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
-    use frame_system::{offchain::{CreateSignedTransaction, CreateBare, SubmitTransaction}, pallet_prelude::*};
+    use frame_system::{offchain::{CreateSignedTransaction, CreateBare}, pallet_prelude::*};
     use alloc::vec::Vec;
 
     /// The type to sign and send transactions.
