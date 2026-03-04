@@ -10,6 +10,10 @@ name = "dbc3_integration_tests"
 path = "src/lib.rs"
 test = true
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 frame-support = { workspace = true, features = ["std"] }
 frame-system = { workspace = true, features = ["std"] }
