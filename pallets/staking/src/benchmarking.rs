@@ -1059,4 +1059,46 @@ mod tests {
             );
         });
     }
+
+    #[test]
+    fn test_withdraw_unbonded_kill_benchmark() {
+        ExtBuilder::default().build_and_execute(|| {
+            let selected_benchmark = SelectedBenchmark::withdraw_unbonded_kill;
+            let c = vec![(frame_benchmarking::BenchmarkParameter::s, 10)];
+            assert_ok!(
+                <SelectedBenchmark as frame_benchmarking::BenchmarkingSetup<Test>>::unit_test_instance(
+                    &selected_benchmark,
+                    &c,
+                )
+            );
+        });
+    }
+
+    #[test]
+    fn test_payout_stakers_alive_staked_benchmark() {
+        ExtBuilder::default().build_and_execute(|| {
+            let selected_benchmark = SelectedBenchmark::payout_stakers_alive_staked;
+            let c = vec![(frame_benchmarking::BenchmarkParameter::n, 8)];
+            assert_ok!(
+                <SelectedBenchmark as frame_benchmarking::BenchmarkingSetup<Test>>::unit_test_instance(
+                    &selected_benchmark,
+                    &c,
+                )
+            );
+        });
+    }
+
+    #[test]
+    fn test_payout_stakers_dead_controller_benchmark() {
+        ExtBuilder::default().build_and_execute(|| {
+            let selected_benchmark = SelectedBenchmark::payout_stakers_dead_controller;
+            let c = vec![(frame_benchmarking::BenchmarkParameter::n, 8)];
+            assert_ok!(
+                <SelectedBenchmark as frame_benchmarking::BenchmarkingSetup<Test>>::unit_test_instance(
+                    &selected_benchmark,
+                    &c,
+                )
+            );
+        });
+    }
 }
