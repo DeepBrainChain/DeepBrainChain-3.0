@@ -335,3 +335,51 @@ content-type: application/json
   "method": "dbc3_listAgentDelegators",
   "params": ["{{stash}}", 20]
 }
+
+###
+# 5.7 查询 stash 对应 legacy controller
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_getLegacyController",
+  "params": ["{{stash}}"]
+}
+
+###
+# 5.8 查询 controller 对应 legacy stash
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_getLegacyStash",
+  "params": ["{{stash}}"]
+}
+
+###
+# 5.9 列举 legacy stash/controller 对（返回 SCALE bytes）
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_listLegacyControllerPairs",
+  "params": [20]
+}
+
+###
+# 5.10 查询 legacy stash/controller 对总数
+POST {{url}} HTTP/1.1
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "dbc3_getLegacyControllerCount",
+  "params": []
+}

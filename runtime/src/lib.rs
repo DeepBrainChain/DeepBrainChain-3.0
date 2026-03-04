@@ -3105,6 +3105,41 @@ impl_runtime_apis! {
             delegators.encode()
         }
 
+        fn get_legacy_controller(stash: AccountId) -> Option<AccountId> {
+            let controller = pallet_staking::Bonded::<Runtime>::get(&stash)?;
+            if controller == stash {
+                None
+            } else {
+                Some(controller)
+            }
+        }
+
+        fn get_legacy_stash(controller: AccountId) -> Option<AccountId> {
+            pallet_staking::Bonded::<Runtime>::iter()
+                .find_map(|(stash, ctrl)| {
+                    if ctrl == controller && stash != controller {
+                        Some(stash)
+                    } else {
+                        None
+                    }
+                })
+        }
+
+        fn list_legacy_controller_pairs(limit: u32) -> Vec<u8> {
+            use parity_scale_codec::Encode;
+            let pairs: Vec<(AccountId, AccountId)> = pallet_staking::Bonded::<Runtime>::iter()
+                .filter(|(stash, controller)| stash != controller)
+                .take(limit as usize)
+                .collect();
+            pairs.encode()
+        }
+
+        fn get_legacy_controller_count() -> u64 {
+            pallet_staking::Bonded::<Runtime>::iter()
+                .filter(|(stash, controller)| stash != controller)
+                .count() as u64
+        }
+
         fn get_network_summary() -> Vec<u8> {
             use parity_scale_codec::Encode;
             let active_pools: u64 = pallet_compute_pool_scheduler::Pools::<Runtime>::iter()

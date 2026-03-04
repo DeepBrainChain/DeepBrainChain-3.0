@@ -404,6 +404,62 @@
         }
       ],
       "type": "Vec<u8>"
+    },
+    "getLegacyController": {
+      "description": "Get controller for a stash if it still uses legacy stash/controller split",
+      "params": [
+        {
+          "name": "stash",
+          "type": "AccountId"
+        },
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Option<AccountId>"
+    },
+    "getLegacyStash": {
+      "description": "Get stash for a controller if it still uses legacy stash/controller split",
+      "params": [
+        {
+          "name": "controller",
+          "type": "AccountId"
+        },
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Option<AccountId>"
+    },
+    "listLegacyControllerPairs": {
+      "description": "List legacy stash/controller pairs (SCALE-encoded bytes)",
+      "params": [
+        {
+          "name": "limit",
+          "type": "u32"
+        },
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "Vec<u8>"
+    },
+    "getLegacyControllerCount": {
+      "description": "Get total count of legacy stash/controller pairs",
+      "params": [
+        {
+          "name": "at",
+          "type": "Hash",
+          "isOptional": true
+        }
+      ],
+      "type": "u64"
     }
   }
 }

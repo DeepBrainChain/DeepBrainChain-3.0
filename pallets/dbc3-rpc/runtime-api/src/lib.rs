@@ -110,6 +110,20 @@ sp_api::decl_runtime_apis! {
         /// List delegators for a given agent (SCALE-encoded `Vec<(AccountId, Delegation)>`).
         fn list_agent_delegators(agent: AccountId, limit: u32) -> Vec<u8>;
 
+        // ─── Staking Controller Deprecation ────────────────────────
+
+        /// Get controller account for a stash if it is a legacy stash/controller pair.
+        fn get_legacy_controller(stash: AccountId) -> Option<AccountId>;
+
+        /// Get stash account for a controller if it is a legacy stash/controller pair.
+        fn get_legacy_stash(controller: AccountId) -> Option<AccountId>;
+
+        /// List legacy stash/controller pairs (SCALE-encoded `Vec<(AccountId, AccountId)>`).
+        fn list_legacy_controller_pairs(limit: u32) -> Vec<u8>;
+
+        /// Get count of legacy stash/controller pairs.
+        fn get_legacy_controller_count() -> u64;
+
         // --- Event Indexer Summary ---
 
         /// Get a summary of all DBC 3.0 pallet activity.

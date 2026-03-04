@@ -102,6 +102,19 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
     #[method(name = "dbc3_listAgentDelegators")]
     fn list_agent_delegators(&self, agent: AccountId, limit: u32, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
 
+    // === Staking Controller Deprecation ===
+    #[method(name = "dbc3_getLegacyController")]
+    fn get_legacy_controller(&self, stash: AccountId, at: Option<BlockHash>) -> RpcResult<Option<AccountId>>;
+
+    #[method(name = "dbc3_getLegacyStash")]
+    fn get_legacy_stash(&self, controller: AccountId, at: Option<BlockHash>) -> RpcResult<Option<AccountId>>;
+
+    #[method(name = "dbc3_listLegacyControllerPairs")]
+    fn list_legacy_controller_pairs(&self, limit: u32, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
+
+    #[method(name = "dbc3_getLegacyControllerCount")]
+    fn get_legacy_controller_count(&self, at: Option<BlockHash>) -> RpcResult<u64>;
+
     #[method(name = "dbc3_getNetworkSummary")]
     fn get_network_summary(&self, at: Option<BlockHash>) -> RpcResult<String>;
 
@@ -305,6 +318,38 @@ where
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.list_agent_delegators(at_hash, agent, limit).map_err(map_err)
+    }
+
+    fn get_legacy_controller(&self, stash: AccountId, at: Option<Block::Hash>) -> RpcResult<Option<AccountId>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_legacy_controller(at_hash, stash).map_err(map_err)
+    }
+
+    fn get_legacy_stash(
+        &self,
+        controller: AccountId,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<AccountId>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_legacy_stash(at_hash, controller).map_err(map_err)
+    }
+
+    fn list_legacy_controller_pairs(
+        &self,
+        limit: u32,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Vec<u8>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.list_legacy_controller_pairs(at_hash, limit).map_err(map_err)
+    }
+
+    fn get_legacy_controller_count(&self, at: Option<Block::Hash>) -> RpcResult<u64> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_legacy_controller_count(at_hash).map_err(map_err)
     }
 
     fn get_network_summary(&self, at: Option<Block::Hash>) -> RpcResult<String> {
