@@ -203,9 +203,8 @@ mod multiplier_tests {
     }
 
     #[test]
-    #[ignore]
     fn congested_chain_simulation() {
-        // `cargo test congested_chain_simulation -- --nocapture` to get some insight.
+        // Keep this bounded so it can run in CI while still validating multiplier growth.
 
         // almost full. The entire quota of normal transactions is taken.
         let block_weight = BlockWeights::get().get(DispatchClass::Normal).max_total.unwrap() -
@@ -220,7 +219,8 @@ mod multiplier_tests {
             assert_eq!(fm, TransactionPayment::next_fee_multiplier());
 
             let mut iterations: u64 = 0;
-            loop {
+            const STEPS: u64 = 200;
+            for _ in 0..STEPS {
                 let next = runtime_multiplier_update(fm);
                 // if no change, panic. This should never happen in this case.
                 if fm == next {
@@ -235,7 +235,7 @@ mod multiplier_tests {
                 let adjusted_fee = fm.saturating_mul_acc_int(fee);
                 println!(
                     "iteration {}, new fm = {:?}. Fee at this point is: {} units / {} millicents, \
-					{} cents, {} dollars",
+						{} cents, {} dollars",
                     iterations,
                     fm,
                     adjusted_fee,
@@ -244,6 +244,8 @@ mod multiplier_tests {
                     adjusted_fee / DOLLARS,
                 );
             }
+            assert_eq!(iterations, STEPS);
+            assert!(fm > Multiplier::one());
         });
     }
 
