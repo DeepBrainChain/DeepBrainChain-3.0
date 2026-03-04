@@ -28,6 +28,12 @@ const TARGET: &'static str = "runtime";
 // Fix `unused_crate_dependencies` warnings.
 use dbc_evm_tracer as _;
 use sp_std as _;
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_nomination_pools_benchmarking as _;
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_offences_benchmarking as _;
+#[cfg(feature = "runtime-benchmarks")]
+use pallet_session_benchmarking as _;
 pub use dbc_primitives::{
     AccountId, AccountIndex, Balance, BlockNumber, Hash, Index, Moment, Signature,
 };
@@ -2734,7 +2740,7 @@ impl_runtime_apis! {
         }
 
         fn execute_block(
-            block: Block,
+            block: <Block as BlockT>::LazyBlock,
             state_root_check: bool,
             signature_check: bool,
             select: frame_try_runtime::TryStateSelect
@@ -2746,12 +2752,13 @@ impl_runtime_apis! {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
+    #[allow(deprecated, non_local_definitions)]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
+            use frame_benchmarking::{baseline, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
@@ -2775,7 +2782,7 @@ impl_runtime_apis! {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch, __private::TrackedStorageKey};
+            use frame_benchmarking::{baseline, BenchmarkBatch, __private::TrackedStorageKey};
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
             // issues. To get around that, we separated the Session benchmarks into its own crate,

@@ -26,7 +26,7 @@ use frame_benchmarking::v1::{
 use frame_support::traits::{EnsureOrigin, Get, UnfilteredDispatchable};
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin as SystemOrigin};
 use sp_runtime::traits::Bounded;
-use alloc::{vec, vec::Vec};
+use alloc::vec;
 
 use crate::Pallet as Assets;
 
@@ -102,7 +102,7 @@ fn add_sufficients<T: Config<I>, I: 'static>(minter: T::AccountId, n: u32) {
 
 fn add_approvals<T: Config<I>, I: 'static>(minter: T::AccountId, n: u32) {
     let asset_id = default_asset_id::<T, I>();
-    T::Currency::deposit_creating(
+    let _ = T::Currency::deposit_creating(
         &minter,
         T::ApprovalDeposit::get() * n.into() + T::Currency::minimum_balance(),
     );
@@ -125,11 +125,15 @@ fn add_approvals<T: Config<I>, I: 'static>(minter: T::AccountId, n: u32) {
     }
 }
 
-fn assert_last_event<T: Config<I>, I: 'static>(generic_event: <T as Config<I>>::RuntimeEvent) {
+fn assert_last_event<T: Config<I>, I: 'static>(
+    generic_event: <T as frame_system::Config>::RuntimeEvent,
+) {
     frame_system::Pallet::<T>::assert_last_event(generic_event.into());
 }
 
-fn assert_event<T: Config<I>, I: 'static>(generic_event: <T as Config<I>>::RuntimeEvent) {
+fn assert_event<T: Config<I>, I: 'static>(
+    generic_event: <T as frame_system::Config>::RuntimeEvent,
+) {
     frame_system::Pallet::<T>::assert_has_event(generic_event.into());
 }
 

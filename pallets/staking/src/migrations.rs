@@ -352,7 +352,7 @@ pub mod v10 {
 pub mod v9 {
     use super::*;
     #[cfg(feature = "try-runtime")]
-    use frame_support::codec::{Decode, Encode};
+    use codec::{Decode, Encode};
     #[cfg(feature = "try-runtime")]
     use alloc::vec::Vec;
 

@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::traits::{Currency, Get, ReservableCurrency};
 use frame_support::BoundedVec;
 use frame_system::RawOrigin;

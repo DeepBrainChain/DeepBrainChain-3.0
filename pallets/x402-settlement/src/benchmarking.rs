@@ -2,7 +2,6 @@
 
 use super::*;
 use alloc::vec;
-use crate::Pallet as X402Settlement;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::Get;
 use frame_support::traits::{Currency, ReservableCurrency};
