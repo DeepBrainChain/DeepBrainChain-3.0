@@ -26,7 +26,6 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::*;
 use sp_runtime::traits::{CheckedAdd, CheckedSub, Saturating, Zero};
-use alloc::vec::Vec; use core::str;
 
 type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;

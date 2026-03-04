@@ -1,4 +1,3 @@
-use frame_system::pallet_prelude::BlockNumberFor;
 use dbc_support::{
     verify_committee_slash::{OCPendingSlashInfo, OCSlashResult},
     verify_online::OCBookResultType,
