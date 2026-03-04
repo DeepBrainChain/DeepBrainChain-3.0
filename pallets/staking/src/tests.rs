@@ -335,6 +335,43 @@ fn deprecate_controller_batch_respects_max_batch_size() {
     })
 }
 
+#[test]
+fn legacy_controller_cannot_execute_control_calls() {
+    ExtBuilder::default().build_and_execute(|| {
+        let (stash, controller) = testing_utils::create_unique_stash_controller::<Test>(
+            123,
+            10,
+            RewardDestination::default(),
+            false,
+        )
+        .unwrap();
+
+        assert_eq!(Staking::bonded(&stash), Some(controller));
+
+        assert_noop!(Staking::chill(RuntimeOrigin::signed(controller)), Error::<Test>::NotController);
+        assert_noop!(
+            Staking::validate(RuntimeOrigin::signed(controller), ValidatorPrefs::default()),
+            Error::<Test>::NotController
+        );
+        assert_noop!(
+            Staking::nominate(RuntimeOrigin::signed(controller), vec![stash]),
+            Error::<Test>::NotController
+        );
+        assert_noop!(
+            Staking::set_payee(RuntimeOrigin::signed(controller), RewardDestination::default()),
+            Error::<Test>::NotController
+        );
+        assert_noop!(
+            Staking::unbond(RuntimeOrigin::signed(controller), 1),
+            Error::<Test>::NotController
+        );
+        assert_noop!(
+            Staking::rebond(RuntimeOrigin::signed(controller), 1),
+            Error::<Test>::NotController
+        );
+    })
+}
+
 //#[test]
 fn rewards_should_work() {
     ExtBuilder::default().nominate(true).session_per_era(3).build_and_execute(|| {
