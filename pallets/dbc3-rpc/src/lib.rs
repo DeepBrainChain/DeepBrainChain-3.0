@@ -83,6 +83,19 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
     #[method(name = "dbc3_getMinerScore")]
     fn get_miner_score(&self, miner: AccountId, at: Option<BlockHash>) -> RpcResult<u32>;
 
+    // === Delegated Staking ===
+    #[method(name = "dbc3_getDelegatedAgent")]
+    fn get_delegated_agent(&self, agent: AccountId, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+
+    #[method(name = "dbc3_getDelegatorState")]
+    fn get_delegator_state(&self, delegator: AccountId, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+
+    #[method(name = "dbc3_getDelegatedAgentCount")]
+    fn get_delegated_agent_count(&self, at: Option<BlockHash>) -> RpcResult<u64>;
+
+    #[method(name = "dbc3_getTotalDelegatedStake")]
+    fn get_total_delegated_stake(&self, at: Option<BlockHash>) -> RpcResult<String>;
+
     #[method(name = "dbc3_getNetworkSummary")]
     fn get_network_summary(&self, at: Option<BlockHash>) -> RpcResult<String>;
 
@@ -244,6 +257,31 @@ where
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_miner_score(at_hash, miner).map_err(map_err)
+    }
+
+    fn get_delegated_agent(&self, agent: AccountId, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_delegated_agent(at_hash, agent).map_err(map_err)
+    }
+
+    fn get_delegator_state(&self, delegator: AccountId, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_delegator_state(at_hash, delegator).map_err(map_err)
+    }
+
+    fn get_delegated_agent_count(&self, at: Option<Block::Hash>) -> RpcResult<u64> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.get_delegated_agent_count(at_hash).map_err(map_err)
+    }
+
+    fn get_total_delegated_stake(&self, at: Option<Block::Hash>) -> RpcResult<String> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        let stake = api.get_total_delegated_stake(at_hash).map_err(map_err)?;
+        Ok(format!("{}", stake))
     }
 
     fn get_network_summary(&self, at: Option<Block::Hash>) -> RpcResult<String> {

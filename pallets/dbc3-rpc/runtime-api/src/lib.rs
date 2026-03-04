@@ -90,6 +90,20 @@ sp_api::decl_runtime_apis! {
         /// Get miner score (0-based).
         fn get_miner_score(miner: AccountId) -> u32;
 
+        // ─── Delegated Staking ─────────────────────────────────────
+
+        /// Get delegated-staking agent ledger by agent account (SCALE-encoded `AgentLedger`).
+        fn get_delegated_agent(agent: AccountId) -> Option<Vec<u8>>;
+
+        /// Get delegated-staking delegator record by delegator account (SCALE-encoded `Delegation`).
+        fn get_delegator_state(delegator: AccountId) -> Option<Vec<u8>>;
+
+        /// Get total registered delegated-staking agent count.
+        fn get_delegated_agent_count() -> u64;
+
+        /// Get total delegated stake amount across all agents.
+        fn get_total_delegated_stake() -> Balance;
+
         // --- Event Indexer Summary ---
 
         /// Get a summary of all DBC 3.0 pallet activity.

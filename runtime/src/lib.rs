@@ -3066,6 +3066,26 @@ impl_runtime_apis! {
             pallet_zk_compute::MinerScores::<Runtime>::get(&miner).unwrap_or(0)
         }
 
+        fn get_delegated_agent(agent: AccountId) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_delegated_staking::Agents::<Runtime>::get(&agent).map(|v| v.encode())
+        }
+
+        fn get_delegator_state(delegator: AccountId) -> Option<Vec<u8>> {
+            use parity_scale_codec::Encode;
+            pallet_delegated_staking::Delegators::<Runtime>::get(&delegator).map(|v| v.encode())
+        }
+
+        fn get_delegated_agent_count() -> u64 {
+            pallet_delegated_staking::Agents::<Runtime>::count() as u64
+        }
+
+        fn get_total_delegated_stake() -> Balance {
+            pallet_delegated_staking::Agents::<Runtime>::iter()
+                .map(|(_, ledger)| ledger.total_delegated)
+                .fold(0u128, |acc, s| acc.saturating_add(s))
+        }
+
         fn get_network_summary() -> Vec<u8> {
             use parity_scale_codec::Encode;
             let active_pools: u64 = pallet_compute_pool_scheduler::Pools::<Runtime>::iter()
