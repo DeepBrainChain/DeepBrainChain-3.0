@@ -3224,7 +3224,7 @@ mod tests {
     use frame_support::traits::WhitelistedStorageKeys;
     use frame_system::offchain::CreateSignedTransaction;
     use sp_core::hexdisplay::HexDisplay;
-    use sp_runtime::UpperOf;
+    use sp_runtime::{BuildStorage, UpperOf};
     use std::collections::HashSet;
 
     #[test]
@@ -3297,5 +3297,19 @@ mod tests {
     #[test]
     fn check_block_time() {
         assert_eq!(DAYS, dbc_support::ONE_DAY, "make sure DAYS is equal to ONE_DAY");
+    }
+
+    #[test]
+    fn genesis_has_no_legacy_stash_controller_pairs() {
+        let storage = RuntimeGenesisConfig::default()
+            .build_storage()
+            .expect("default runtime genesis config builds");
+        let mut ext = sp_io::TestExternalities::new(storage);
+        ext.execute_with(|| {
+            let legacy_pairs = pallet_staking::Bonded::<Runtime>::iter()
+                .filter(|(stash, controller)| stash != controller)
+                .count();
+            assert_eq!(legacy_pairs, 0, "new chain genesis should not contain legacy stash/controller pairs");
+        });
     }
 }
