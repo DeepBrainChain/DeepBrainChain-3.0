@@ -96,6 +96,12 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
     #[method(name = "dbc3_getTotalDelegatedStake")]
     fn get_total_delegated_stake(&self, at: Option<BlockHash>) -> RpcResult<String>;
 
+    #[method(name = "dbc3_listDelegatedAgents")]
+    fn list_delegated_agents(&self, limit: u32, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
+
+    #[method(name = "dbc3_listAgentDelegators")]
+    fn list_agent_delegators(&self, agent: AccountId, limit: u32, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
+
     #[method(name = "dbc3_getNetworkSummary")]
     fn get_network_summary(&self, at: Option<BlockHash>) -> RpcResult<String>;
 
@@ -282,6 +288,23 @@ where
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         let stake = api.get_total_delegated_stake(at_hash).map_err(map_err)?;
         Ok(format!("{}", stake))
+    }
+
+    fn list_delegated_agents(&self, limit: u32, at: Option<Block::Hash>) -> RpcResult<Vec<u8>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.list_delegated_agents(at_hash, limit).map_err(map_err)
+    }
+
+    fn list_agent_delegators(
+        &self,
+        agent: AccountId,
+        limit: u32,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Vec<u8>> {
+        let api = self.client.runtime_api();
+        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.list_agent_delegators(at_hash, agent, limit).map_err(map_err)
     }
 
     fn get_network_summary(&self, at: Option<Block::Hash>) -> RpcResult<String> {

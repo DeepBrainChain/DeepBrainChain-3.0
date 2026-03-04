@@ -3086,6 +3086,25 @@ impl_runtime_apis! {
                 .fold(0u128, |acc, s| acc.saturating_add(s))
         }
 
+        fn list_delegated_agents(limit: u32) -> Vec<u8> {
+            use parity_scale_codec::Encode;
+            let agents: Vec<(AccountId, pallet_delegated_staking::types::AgentLedger<Runtime>)> =
+                pallet_delegated_staking::Agents::<Runtime>::iter()
+                    .take(limit as usize)
+                    .collect();
+            agents.encode()
+        }
+
+        fn list_agent_delegators(agent: AccountId, limit: u32) -> Vec<u8> {
+            use parity_scale_codec::Encode;
+            let delegators: Vec<(AccountId, pallet_delegated_staking::types::Delegation<Runtime>)> =
+                pallet_delegated_staking::Delegators::<Runtime>::iter()
+                    .filter(|(_, delegation)| delegation.agent == agent)
+                    .take(limit as usize)
+                    .collect();
+            delegators.encode()
+        }
+
         fn get_network_summary() -> Vec<u8> {
             use parity_scale_codec::Encode;
             let active_pools: u64 = pallet_compute_pool_scheduler::Pools::<Runtime>::iter()

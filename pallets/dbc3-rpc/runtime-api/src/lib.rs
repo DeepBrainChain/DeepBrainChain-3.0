@@ -104,6 +104,12 @@ sp_api::decl_runtime_apis! {
         /// Get total delegated stake amount across all agents.
         fn get_total_delegated_stake() -> Balance;
 
+        /// List delegated-staking agents (SCALE-encoded `Vec<(AccountId, AgentLedger)>`).
+        fn list_delegated_agents(limit: u32) -> Vec<u8>;
+
+        /// List delegators for a given agent (SCALE-encoded `Vec<(AccountId, Delegation)>`).
+        fn list_agent_delegators(agent: AccountId, limit: u32) -> Vec<u8>;
+
         // --- Event Indexer Summary ---
 
         /// Get a summary of all DBC 3.0 pallet activity.
