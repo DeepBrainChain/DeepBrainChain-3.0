@@ -18,9 +18,9 @@
 //! Functions for the Assets pallet.
 
 use super::*;
+use alloc::{collections::BTreeSet, vec};
 use frame_support::{traits::Get, BoundedVec};
 use frame_system::pallet_prelude::BlockNumberFor;
-use alloc::{collections::BTreeSet, vec};
 
 #[must_use]
 pub(super) enum DeadConsequence {

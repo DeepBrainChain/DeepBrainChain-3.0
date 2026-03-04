@@ -1,7 +1,7 @@
 use crate::{BalanceOf, CommitteeStake, Config, Pallet};
+use alloc::vec::Vec;
 use dbc_support::{traits::ManageCommittee, ReportId};
 use sp_runtime::traits::Saturating;
-use alloc::vec::Vec;
 
 impl<T: Config> ManageCommittee for Pallet<T> {
     type AccountId = T::AccountId;

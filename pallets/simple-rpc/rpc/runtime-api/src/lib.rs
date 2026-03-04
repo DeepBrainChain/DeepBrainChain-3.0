@@ -6,9 +6,9 @@
 extern crate alloc;
 use sp_std as _;
 
+use alloc::vec::Vec;
 use parity_scale_codec::Codec;
 use simple_rpc::StakerListInfo;
-use alloc::vec::Vec;
 
 sp_api::decl_runtime_apis! {
     pub trait SimpleRpcApi<AccountId, Balance> where

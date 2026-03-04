@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 #[cfg(feature = "std")]
 use dbc_support::rpc_types::RpcText;
 use dbc_support::{
@@ -9,7 +10,6 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec;
 
 // for RPC
 #[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]

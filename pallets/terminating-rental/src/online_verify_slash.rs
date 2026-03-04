@@ -1,6 +1,7 @@
 use crate::{
     BalanceOf, Config, Error, Pallet, PendingOnlineSlash, StashStake, UnhandledOnlineSlash,
 };
+use alloc::{vec, vec::Vec};
 use dbc_support::{
     traits::{GNOps, ManageCommittee},
     verify_committee_slash::OCSlashResult,
@@ -8,7 +9,6 @@ use dbc_support::{
 };
 use frame_support::{dispatch::DispatchResultWithPostInfo, ensure};
 use sp_runtime::traits::{CheckedSub, Zero};
-use alloc::{vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn get_stake_per_order() -> Result<BalanceOf<T>, Error<T>> {

@@ -1,4 +1,5 @@
 use crate::*;
+use alloc::{boxed::Box, vec, vec::Vec};
 use dbc_support::{
     machine_type::MachineStatus,
     report::{
@@ -11,7 +12,6 @@ use dbc_support::{
 use frame_support::{dispatch::DispatchResultWithPostInfo, ensure, traits::ReservableCurrency};
 use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::traits::{Saturating, Zero};
-use alloc::{boxed::Box, vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     // Warp for SlashAndReward::slash_and_reward
@@ -99,7 +99,7 @@ impl<T: Config> Pallet<T> {
     pub fn do_report_machine_fault(
         reporter: T::AccountId,
         machine_fault_type: MachineFaultType,
-        report_time: Option<BlockNumberFor::<T>>,
+        report_time: Option<BlockNumberFor<T>>,
         live_report: &mut MTLiveReportList,
         reporter_report: &mut ReporterReportList,
     ) -> DispatchResultWithPostInfo {
@@ -139,7 +139,7 @@ impl<T: Config> Pallet<T> {
     pub fn book_report(
         committee: T::AccountId,
         report_id: ReportId,
-        report_info: &mut MTReportInfoDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        report_info: &mut MTReportInfoDetail<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
         order_stake: BalanceOf<T>,
     ) {
         let now = <frame_system::Pallet<T>>::block_number();
@@ -349,11 +349,11 @@ impl<T: Config> Pallet<T> {
     // 在第一个预订后，3个小时前进行检查
     fn summary_before_submit_raw(
         report_id: ReportId,
-        now: BlockNumberFor::<T>,
+        now: BlockNumberFor<T>,
 
         live_report: &mut MTLiveReportList,
         reporter_report: &mut ReporterReportList,
-        report_result: &mut MTReportResultInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        report_result: &mut MTReportResultInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     ) -> Result<(), ()> {
         let mut report_info = Self::report_info(&report_id).ok_or(())?;
 
@@ -518,7 +518,7 @@ impl<T: Config> Pallet<T> {
     // 并在提交raw开始前，如果有正在验证的委员会(还未完成工作)，则移除其信息，退还质押，不作处理。
     fn summary_after_submit_raw(
         report_id: ReportId,
-        now: BlockNumberFor::<T>,
+        now: BlockNumberFor<T>,
         live_report: &mut MTLiveReportList,
     ) -> Result<(), ()> {
         live_report.clean_unfinished_report(&report_id);
@@ -563,7 +563,7 @@ impl<T: Config> Pallet<T> {
     pub fn update_unhandled_report(
         report_id: ReportId,
         is_add: bool,
-        slash_exec_time: BlockNumberFor::<T>,
+        slash_exec_time: BlockNumberFor<T>,
     ) {
         UnhandledReportResult::<T>::mutate(slash_exec_time, |unhandled_report_result| {
             if is_add {

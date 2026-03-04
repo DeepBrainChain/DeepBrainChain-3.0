@@ -1,5 +1,4 @@
 #![recursion_limit = "4096"]
-
 // This file is part of Substrate.
 
 // Copyright (C) Parity Technologies (UK) Ltd.
@@ -32,10 +31,10 @@
 
 pub mod chain_spec;
 
-pub mod service;
 mod cli;
 mod command;
 mod rpc;
+pub mod service;
 
 pub use cli::*;
 pub use command::*;

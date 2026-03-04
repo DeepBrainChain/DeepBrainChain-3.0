@@ -1,13 +1,13 @@
 use crate::{
     Config, Pallet, PendingSlashReview, ReportResult, ReporterStake, UnhandledReportResult,
 };
+use alloc::{vec, vec::Vec};
 use dbc_support::{
     report::{MCSlashResult, MTReportResultInfo, ReportResultType},
     traits::MTOps,
     ReportId,
 };
 use frame_support::IterableStorageMap;
-use alloc::{vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn exec_slash() -> Result<(), ()> {

@@ -2,14 +2,17 @@ use crate::{
     report::{MTReportInfoDetail, ReportConfirmStatus},
     ItemList, MachineId, ReportId, TWO_DAYS,
 };
+use alloc::{vec, vec::Vec};
+use core::{
+    cmp::PartialEq,
+    ops::{Add, Sub},
+};
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{Saturating, Zero},
     RuntimeDebug,
 };
-use alloc::{vec, vec::Vec};
-use core::{cmp::PartialEq, ops::{Add, Sub}};
 
 /// 报告的处理结果
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]

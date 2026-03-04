@@ -1,4 +1,5 @@
 use crate::types::*;
+use alloc::vec::Vec;
 use dbc_support::{
     live_machine::LiveMachine,
     machine_info::MachineInfo,
@@ -7,7 +8,6 @@ use dbc_support::{
 };
 use frame_support::{IterableStorageDoubleMap, IterableStorageMap};
 use frame_system::pallet_prelude::BlockNumberFor;
-use alloc::vec::Vec;
 
 use parity_scale_codec::EncodeLike;
 
@@ -29,7 +29,7 @@ impl<T: Config> Pallet<T> {
 
     pub fn get_staker_info(
         account: impl EncodeLike<T::AccountId>,
-    ) -> StakerInfo<BalanceOf<T>, BlockNumberFor::<T>, T::AccountId> {
+    ) -> StakerInfo<BalanceOf<T>, BlockNumberFor<T>, T::AccountId> {
         let staker_info = Self::stash_machines(account);
 
         let mut staker_machines = Vec::new();
@@ -58,7 +58,7 @@ impl<T: Config> Pallet<T> {
     /// 获取机器详情
     pub fn get_machine_info(
         machine_id: MachineId,
-    ) -> Option<MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>> {
+    ) -> Option<MachineInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>> {
         Self::machines_info(&machine_id)
     }
 

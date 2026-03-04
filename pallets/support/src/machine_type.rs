@@ -1,6 +1,7 @@
 #[cfg(feature = "std")]
 use super::rpc_types::serde_text;
 use super::{verify_slash::OPSlashReason, MachineId};
+use alloc::{boxed::Box, vec, vec::Vec};
 use parity_scale_codec::{alloc::string::ToString, Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
@@ -8,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_io::hashing::blake2_128;
 use sp_runtime::RuntimeDebug;
-use alloc::{boxed::Box, vec, vec::Vec};
 
 #[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -36,7 +36,19 @@ impl Default for Latitude {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, PartialOrd, Ord, TypeInfo)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Default,
+    PartialOrd,
+    Ord,
+    TypeInfo,
+)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct CommitteeUploadInfo {
     #[cfg_attr(feature = "std", serde(with = "serde_text"))]
@@ -117,7 +129,9 @@ pub struct StakerCustomizeInfo {
 }
 
 /// Standard GPU rent price Per Era
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 pub struct StandardGpuPointPrice {
     /// Standard GPU calc points
     pub gpu_point: u64,
@@ -159,8 +173,8 @@ pub enum MachineStatus<BlockNumber, AccountId> {
     Exit,
 }
 
-impl<BlockNumber: DecodeWithMemTracking, AccountId: DecodeWithMemTracking>
-    DecodeWithMemTracking for MachineStatus<BlockNumber, AccountId>
+impl<BlockNumber: DecodeWithMemTracking, AccountId: DecodeWithMemTracking> DecodeWithMemTracking
+    for MachineStatus<BlockNumber, AccountId>
 {
 }
 

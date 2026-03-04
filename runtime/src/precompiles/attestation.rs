@@ -1,9 +1,9 @@
+use crate::precompiles::{from_ethabi_h160, to_ethabi_u256};
 use fp_evm::{
     ExitRevert, ExitSucceed, Precompile, PrecompileFailure, PrecompileHandle, PrecompileOutput,
     PrecompileResult,
 };
 use sp_core::U256;
-use crate::precompiles::{to_ethabi_u256, from_ethabi_h160};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
@@ -54,22 +54,20 @@ where
     pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     fn query_node(handle: &mut impl PrecompileHandle) -> PrecompileResult {
-        handle.record_cost(T::GasWeightMapping::weight_to_gas(
-            Weight::from_parts(10_000, 0),
-        ))?;
+        handle.record_cost(T::GasWeightMapping::weight_to_gas(Weight::from_parts(10_000, 0)))?;
         let input = handle.input();
-        let param = ethabi::decode(
-            &[ethabi::ParamType::Address],
-            &input.get(4..).unwrap_or_default(),
-        ).map_err(|e| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: format!("decode failed: {:?}", e).into(),
-        })?;
+        let param =
+            ethabi::decode(&[ethabi::ParamType::Address], &input.get(4..).unwrap_or_default())
+                .map_err(|e| PrecompileFailure::Revert {
+                    exit_status: ExitRevert::Reverted,
+                    output: format!("decode failed: {:?}", e).into(),
+                })?;
         let addr = param[0].clone().into_address().ok_or_else(|| PrecompileFailure::Revert {
             exit_status: ExitRevert::Reverted,
             output: "decode address failed".into(),
         })?;
-        let account: T::AccountId = T::AddressMapping::into_account_id(from_ethabi_h160(addr)).into();
+        let account: T::AccountId =
+            T::AddressMapping::into_account_id(from_ethabi_h160(addr)).into();
         let node = pallet_agent_attestation::Nodes::<T>::get(&account);
         let (registered, reputation) = match node {
             Some(n) => (true, n.tflops),
@@ -79,23 +77,18 @@ where
             ethabi::Token::Bool(registered),
             ethabi::Token::Uint(to_ethabi_u256(U256::from(reputation))),
         ]);
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            output: encoded,
-        })
+        Ok(PrecompileOutput { exit_status: ExitSucceed::Returned, output: encoded })
     }
 
     fn do_heartbeat(handle: &mut impl PrecompileHandle) -> PrecompileResult {
-        handle.record_cost(T::GasWeightMapping::weight_to_gas(
-            Weight::from_parts(50_000, 0),
-        ))?;
+        handle.record_cost(T::GasWeightMapping::weight_to_gas(Weight::from_parts(50_000, 0)))?;
         let from: T::AccountId = T::AddressMapping::into_account_id(handle.context().caller).into();
         let origin = frame_system::RawOrigin::Signed(from);
-        pallet_agent_attestation::Pallet::<T>::heartbeat(
-            origin.into(),
-        ).map_err(|e| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: format!("heartbeat failed: {:?}", e).into(),
+        pallet_agent_attestation::Pallet::<T>::heartbeat(origin.into()).map_err(|e| {
+            PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: format!("heartbeat failed: {:?}", e).into(),
+            }
         })?;
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,

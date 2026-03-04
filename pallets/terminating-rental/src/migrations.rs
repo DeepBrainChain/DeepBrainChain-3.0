@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use dbc_support::{
     verify_committee_slash::{OCPendingSlashInfo, OCSlashResult},
     verify_online::OCBookResultType,
@@ -8,7 +9,6 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
-use alloc::vec::Vec;
 
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 struct OldOCPendingSlashInfo<AccountId, BlockNumber, Balance> {
@@ -61,17 +61,17 @@ use crate::*;
 const TARGET: &'static str = "terminating-rental-migration";
 
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-type BlockNumberOf<T> = BlockNumberFor::<T>;
+type BlockNumberOf<T> = BlockNumberFor<T>;
 
 mod v0 {
     use dbc_support::{
         machine_type::{CommitteeUploadInfo, Latitude, Longitude, MachineStatus},
         EraIndex,
     };
-    use sp_runtime::RuntimeDebug;
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
     use sp_core::H256;
+    use sp_runtime::RuntimeDebug;
 
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

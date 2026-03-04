@@ -15,19 +15,17 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
     use crate::weights::WeightInfo;
+    use alloc::vec::Vec;
     use dbc_support::traits::AttestationSettler;
-    use frame_support::traits::StorageVersion;
     use frame_support::{
         dispatch::DispatchResult,
         pallet_prelude::*,
-        traits::EnsureOrigin,
-        traits::{Currency, ReservableCurrency},
+        traits::{Currency, EnsureOrigin, ReservableCurrency, StorageVersion},
         BoundedVec,
     };
     use frame_system::pallet_prelude::*;
     use sp_core::H256;
     use sp_runtime::traits::Saturating;
-    use alloc::vec::Vec;
 
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -760,10 +758,8 @@ pub mod pallet {
                     Error::<T>::BenchmarkNotChallenged
                 );
 
-                let challenger = claim
-                    .challenger
-                    .clone()
-                    .ok_or(Error::<T>::BenchmarkNotChallenged)?;
+                let challenger =
+                    claim.challenger.clone().ok_or(Error::<T>::BenchmarkNotChallenged)?;
                 let challenge_deposit =
                     claim.challenge_deposit.ok_or(Error::<T>::BenchmarkNotChallenged)?;
 
@@ -787,7 +783,8 @@ pub mod pallet {
                 } else {
                     // Claim invalid, claimer loses benchmark deposit
                     let slash_percent = T::SlashPercent::get();
-                    let slash_amount = sp_runtime::Perbill::from_percent(slash_percent) * claim.deposit;
+                    let slash_amount =
+                        sp_runtime::Perbill::from_percent(slash_percent) * claim.deposit;
 
                     let _imbalance = T::Currency::slash_reserved(&claim.claimer, slash_amount);
                     let remainder = claim.deposit.saturating_sub(slash_amount);
@@ -828,8 +825,8 @@ pub mod pallet {
             let model_id_bounded: BoundedVec<u8, T::MaxModelIdLen> =
                 model_id.try_into().map_err(|_| Error::<T>::InvalidModelId)?;
 
-            let claim_id =
-                MinerBenchmark::<T>::get(&who, &model_id_bounded).ok_or(Error::<T>::BenchmarkClaimNotFound)?;
+            let claim_id = MinerBenchmark::<T>::get(&who, &model_id_bounded)
+                .ok_or(Error::<T>::BenchmarkClaimNotFound)?;
 
             BenchmarkClaims::<T>::try_mutate(claim_id, |maybe_claim| -> DispatchResult {
                 let claim = maybe_claim.as_mut().ok_or(Error::<T>::BenchmarkClaimNotFound)?;
@@ -842,10 +839,7 @@ pub mod pallet {
 
                 claim.score = new_score;
 
-                Self::deposit_event(Event::BenchmarkClaimUpdated {
-                    claim_id,
-                    new_score,
-                });
+                Self::deposit_event(Event::BenchmarkClaimUpdated { claim_id, new_score });
                 Ok(())
             })
         }
@@ -941,7 +935,8 @@ impl<T: Config> dbc_support::traits::BenchmarkScoreProvider for Pallet<T> {
     type AccountId = T::AccountId;
 
     fn get_benchmark_score(miner: &Self::AccountId, model_id: &[u8]) -> Option<u32> {
-        let model_id_bounded: frame_support::BoundedVec<u8, T::MaxModelIdLen> = model_id.to_vec().try_into().ok()?;
+        let model_id_bounded: frame_support::BoundedVec<u8, T::MaxModelIdLen> =
+            model_id.to_vec().try_into().ok()?;
         let claim_id = pallet::MinerBenchmark::<T>::get(miner, &model_id_bounded)?;
         let claim = pallet::BenchmarkClaims::<T>::get(claim_id)?;
         if matches!(claim.status, pallet::BenchmarkClaimStatus::Active) {
@@ -956,7 +951,7 @@ impl<T: Config> dbc_support::traits::BenchmarkScoreProvider for Pallet<T> {
         for (_, claim_id) in pallet::MinerBenchmark::<T>::iter_prefix(miner) {
             if let Some(claim) = pallet::BenchmarkClaims::<T>::get(claim_id) {
                 if matches!(claim.status, pallet::BenchmarkClaimStatus::Slashed) {
-                    return true;
+                    return true
                 }
             }
         }

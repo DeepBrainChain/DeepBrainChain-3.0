@@ -3,42 +3,39 @@ extern crate alloc;
 pub use pallet::*;
 pub mod weights;
 
-use frame_support::{
-    traits::Currency,
-    weights::Weight,
-};
 use dbc_support::traits::TaskCompletionHandler;
+use frame_support::{traits::Currency, weights::Weight};
 
 // Re-export BalanceOf for use in trait implementations
-type BalanceOf<T> = <<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+type BalanceOf<T> =
+    <<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
 
 pub type PoolId = u64;
 pub type TaskId = u64;
 
-
-
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::traits::StorageVersion;
     use super::*;
     use crate::weights::WeightInfo;
+    use alloc::vec::Vec;
     use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
     use frame_support::{
         dispatch::DispatchResult,
         pallet_prelude::*,
-        traits::{tokens::BalanceStatus, Currency, ReservableCurrency},
+        traits::{tokens::BalanceStatus, Currency, ReservableCurrency, StorageVersion},
     };
     use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::{Saturating, UniqueSaturatedInto, Zero};
-    use sp_runtime::{ArithmeticError, RuntimeDebug};
-    use alloc::vec::Vec;
+    use sp_runtime::{
+        traits::{Saturating, UniqueSaturatedInto, Zero},
+        ArithmeticError, RuntimeDebug,
+    };
 
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -50,7 +47,17 @@ pub mod pallet {
         Deregistered,
     }
 
-    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(
+        Encode,
+        Decode,
+        DecodeWithMemTracking,
+        Clone,
+        Eq,
+        PartialEq,
+        RuntimeDebug,
+        TypeInfo,
+        MaxEncodedLen,
+    )]
     pub enum TaskPriority {
         Low,
         Normal,
@@ -58,7 +65,17 @@ pub mod pallet {
         Critical,
     }
 
-    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(
+        Encode,
+        Decode,
+        DecodeWithMemTracking,
+        Clone,
+        Eq,
+        PartialEq,
+        RuntimeDebug,
+        TypeInfo,
+        MaxEncodedLen,
+    )]
     pub enum TaskStatus {
         Pending,
         Assigned,
@@ -69,7 +86,17 @@ pub mod pallet {
         Failed,
     }
 
-    #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(
+        Encode,
+        Decode,
+        DecodeWithMemTracking,
+        Clone,
+        Eq,
+        PartialEq,
+        RuntimeDebug,
+        TypeInfo,
+        MaxEncodedLen,
+    )]
     pub struct TaskDimensions {
         pub m: u32,
         pub n: u32,
@@ -210,7 +237,9 @@ pub mod pallet {
         type SlashGracePeriod: Get<BlockNumberFor<Self>>;
         type WeightInfo: WeightInfo;
         /// Handler to notify when a task is completed
-        type OnTaskCompleted: dbc_support::traits::TaskCompletionHandler<AccountId = Self::AccountId>;
+        type OnTaskCompleted: dbc_support::traits::TaskCompletionHandler<
+            AccountId = Self::AccountId,
+        >;
     }
 
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -284,8 +313,15 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn pool_stakes)]
-    pub type PoolStakes<T: Config> =
-        StorageDoubleMap<_, Blake2_128Concat, PoolId, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
+    pub type PoolStakes<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        PoolId,
+        Blake2_128Concat,
+        T::AccountId,
+        BalanceOf<T>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn total_pool_stake)]
@@ -314,39 +350,111 @@ pub mod pallet {
     /// PoolId -> open complaint count
     #[pallet::storage]
     #[pallet::getter(fn pool_open_complaints)]
-    pub type PoolOpenComplaints<T: Config> = StorageMap<_, Blake2_128Concat, PoolId, u32, ValueQuery>;
+    pub type PoolOpenComplaints<T: Config> =
+        StorageMap<_, Blake2_128Concat, PoolId, u32, ValueQuery>;
 
     /// Pending complaint slash: complaint_id -> (pool_id, amount, execute_after_block)
     #[pallet::storage]
     #[pallet::getter(fn pending_complaint_slash)]
     pub type PendingComplaintSlash<T: Config> = StorageMap<
-        _, Blake2_128Concat, u64, (PoolId, BalanceOf<T>, BlockNumberFor<T>), OptionQuery
+        _,
+        Blake2_128Concat,
+        u64,
+        (PoolId, BalanceOf<T>, BlockNumberFor<T>),
+        OptionQuery,
     >;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        PoolRegistered { pool_id: PoolId, owner: T::AccountId },
-        PoolConfigUpdated { pool_id: PoolId },
-        PoolDeregistered { pool_id: PoolId, owner: T::AccountId },
-        TaskSubmitted { task_id: TaskId, user: T::AccountId },
-        TaskAssigned { task_id: TaskId, pool_id: PoolId, final_score: u32 },
-        TaskStatusChanged { task_id: TaskId, status: TaskStatus },
-        ProofSubmitted { task_id: TaskId, pool_id: PoolId },
-        ProofVerified { task_id: TaskId, result: bool },
-        RewardAvailable { task_id: TaskId, amount: BalanceOf<T> },
-        RewardClaimed { task_id: TaskId, pool_owner: T::AccountId, amount: BalanceOf<T> },
-        VerificationDisputed { task_id: TaskId, user: T::AccountId },
-        TaskTimedOut { task_id: TaskId },
-        PoolSlashed { pool_id: PoolId, amount: BalanceOf<T> },
-        Staked { who: T::AccountId, pool_id: PoolId, amount: BalanceOf<T> },
-        Unstaked { who: T::AccountId, pool_id: PoolId, amount: BalanceOf<T> },
-        StakeSlashed { pool_id: PoolId, amount: BalanceOf<T> },
-        ComplaintFiled { complaint_id: u64, complainant: T::AccountId, pool_id: PoolId, task_id: TaskId },
-        ComplaintResolved { complaint_id: u64, valid: bool },
-        ComplaintCancelled { complaint_id: u64 },
-        ComplaintAppealed { complaint_id: u64, pool_owner: T::AccountId },
-        ComplaintSlashExecuted { complaint_id: u64, pool_id: PoolId, amount: BalanceOf<T> },
+        PoolRegistered {
+            pool_id: PoolId,
+            owner: T::AccountId,
+        },
+        PoolConfigUpdated {
+            pool_id: PoolId,
+        },
+        PoolDeregistered {
+            pool_id: PoolId,
+            owner: T::AccountId,
+        },
+        TaskSubmitted {
+            task_id: TaskId,
+            user: T::AccountId,
+        },
+        TaskAssigned {
+            task_id: TaskId,
+            pool_id: PoolId,
+            final_score: u32,
+        },
+        TaskStatusChanged {
+            task_id: TaskId,
+            status: TaskStatus,
+        },
+        ProofSubmitted {
+            task_id: TaskId,
+            pool_id: PoolId,
+        },
+        ProofVerified {
+            task_id: TaskId,
+            result: bool,
+        },
+        RewardAvailable {
+            task_id: TaskId,
+            amount: BalanceOf<T>,
+        },
+        RewardClaimed {
+            task_id: TaskId,
+            pool_owner: T::AccountId,
+            amount: BalanceOf<T>,
+        },
+        VerificationDisputed {
+            task_id: TaskId,
+            user: T::AccountId,
+        },
+        TaskTimedOut {
+            task_id: TaskId,
+        },
+        PoolSlashed {
+            pool_id: PoolId,
+            amount: BalanceOf<T>,
+        },
+        Staked {
+            who: T::AccountId,
+            pool_id: PoolId,
+            amount: BalanceOf<T>,
+        },
+        Unstaked {
+            who: T::AccountId,
+            pool_id: PoolId,
+            amount: BalanceOf<T>,
+        },
+        StakeSlashed {
+            pool_id: PoolId,
+            amount: BalanceOf<T>,
+        },
+        ComplaintFiled {
+            complaint_id: u64,
+            complainant: T::AccountId,
+            pool_id: PoolId,
+            task_id: TaskId,
+        },
+        ComplaintResolved {
+            complaint_id: u64,
+            valid: bool,
+        },
+        ComplaintCancelled {
+            complaint_id: u64,
+        },
+        ComplaintAppealed {
+            complaint_id: u64,
+            pool_owner: T::AccountId,
+        },
+        ComplaintSlashExecuted {
+            complaint_id: u64,
+            pool_id: PoolId,
+            amount: BalanceOf<T>,
+        },
     }
 
     #[pallet::error]
@@ -416,7 +524,7 @@ pub mod pallet {
                     reads = reads.saturating_add(1);
                     if let Some(task) = Tasks::<T>::get(task_id) {
                         if Self::is_terminal(&task.status) {
-                            continue;
+                            continue
                         }
                         // Auto-verify: ProofSubmitted tasks past VerificationTimeout
                         if matches!(task.status, TaskStatus::ProofSubmitted) {
@@ -424,7 +532,7 @@ pub mod pallet {
                                 reads = reads.saturating_add(1);
                                 if now > proof_at.saturating_add(T::VerificationTimeout::get()) {
                                     auto_verify.push(*task_id);
-                                    continue;
+                                    continue
                                 }
                             }
                         }
@@ -453,7 +561,9 @@ pub mod pallet {
             // Return accurate weight based on actual work done
             // Execute pending complaint slashes past grace period
             let mut slash_executed: Vec<u64> = Vec::new();
-            for (complaint_id, (pool_id, slash_amount, execute_at)) in PendingComplaintSlash::<T>::iter() {
+            for (complaint_id, (pool_id, slash_amount, execute_at)) in
+                PendingComplaintSlash::<T>::iter()
+            {
                 if now >= execute_at {
                     // Execute the slash
                     if let Some(complaint) = Complaints::<T>::get(complaint_id) {
@@ -462,10 +572,15 @@ pub mod pallet {
                                 if let Some(pool) = maybe_pool {
                                     let actual_slash = slash_amount.min(pool.deposit_held);
                                     let half = actual_slash / 2u32.into();
-                                    let _imbalance = T::Currency::slash_reserved(&pool.owner, actual_slash);
-                                    pool.deposit_held = pool.deposit_held.saturating_sub(actual_slash);
+                                    let _imbalance =
+                                        T::Currency::slash_reserved(&pool.owner, actual_slash);
+                                    pool.deposit_held =
+                                        pool.deposit_held.saturating_sub(actual_slash);
                                     // Reward complainant with half
-                                    let _ = T::Currency::deposit_into_existing(&complaint.complainant, half);
+                                    let _ = T::Currency::deposit_into_existing(
+                                        &complaint.complainant,
+                                        half,
+                                    );
                                 }
                             });
                             Complaints::<T>::mutate(complaint_id, |maybe_c| {
@@ -473,7 +588,11 @@ pub mod pallet {
                                     c.status = ComplaintStatus::Executed;
                                 }
                             });
-                            Self::deposit_event(Event::ComplaintSlashExecuted { complaint_id, pool_id, amount: slash_amount });
+                            Self::deposit_event(Event::ComplaintSlashExecuted {
+                                complaint_id,
+                                pool_id,
+                                amount: slash_amount,
+                            });
                         }
                     }
                     slash_executed.push(complaint_id);
@@ -484,12 +603,14 @@ pub mod pallet {
             }
             let slash_count = slash_executed.len() as u64;
 
-            let total_processed = expired_count.saturating_add(auto_verify_count).saturating_add(slash_count);
-            T::DbWeight::get().reads(reads.saturating_add(1))
-                .saturating_add(T::DbWeight::get().reads_writes(
+            let total_processed =
+                expired_count.saturating_add(auto_verify_count).saturating_add(slash_count);
+            T::DbWeight::get().reads(reads.saturating_add(1)).saturating_add(
+                T::DbWeight::get().reads_writes(
                     total_processed.saturating_mul(5),
                     total_processed.saturating_mul(5),
-                ))
+                ),
+            )
         }
     }
 
@@ -770,15 +891,14 @@ pub mod pallet {
         /// This prevents pool owners from self-certifying their own work.
         #[pallet::call_index(9)]
         #[pallet::weight(T::WeightInfo::verify_proof())]
-        pub fn verify_proof(
-            origin: OriginFor<T>,
-            task_id: TaskId,
-            result: bool,
-        ) -> DispatchResult {
+        pub fn verify_proof(origin: OriginFor<T>, task_id: TaskId, result: bool) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
             let task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
-            ensure!(matches!(task.status, TaskStatus::ProofSubmitted), Error::<T>::InvalidTaskState);
+            ensure!(
+                matches!(task.status, TaskStatus::ProofSubmitted),
+                Error::<T>::InvalidTaskState
+            );
             ensure!(task.proof_hash.is_some(), Error::<T>::ProofNotSubmitted);
 
             let pool = Pools::<T>::get(task.pool_id).ok_or(Error::<T>::PoolNotFound)?;
@@ -873,7 +993,7 @@ pub mod pallet {
                     status: TaskStatus::Completed,
                 });
             } else {
-                return Err(Error::<T>::DisputeNotAllowed.into());
+                return Err(Error::<T>::DisputeNotAllowed.into())
             }
 
             Self::deposit_event(Event::VerificationDisputed { task_id, user: sender });
@@ -936,30 +1056,37 @@ pub mod pallet {
             T::Currency::reserve(&complainant, deposit)
                 .map_err(|_| Error::<T>::InsufficientBalance)?;
 
-            let reason_bounded: BoundedVec<u8, ConstU32<256>> = reason
-                .try_into()
-                .map_err(|_| Error::<T>::ArithmeticOverflow)?;
+            let reason_bounded: BoundedVec<u8, ConstU32<256>> =
+                reason.try_into().map_err(|_| Error::<T>::ArithmeticOverflow)?;
 
             let complaint_id = NextComplaintId::<T>::get();
             let next_id = complaint_id.checked_add(1).ok_or(Error::<T>::ArithmeticOverflow)?;
             NextComplaintId::<T>::put(next_id);
 
             let now = frame_system::Pallet::<T>::block_number();
-            Complaints::<T>::insert(complaint_id, Complaint {
-                complainant: complainant.clone(),
-                pool_id,
-                task_id,
-                deposit,
-                status: ComplaintStatus::Open,
-                filed_at: now,
-                resolved_at: None,
-                reason: reason_bounded,
-            });
+            Complaints::<T>::insert(
+                complaint_id,
+                Complaint {
+                    complainant: complainant.clone(),
+                    pool_id,
+                    task_id,
+                    deposit,
+                    status: ComplaintStatus::Open,
+                    filed_at: now,
+                    resolved_at: None,
+                    reason: reason_bounded,
+                },
+            );
 
             TaskComplaint::<T>::insert(task_id, complaint_id);
             PoolOpenComplaints::<T>::mutate(pool_id, |c| *c = c.saturating_add(1));
 
-            Self::deposit_event(Event::ComplaintFiled { complaint_id, complainant, pool_id, task_id });
+            Self::deposit_event(Event::ComplaintFiled {
+                complaint_id,
+                complainant,
+                pool_id,
+                task_id,
+            });
             Ok(())
         }
 
@@ -987,12 +1114,17 @@ pub mod pallet {
                     complaint.status = ComplaintStatus::ResolvedValid;
                     T::Currency::unreserve(&complaint.complainant, complaint.deposit);
 
-                    let pool = Pools::<T>::get(complaint.pool_id).ok_or(Error::<T>::PoolNotFound)?;
+                    let pool =
+                        Pools::<T>::get(complaint.pool_id).ok_or(Error::<T>::PoolNotFound)?;
                     let slash_percent = T::ComplaintSlashPercent::get();
-                    let slash_amount = sp_runtime::Perbill::from_percent(slash_percent) * pool.deposit_held;
+                    let slash_amount =
+                        sp_runtime::Perbill::from_percent(slash_percent) * pool.deposit_held;
 
                     let execute_at = now.saturating_add(T::SlashGracePeriod::get());
-                    PendingComplaintSlash::<T>::insert(complaint_id, (complaint.pool_id, slash_amount, execute_at));
+                    PendingComplaintSlash::<T>::insert(
+                        complaint_id,
+                        (complaint.pool_id, slash_amount, execute_at),
+                    );
 
                     Pools::<T>::mutate(complaint.pool_id, |maybe_pool| {
                         if let Some(pool) = maybe_pool {
@@ -1002,7 +1134,8 @@ pub mod pallet {
                 } else {
                     complaint.status = ComplaintStatus::ResolvedInvalid;
                     let half = complaint.deposit / 2u32.into();
-                    let _imbalance = T::Currency::slash_reserved(&complaint.complainant, complaint.deposit);
+                    let _imbalance =
+                        T::Currency::slash_reserved(&complaint.complainant, complaint.deposit);
                     if let Some(pool) = Pools::<T>::get(complaint.pool_id) {
                         let _ = T::Currency::deposit_into_existing(&pool.owner, half);
                     }
@@ -1017,16 +1150,16 @@ pub mod pallet {
         /// Cancel an open complaint (complainant only, 90% refund)
         #[pallet::call_index(12)]
         #[pallet::weight(T::WeightInfo::cancel_complaint())]
-        pub fn cancel_complaint(
-            origin: OriginFor<T>,
-            complaint_id: u64,
-        ) -> DispatchResult {
+        pub fn cancel_complaint(origin: OriginFor<T>, complaint_id: u64) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
             Complaints::<T>::try_mutate(complaint_id, |maybe_complaint| -> DispatchResult {
                 let complaint = maybe_complaint.as_mut().ok_or(Error::<T>::ComplaintNotFound)?;
                 ensure!(complaint.complainant == who, Error::<T>::NotComplainant);
-                ensure!(matches!(complaint.status, ComplaintStatus::Open), Error::<T>::ComplaintNotOpen);
+                ensure!(
+                    matches!(complaint.status, ComplaintStatus::Open),
+                    Error::<T>::ComplaintNotOpen
+                );
 
                 complaint.status = ComplaintStatus::Cancelled;
 
@@ -1045,15 +1178,15 @@ pub mod pallet {
         /// Appeal a valid complaint resolution (pool owner, within grace period)
         #[pallet::call_index(13)]
         #[pallet::weight(T::WeightInfo::appeal_complaint())]
-        pub fn appeal_complaint(
-            origin: OriginFor<T>,
-            complaint_id: u64,
-        ) -> DispatchResult {
+        pub fn appeal_complaint(origin: OriginFor<T>, complaint_id: u64) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
             Complaints::<T>::try_mutate(complaint_id, |maybe_complaint| -> DispatchResult {
                 let complaint = maybe_complaint.as_mut().ok_or(Error::<T>::ComplaintNotFound)?;
-                ensure!(matches!(complaint.status, ComplaintStatus::ResolvedValid), Error::<T>::ComplaintNotOpen);
+                ensure!(
+                    matches!(complaint.status, ComplaintStatus::ResolvedValid),
+                    Error::<T>::ComplaintNotOpen
+                );
 
                 let pool = Pools::<T>::get(complaint.pool_id).ok_or(Error::<T>::PoolNotFound)?;
                 ensure!(pool.owner == who, Error::<T>::NotPoolOwner);
@@ -1155,7 +1288,7 @@ pub mod pallet {
         fn mark_task_failed(task_id: TaskId, timed_out: bool) -> DispatchResult {
             let task = Tasks::<T>::get(task_id).ok_or(Error::<T>::TaskNotFound)?;
             if Self::is_terminal(&task.status) {
-                return Ok(());
+                return Ok(())
             }
 
             Tasks::<T>::try_mutate(task_id, |maybe_task| -> DispatchResult {
@@ -1190,7 +1323,7 @@ pub mod pallet {
             Pools::<T>::try_mutate(pool_id, |maybe_pool| -> DispatchResult {
                 let pool = maybe_pool.as_mut().ok_or(Error::<T>::PoolNotFound)?;
                 if pool.deposit_held.is_zero() {
-                    return Ok(());
+                    return Ok(())
                 }
                 let slash_amount = if pool.deposit_held > T::FailureSlash::get() {
                     T::FailureSlash::get()
@@ -1225,8 +1358,8 @@ pub mod pallet {
             if has_nvlink {
                 reward_u128 = reward_u128
                     .checked_mul(nvlink_efficiency as u128)
-                    .ok_or(ArithmeticError::Overflow)?
-                    / 100u128;
+                    .ok_or(ArithmeticError::Overflow)? /
+                    100u128;
             }
             Ok(reward_u128.unique_saturated_into())
         }
@@ -1240,13 +1373,13 @@ pub mod pallet {
             )> = Vec::new();
             for (pool_id, pool) in Pools::<T>::iter().take(50) {
                 if !matches!(pool.status, PoolStatus::Active) {
-                    continue;
+                    continue
                 }
                 if ActiveTaskCount::<T>::get(pool_id) >= T::MaxTasksPerPool::get() {
-                    continue;
+                    continue
                 }
                 if pool.gpu_memory < task.dimensions.k {
-                    continue;
+                    continue
                 }
                 candidates.push((pool_id, pool));
             }
@@ -1376,16 +1509,18 @@ impl<T: Config> dbc_support::traits::TaskComputeScheduler for Pallet<T> {
         _model_id: &[u8],
         dimensions: (u32, u32, u32),
     ) -> Result<(u64, Self::AccountId, Self::Balance), &'static str> {
-
         // Find the best available pool based on reputation and status
-        let mut best_pool: Option<(PoolId, ComputePool<T::AccountId, BalanceOf<T>, T::MaxGpuModelLen>)> = None;
+        let mut best_pool: Option<(
+            PoolId,
+            ComputePool<T::AccountId, BalanceOf<T>, T::MaxGpuModelLen>,
+        )> = None;
         let mut best_score = 0u32;
 
         for (pool_id, pool) in Pools::<T>::iter().take(50) {
             if pool.status != PoolStatus::Active {
-                continue;
+                continue
             }
-            
+
             // Calculate a simple score based on reputation and success rate
             let score = pool.reputation.saturating_add(pool.success_rate) / 2;
             if score > best_score {
@@ -1401,11 +1536,7 @@ impl<T: Config> dbc_support::traits::TaskComputeScheduler for Pallet<T> {
         let next_task_id = task_id.checked_add(1).ok_or("Task ID overflow")?;
         NextTaskId::<T>::put(next_task_id);
 
-        let task_dimensions = TaskDimensions {
-            m: dimensions.0,
-            n: dimensions.1,
-            k: dimensions.2,
-        };
+        let task_dimensions = TaskDimensions { m: dimensions.0, n: dimensions.1, k: dimensions.2 };
 
         let now = frame_system::Pallet::<T>::block_number();
         let estimated_cost = pool.price_per_task;

@@ -5,7 +5,7 @@ use fp_evm::{
 use sp_core::{Get, U256};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
-use crate::precompiles::{LOG_TARGET, to_ethabi_u256, to_ethabi_h160, from_ethabi_h160};
+use crate::precompiles::{from_ethabi_h160, to_ethabi_h160, to_ethabi_u256, LOG_TARGET};
 use alloc::format;
 use core::marker::PhantomData;
 use frame_support::{ensure, pallet_prelude::Weight, traits::Currency};
@@ -70,13 +70,13 @@ where
     /// Returns: uint64 order_id
     fn create_task_order(handle: &mut impl PrecompileHandle) -> PrecompileResult {
         let input = handle.input();
-        
+
         let param = ethabi::decode(
             &[
-                ethabi::ParamType::Uint(64),  // task_id
-                ethabi::ParamType::Address,   // miner
-                ethabi::ParamType::Uint(64),  // input_tokens
-                ethabi::ParamType::Uint(64),  // output_tokens
+                ethabi::ParamType::Uint(64), // task_id
+                ethabi::ParamType::Address,  // miner
+                ethabi::ParamType::Uint(64), // input_tokens
+                ethabi::ParamType::Uint(64), // output_tokens
             ],
             &input.get(4..).unwrap_or_default(),
         )
@@ -85,10 +85,11 @@ where
             output: format!("decode param failed: {:?}", e).into(),
         })?;
 
-        let task_id_uint = param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "decode task_id failed".into(),
-        })?;
+        let task_id_uint =
+            param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "decode task_id failed".into(),
+            })?;
         let task_id: u64 = task_id_uint.as_u64();
 
         let miner_address =
@@ -96,7 +97,8 @@ where
                 exit_status: ExitRevert::Reverted,
                 output: "decode miner address failed".into(),
             })?;
-        let miner_account: T::AccountId = T::AddressMapping::into_account_id(from_ethabi_h160(miner_address)).into();
+        let miner_account: T::AccountId =
+            T::AddressMapping::into_account_id(from_ethabi_h160(miner_address)).into();
 
         let input_tokens_uint =
             param[2].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
@@ -184,13 +186,12 @@ where
         );
 
         // Query order from storage
-        let order =
-            pallet_task_mode::TaskOrders::<T>::get(order_id).ok_or_else(|| {
-                PrecompileFailure::Revert {
-                    exit_status: ExitRevert::Reverted,
-                    output: format!("order {} not found", order_id).into(),
-                }
-            })?;
+        let order = pallet_task_mode::TaskOrders::<T>::get(order_id).ok_or_else(|| {
+            PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: format!("order {} not found", order_id).into(),
+            }
+        })?;
 
         // Convert status to u8
         let status: u8 = match order.status {
@@ -208,8 +209,8 @@ where
         let cost: U256 = order.total_dbc_charged.into();
 
         // Record gas cost for storage read
-        let weight = Weight::default()
-            .saturating_add(<T as frame_system::Config>::DbWeight::get().reads(1));
+        let weight =
+            Weight::default().saturating_add(<T as frame_system::Config>::DbWeight::get().reads(1));
 
         handle.record_cost(T::GasWeightMapping::weight_to_gas(weight))?;
 
@@ -238,10 +239,11 @@ where
             output: format!("decode param failed: {:?}", e).into(),
         })?;
 
-        let task_id_bytes = param[0].clone().into_bytes().ok_or_else(|| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "decode task_id failed".into(),
-        })?;
+        let task_id_bytes =
+            param[0].clone().into_bytes().ok_or_else(|| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "decode task_id failed".into(),
+            })?;
 
         // Convert bytes to u64 (simplified - take first 8 bytes)
         let task_id: u64 = if task_id_bytes.len() >= 8 {
@@ -268,8 +270,8 @@ where
         let price: U256 = task_def.input_price_usd_per_1k.into();
 
         // Record gas cost for storage read
-        let weight = Weight::default()
-            .saturating_add(<T as frame_system::Config>::DbWeight::get().reads(1));
+        let weight =
+            Weight::default().saturating_add(<T as frame_system::Config>::DbWeight::get().reads(1));
 
         handle.record_cost(T::GasWeightMapping::weight_to_gas(weight))?;
 
@@ -286,8 +288,8 @@ where
 
         let param = ethabi::decode(
             &[
-                ethabi::ParamType::Bytes,     // gpu_uuid
-                ethabi::ParamType::Uint(32),  // tflops
+                ethabi::ParamType::Bytes,    // gpu_uuid
+                ethabi::ParamType::Uint(32), // tflops
             ],
             &input.get(4..).unwrap_or_default(),
         )
@@ -301,10 +303,11 @@ where
             output: "decode gpu_uuid failed".into(),
         })?;
 
-        let tflops_uint = param[1].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "decode tflops failed".into(),
-        })?;
+        let tflops_uint =
+            param[1].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "decode tflops failed".into(),
+            })?;
         let tflops: u32 = tflops_uint.as_u32();
 
         // Get caller account
@@ -321,11 +324,12 @@ where
 
         // Call pallet-agent-attestation to register node
         let origin = frame_system::RawOrigin::Signed(caller_account.clone()).into();
-        pallet_agent_attestation::Pallet::<T>::register_node(origin, gpu_uuid, tflops)
-            .map_err(|e| PrecompileFailure::Revert {
+        pallet_agent_attestation::Pallet::<T>::register_node(origin, gpu_uuid, tflops).map_err(
+            |e| PrecompileFailure::Revert {
                 exit_status: ExitRevert::Reverted,
                 output: format!("register_node failed: {:?}", e).into(),
-            })?;
+            },
+        )?;
 
         // Record gas cost for storage writes
         let weight = Weight::default()

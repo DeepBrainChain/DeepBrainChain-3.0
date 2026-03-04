@@ -18,6 +18,7 @@
 //! Tests for Nfts pallet.
 
 use crate::{mock::*, Event, *};
+use alloc::vec::Vec;
 use enumflags2::BitFlags;
 use frame_support::{
     assert_noop, assert_ok,
@@ -26,11 +27,12 @@ use frame_support::{
         Currency, Get,
     },
 };
-use sp_runtime::traits::Dispatchable;
 use pallet_balances::Error as BalancesError;
 use sp_core::{bounded::BoundedVec, Pair};
-use sp_runtime::{traits::IdentifyAccount, MultiSignature, MultiSigner};
-use alloc::vec::Vec;
+use sp_runtime::{
+    traits::{Dispatchable, IdentifyAccount},
+    MultiSignature, MultiSigner,
+};
 
 type AccountIdOf<Test> = <Test as frame_system::Config>::AccountId;
 

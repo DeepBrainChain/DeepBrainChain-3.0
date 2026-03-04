@@ -13,17 +13,19 @@ pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::traits::StorageVersion;
+    use alloc::vec::Vec;
     use dbc_support::traits::DbcPrice;
     use frame_support::{
         dispatch::DispatchResult,
         pallet_prelude::*,
-        traits::{Currency, ReservableCurrency},
+        traits::{Currency, ReservableCurrency, StorageVersion},
         BoundedVec,
     };
     use frame_system::pallet_prelude::*;
-    use alloc::vec::Vec;
-    use sp_runtime::{traits::{CheckedAdd, SaturatedConversion}, Percent};
+    use sp_runtime::{
+        traits::{CheckedAdd, SaturatedConversion},
+        Percent,
+    };
 
     use crate::weights::WeightInfo;
 
@@ -68,7 +70,9 @@ pub mod pallet {
         pub attestation_hash: Option<[u8; 32]>,
     }
 
-    #[derive(Default, Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(
+        Default, Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
+    )]
     pub struct EraTaskStats<Balance> {
         pub total_charged: Balance,
         pub total_burned: Balance,
@@ -112,7 +116,7 @@ pub mod pallet {
         /// Compute scheduler for task execution
         type ComputeScheduler: dbc_support::traits::TaskComputeScheduler<
             AccountId = Self::AccountId,
-            Balance = BalanceOf<Self>
+            Balance = BalanceOf<Self>,
         >;
     }
 
@@ -132,13 +136,16 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn task_definition_of)]
-    pub type TaskDefinitions<T: Config> =
-        StorageMap<_, Blake2_128Concat, u64, TaskDefinition<T>>;
+    pub type TaskDefinitions<T: Config> = StorageMap<_, Blake2_128Concat, u64, TaskDefinition<T>>;
 
     #[pallet::storage]
     #[pallet::getter(fn task_order_of)]
-    pub type TaskOrders<T: Config> =
-        StorageMap<_, Blake2_128Concat, u64, TaskOrder<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>>;
+    pub type TaskOrders<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        u64,
+        TaskOrder<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn era_stats_of)]
@@ -160,8 +167,13 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        TaskDefinitionCreated { task_id: u64, admin: T::AccountId },
-        TaskDefinitionUpdated { task_id: u64 },
+        TaskDefinitionCreated {
+            task_id: u64,
+            admin: T::AccountId,
+        },
+        TaskDefinitionUpdated {
+            task_id: u64,
+        },
         TaskOrderCreated {
             order_id: u64,
             customer: T::AccountId,
@@ -197,7 +209,6 @@ pub mod pallet {
         NotAuthorized,
         OrderNotExpired,
     }
-
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
@@ -255,7 +266,9 @@ pub mod pallet {
                     input_price_usd_per_1k,
                     output_price_usd_per_1k,
                     max_tokens_per_request,
-                    policy_cid: policy_cid.try_into().map_err(|_| Error::<T>::ArithmeticOverflow)?,
+                    policy_cid: policy_cid
+                        .try_into()
+                        .map_err(|_| Error::<T>::ArithmeticOverflow)?,
                     is_active: true,
                 },
             );
@@ -310,12 +323,12 @@ pub mod pallet {
             output_tokens: u64,
         ) -> DispatchResult {
             let customer = ensure_signed(origin)?;
-            let task = TaskDefinitions::<T>::get(task_id).ok_or(Error::<T>::TaskDefinitionNotFound)?;
+            let task =
+                TaskDefinitions::<T>::get(task_id).ok_or(Error::<T>::TaskDefinitionNotFound)?;
             ensure!(task.is_active, Error::<T>::TaskDefinitionInactive);
 
-            let total_tokens = input_tokens
-                .checked_add(output_tokens)
-                .ok_or(Error::<T>::ArithmeticOverflow)?;
+            let total_tokens =
+                input_tokens.checked_add(output_tokens).ok_or(Error::<T>::ArithmeticOverflow)?;
             ensure!(
                 total_tokens <= task.max_tokens_per_request,
                 Error::<T>::TokenCountExceedsLimit
@@ -400,10 +413,7 @@ pub mod pallet {
                 Ok(())
             })?;
 
-            Self::deposit_event(Event::TaskOrderCompleted {
-                order_id,
-                attestation_hash,
-            });
+            Self::deposit_event(Event::TaskOrderCompleted { order_id, attestation_hash });
             Ok(())
         }
 
@@ -421,7 +431,8 @@ pub mod pallet {
                 Error::<T>::InvalidOrderStatus
             );
 
-            let task = TaskDefinitions::<T>::get(order.task_id).ok_or(Error::<T>::TaskDefinitionNotFound)?;
+            let task = TaskDefinitions::<T>::get(order.task_id)
+                .ok_or(Error::<T>::TaskDefinitionNotFound)?;
             ensure!(
                 caller == order.customer || caller == order.miner || caller == task.admin,
                 Error::<T>::NotAuthorized
@@ -454,7 +465,8 @@ pub mod pallet {
             EraStats::<T>::mutate(era, |stats| {
                 stats.total_charged = stats.total_charged.saturating_add(order.total_dbc_charged);
                 stats.total_burned = stats.total_burned.saturating_add(order.dbc_burned);
-                stats.total_miner_payout = stats.total_miner_payout.saturating_add(order.miner_payout);
+                stats.total_miner_payout =
+                    stats.total_miner_payout.saturating_add(order.miner_payout);
                 stats.completed_orders = stats.completed_orders.saturating_add(1);
             });
 
@@ -476,21 +488,18 @@ pub mod pallet {
         /// Anyone can call this for orders that have exceeded the OrderTimeout.
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::cancel_expired_order())]
-        pub fn cancel_expired_order(
-            origin: OriginFor<T>,
-            order_id: u64,
-        ) -> DispatchResult {
+        pub fn cancel_expired_order(origin: OriginFor<T>, order_id: u64) -> DispatchResult {
             ensure_signed(origin)?;
 
-            let mut order = TaskOrders::<T>::get(order_id)
-                .ok_or(Error::<T>::TaskOrderNotFound)?;
+            let mut order = TaskOrders::<T>::get(order_id).ok_or(Error::<T>::TaskOrderNotFound)?;
             ensure!(
                 matches!(order.status, TaskOrderStatus::Pending | TaskOrderStatus::InProgress),
                 Error::<T>::InvalidOrderStatus
             );
 
             let now = <frame_system::Pallet<T>>::block_number();
-            let deadline = order.created_at
+            let deadline = order
+                .created_at
                 .checked_add(&T::OrderTimeout::get())
                 .ok_or(Error::<T>::ArithmeticOverflow)?;
             ensure!(now > deadline, Error::<T>::OrderNotExpired);
@@ -503,11 +512,7 @@ pub mod pallet {
             order.status = TaskOrderStatus::Settled;
             TaskOrders::<T>::insert(order_id, &order);
 
-            Self::deposit_event(Event::TaskOrderExpired {
-                order_id,
-                customer,
-                refunded,
-            });
+            Self::deposit_event(Event::TaskOrderExpired { order_id, customer, refunded });
             Ok(())
         }
     }
@@ -531,25 +536,23 @@ pub mod pallet {
                 .checked_div(1000)
                 .ok_or(Error::<T>::ArithmeticOverflow)?;
 
-            let total = input_part
-                .checked_add(output_part)
-                .ok_or(Error::<T>::ArithmeticOverflow)?;
+            let total =
+                input_part.checked_add(output_part).ok_or(Error::<T>::ArithmeticOverflow)?;
 
             u64::try_from(total).map_err(|_| Error::<T>::ArithmeticOverflow)
         }
 
-        fn calculate_revenue_split(total: BalanceOf<T>) -> Result<(BalanceOf<T>, BalanceOf<T>), Error<T>> {
+        fn calculate_revenue_split(
+            total: BalanceOf<T>,
+        ) -> Result<(BalanceOf<T>, BalanceOf<T>), Error<T>> {
             let burned = T::BurnPercentage::get() * total;
             let miner_percent_cut = T::MinerPayoutPercentage::get() * total;
 
-            let charged_check = burned
-                .checked_add(miner_percent_cut)
-                .ok_or(Error::<T>::ArithmeticOverflow)?;
+            let charged_check =
+                burned.checked_add(miner_percent_cut).ok_or(Error::<T>::ArithmeticOverflow)?;
             ensure!(charged_check <= total, Error::<T>::ArithmeticOverflow);
 
-            let miner_payout = total
-                .checked_sub(burned)
-                .ok_or(Error::<T>::ArithmeticOverflow)?;
+            let miner_payout = total.checked_sub(burned).ok_or(Error::<T>::ArithmeticOverflow)?;
 
             Ok((burned, miner_payout))
         }
@@ -564,7 +567,9 @@ pub mod pallet {
             era.min(u32::MAX as u128) as u32
         }
 
-        pub fn split_era_rewards(total_era_rewards: BalanceOf<T>) -> Result<(BalanceOf<T>, BalanceOf<T>), Error<T>> {
+        pub fn split_era_rewards(
+            total_era_rewards: BalanceOf<T>,
+        ) -> Result<(BalanceOf<T>, BalanceOf<T>), Error<T>> {
             let task_reward_pool = T::TaskModeRewardPercentage::get() * total_era_rewards;
             let rental_reward_pool = total_era_rewards
                 .checked_sub(task_reward_pool)
@@ -572,7 +577,11 @@ pub mod pallet {
             Ok((task_reward_pool, rental_reward_pool))
         }
 
-        pub fn miner_reward_share(era_index: u32, miner: &T::AccountId, total_era_rewards: BalanceOf<T>) -> Option<BalanceOf<T>> {
+        pub fn miner_reward_share(
+            era_index: u32,
+            miner: &T::AccountId,
+            total_era_rewards: BalanceOf<T>,
+        ) -> Option<BalanceOf<T>> {
             let (task_pool, _) = Self::split_era_rewards(total_era_rewards).ok()?;
             let era_stats = EraStats::<T>::get(era_index);
             if era_stats.total_miner_payout == 0 {
@@ -595,11 +604,12 @@ pub mod pallet {
 // Cross-Pallet Integration: TaskBillingProvider Implementation
 // ============================================================
 
-use frame_support::traits::Currency;
 use dbc_support::traits::DbcPrice;
+use frame_support::traits::Currency;
 
 // Re-export BalanceOf for use in trait implementations
-type BalanceOf<T> = <<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+type BalanceOf<T> =
+    <<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 impl<T: Config> dbc_support::traits::TaskBillingProvider for Pallet<T> {
     type AccountId = T::AccountId;
@@ -615,30 +625,30 @@ impl<T: Config> dbc_support::traits::TaskBillingProvider for Pallet<T> {
         // Get DBC price from oracle
         let dbc_price = T::DbcPriceProvider::get_dbc_price()?;
         if dbc_price.is_zero() {
-            return None;
+            return None
         }
 
         // Simple pricing model: 1 DBC per 1000 tokens (input + output)
         // In a real implementation, this would use the TaskDefinition pricing
         let total_tokens = input_tokens.checked_add(output_tokens)?;
         let tokens_in_thousands = total_tokens.checked_div(1000)?;
-        
+
         // Calculate DBC amount based on price
         let dbc_amount = (tokens_in_thousands as u128).checked_mul(dbc_price)?;
-        
+
         Some(dbc_amount)
     }
 
     fn get_revenue_split(total: Self::Balance) -> (Self::Balance, Self::Balance) {
         use sp_runtime::Percent;
-        
+
         // 15% burn, 85% miner
         let burn_percent = Percent::from_percent(15);
         let miner_percent = Percent::from_percent(85);
-        
+
         let burn_amount = burn_percent * total;
         let miner_amount = miner_percent * total;
-        
+
         (burn_amount, miner_amount)
     }
 }

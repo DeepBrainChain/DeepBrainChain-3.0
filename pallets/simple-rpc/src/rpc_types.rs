@@ -1,11 +1,11 @@
+use alloc::vec::Vec;
 #[cfg(feature = "std")]
 use dbc_support::rpc_types::serde_text;
-use sp_runtime::RuntimeDebug;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use alloc::vec::Vec;
+use sp_runtime::RuntimeDebug;
 
 #[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

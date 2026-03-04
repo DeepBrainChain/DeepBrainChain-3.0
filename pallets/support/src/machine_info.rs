@@ -6,6 +6,7 @@ use crate::{
     },
     EraIndex, MachineId,
 };
+use alloc::{vec, vec::Vec};
 use frame_support::ensure;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
@@ -15,7 +16,6 @@ use sp_runtime::{
     traits::{Saturating, Zero},
     RuntimeDebug,
 };
-use alloc::{vec, vec::Vec};
 
 /// All details of a machine
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]

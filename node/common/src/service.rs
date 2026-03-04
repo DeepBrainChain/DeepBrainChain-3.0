@@ -33,8 +33,8 @@ where
     BE::State: StateBackend<BlakeTwo256>,
 {
     let frontier_backend = match rpc_config.frontier_backend_type {
-        BackendTypeConfig::KeyValue => fc_db::Backend::KeyValue(Arc::new(
-            fc_db::kv::Backend::<Block, C>::new(
+        BackendTypeConfig::KeyValue => {
+            fc_db::Backend::KeyValue(Arc::new(fc_db::kv::Backend::<Block, C>::new(
                 client,
                 &fc_db::kv::DatabaseSettings {
                     source: match config.database {
@@ -42,10 +42,8 @@ where
                             path: frontier_database_dir(config, "db"),
                             cache_size: 0,
                         },
-                        DatabaseSource::ParityDb { .. } => {
-                            DatabaseSource::ParityDb {
-                                path: frontier_database_dir(config, "paritydb"),
-                            }
+                        DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
+                            path: frontier_database_dir(config, "paritydb"),
                         },
                         DatabaseSource::Auto { .. } => DatabaseSource::Auto {
                             rocksdb_path: frontier_database_dir(config, "db"),
@@ -59,8 +57,8 @@ where
                         },
                     },
                 },
-            )?
-        )),
+            )?))
+        },
         BackendTypeConfig::Sql { pool_size, num_ops_timeout, thread_count, cache_size } => {
             let storage_override = crate::rpc::storage_override::<Block, C, BE>(client.clone());
             let sqlite_db_path = frontier_database_dir(config, "sql");

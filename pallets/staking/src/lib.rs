@@ -397,8 +397,15 @@ type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup
 
 /// Information regarding the active era (era in used in session).
 #[derive(
-    Encode, Decode, DecodeWithMemTracking, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen,
-    PartialEq, Eq,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Clone,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    PartialEq,
+    Eq,
 )]
 pub struct ActiveEraInfo {
     /// Index of era.
@@ -428,7 +435,18 @@ impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
 }
 
 /// A destination account for payment.
-#[derive(PartialEq, Eq, Copy, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    PartialEq,
+    Eq,
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub enum RewardDestination<AccountId> {
     /// Pay into the stash account, increasing the amount at stake accordingly.
     Staked,
@@ -449,7 +467,18 @@ impl<AccountId> Default for RewardDestination<AccountId> {
 }
 
 /// Preference of what happens regarding validation.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, codec::DecodeWithMemTracking, RuntimeDebug, TypeInfo, Default, MaxEncodedLen)]
+#[derive(
+    PartialEq,
+    Eq,
+    Clone,
+    Encode,
+    Decode,
+    codec::DecodeWithMemTracking,
+    RuntimeDebug,
+    TypeInfo,
+    Default,
+    MaxEncodedLen,
+)]
 pub struct ValidatorPrefs {
     /// Reward that validator takes up-front; only the rest is split between themselves and
     /// nominators.
@@ -462,7 +491,17 @@ pub struct ValidatorPrefs {
 }
 
 /// Just a Balance/BlockNumber tuple to encode when a chunk of funds will be unlocked.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    PartialEq,
+    Eq,
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub struct UnlockChunk<Balance: HasCompact + MaxEncodedLen> {
     /// Amount of funds to be unlocked.
     #[codec(compact)]
@@ -855,8 +894,18 @@ impl<Balance: AtLeast32BitUnsigned + Clone, T: Get<&'static PiecewiseLinear<'sta
 
 /// Mode of era-forcing.
 #[derive(
-    Copy, Clone, PartialEq, Eq, Encode, Decode, codec::DecodeWithMemTracking, RuntimeDebug, TypeInfo, MaxEncodedLen,
-    serde::Serialize, serde::Deserialize,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    codec::DecodeWithMemTracking,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+    serde::Serialize,
+    serde::Deserialize,
 )]
 pub enum Forcing {
     /// Not forcing anything - just let whatever happen.
@@ -956,7 +1005,9 @@ impl BenchmarkingConfig for TestBenchmarkingConfig {
 }
 
 // foundation reward params
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 pub struct FoundationIssueRewards<AccountId: Ord, Balance> {
     pub who: Vec<AccountId>,
     pub left_reward_times: u32,
@@ -966,7 +1017,18 @@ pub struct FoundationIssueRewards<AccountId: Ord, Balance> {
 }
 
 // Treasury issue params
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(
+    PartialEq,
+    Eq,
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Default,
+    RuntimeDebug,
+    MaxEncodedLen,
+    TypeInfo,
+)]
 pub struct TreasuryIssueRewards<AccountId, Balance> {
     pub treasury_account: AccountId,
     pub left_reward_times: u32,

@@ -1,13 +1,12 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use alloc::vec;
 use crate::Pallet as TaskMode;
+use alloc::{vec, vec::Vec};
+use codec::Encode;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use codec::Encode;
-use alloc::vec::Vec;
 
 fn setup_task_definition<T: Config>(admin: T::AccountId) -> u64 {
     let task_id = NextTaskId::<T>::get();
@@ -19,7 +18,8 @@ fn setup_task_definition<T: Config>(admin: T::AccountId) -> u64 {
         200,
         10_000,
         vec![2u8; 16],
-    ).expect("setup: create_task_definition failed");
+    )
+    .expect("setup: create_task_definition failed");
     task_id
 }
 

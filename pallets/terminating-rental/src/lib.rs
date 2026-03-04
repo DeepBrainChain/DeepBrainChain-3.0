@@ -18,6 +18,8 @@ pub mod rpc_types;
 mod types;
 use log;
 
+use alloc::{vec, vec::Vec};
+use core::str;
 use dbc_support::{
     live_machine::LiveMachine,
     machine_info::MachineInfo,
@@ -50,7 +52,6 @@ use sp_runtime::{
     traits::{CheckedAdd, CheckedMul, CheckedSub, SaturatedConversion, Saturating, Zero},
     Perbill,
 };
-use alloc::{vec, vec::Vec}; use core::str;
 
 /// 36 hours divide into 9 intervals for verification
 pub const DISTRIBUTION: u32 = 9;
@@ -126,7 +127,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn offline_machines)]
     pub(super) type OfflineMachines<T: Config> =
-        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<MachineId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor<T>, Vec<MachineId>, ValueQuery>;
 
     /// 资金账户的质押总计
     #[pallet::storage]
@@ -146,7 +147,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         MachineId,
-        MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        MachineInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     #[pallet::storage]
@@ -171,7 +172,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         MachineId,
-        OCMachineCommitteeList<T::AccountId, BlockNumberFor::<T>>,
+        OCMachineCommitteeList<T::AccountId, BlockNumberFor<T>>,
         ValueQuery,
     >;
 
@@ -189,7 +190,7 @@ pub mod pallet {
         T::AccountId,
         Blake2_128Concat,
         MachineId,
-        IRCommitteeOnlineOps<BlockNumberFor::<T>, BalanceOf<T>>,
+        IRCommitteeOnlineOps<BlockNumberFor<T>, BalanceOf<T>>,
         ValueQuery,
     >;
 
@@ -216,20 +217,20 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         RentOrderId,
-        RentOrderDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        RentOrderDetail<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     // 等待用户确认租用成功的机器
     #[pallet::storage]
     #[pallet::getter(fn pending_confirming)]
     pub type PendingConfirming<T: Config> =
-        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<RentOrderId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor<T>, Vec<RentOrderId>, ValueQuery>;
 
     // 记录每个区块将要结束租用的机器
     #[pallet::storage]
     #[pallet::getter(fn pending_rent_ending)]
     pub(super) type PendingRentEnding<T: Config> =
-        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<RentOrderId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor<T>, Vec<RentOrderId>, ValueQuery>;
 
     // 租金支付目标地址
     #[pallet::storage]
@@ -275,7 +276,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         SlashId,
-        PendingOnlineSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        PendingOnlineSlashInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     // #[pallet::storage]
@@ -305,7 +306,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         ReportId,
-        MTReportInfoDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        MTReportInfoDetail<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     /// Report record for reporter
@@ -343,7 +344,7 @@ pub mod pallet {
         T::AccountId,
         Blake2_128Concat,
         ReportId,
-        MTCommitteeOpsDetail<BlockNumberFor::<T>, BalanceOf<T>>,
+        MTCommitteeOpsDetail<BlockNumberFor<T>, BalanceOf<T>>,
         ValueQuery,
     >;
 
@@ -353,13 +354,13 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         ReportId,
-        MTReportResultInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        MTReportResultInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     #[pallet::storage]
     #[pallet::getter(fn unhandled_report_result)]
     pub(super) type UnhandledReportResult<T: Config> =
-        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<ReportId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor<T>, Vec<ReportId>, ValueQuery>;
 
     // The current storage version.
     #[pallet::storage]
@@ -375,7 +376,7 @@ pub mod pallet {
             Weight::zero()
         }
 
-        fn on_finalize(_block_number: BlockNumberFor::<T>) {
+        fn on_finalize(_block_number: BlockNumberFor<T>) {
             Self::statistic_online_verify();
             Self::distribute_machines();
 
@@ -641,7 +642,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             machine_id: MachineId,
             rent_gpu_num: u32,
-            duration: BlockNumberFor::<T>,
+            duration: BlockNumberFor<T>,
         ) -> DispatchResultWithPostInfo {
             let renter = ensure_signed(origin)?;
             let now = <frame_system::Pallet<T>>::block_number();
@@ -731,12 +732,7 @@ pub mod pallet {
             );
 
             Self::deposit_event(Event::RentBlockNum(
-                rent_id,
-                renter,
-                machine_id,
-                rent_fee,
-                duration,
-                gpu_num,
+                rent_id, renter, machine_id, rent_fee, duration, gpu_num,
             ));
             Ok(().into())
         }
@@ -807,7 +803,7 @@ pub mod pallet {
         pub fn relet_machine(
             origin: OriginFor<T>,
             rent_id: RentOrderId,
-            duration: BlockNumberFor::<T>,
+            duration: BlockNumberFor<T>,
         ) -> DispatchResultWithPostInfo {
             let renter = ensure_signed(origin)?;
             let mut order_info = Self::rent_order(&rent_id).ok_or(Error::<T>::Unknown)?;
@@ -831,7 +827,7 @@ pub mod pallet {
             let wanted_rent_end = pre_rent_end + duration;
 
             // 计算实际续租了多久 (块高)
-            let add_duration: BlockNumberFor::<T> =
+            let add_duration: BlockNumberFor<T> =
                 if max_rent_end >= wanted_rent_end { duration } else { (60 * ONE_DAY).into() };
 
             if add_duration == Zero::zero() {
@@ -1354,10 +1350,10 @@ pub mod pallet {
         MachineDistributed(MachineId, T::AccountId),
 
         // Last item is rent order gpu_num
-        RentBlockNum(RentOrderId, T::AccountId, MachineId, BalanceOf<T>, BlockNumberFor::<T>, u32),
-        ConfirmReletBlockNum(T::AccountId, MachineId, BalanceOf<T>, BlockNumberFor::<T>),
+        RentBlockNum(RentOrderId, T::AccountId, MachineId, BalanceOf<T>, BlockNumberFor<T>, u32),
+        ConfirmReletBlockNum(T::AccountId, MachineId, BalanceOf<T>, BlockNumberFor<T>),
         // Last item is rent order gpu_num
-        ReletBlockNum(RentOrderId, T::AccountId, MachineId, BalanceOf<T>, BlockNumberFor::<T>, u32),
+        ReletBlockNum(RentOrderId, T::AccountId, MachineId, BalanceOf<T>, BlockNumberFor<T>, u32),
 
         ReportMachineFault(T::AccountId, MachineFaultType),
         ReporterAddStake(T::AccountId, BalanceOf<T>),
@@ -1468,7 +1464,7 @@ impl<T: Config> Pallet<T> {
     // 判断Hash是否被提交过
     pub fn is_uniq_hash(
         report_id: ReportId,
-        report_info: &MTReportInfoDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        report_info: &MTReportInfoDetail<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
         hash: ReportHash,
     ) -> DispatchResultWithPostInfo {
         for a_committee in &report_info.hashed_committee {
@@ -1577,8 +1573,8 @@ impl<T: Config> Pallet<T> {
     // - Writes: MachineCommittee, CommitteeMachine, CommitteeOps
     fn book_one(
         machine_id: MachineId,
-        confirm_start: BlockNumberFor::<T>,
-        now: BlockNumberFor::<T>,
+        confirm_start: BlockNumberFor<T>,
+        now: BlockNumberFor<T>,
         work_index: VerifySequence<T::AccountId>,
     ) -> Result<(), ()> {
         let stake_need = <T as Config>::ManageCommittee::stake_per_order().ok_or(())?;
@@ -1643,7 +1639,7 @@ impl<T: Config> Pallet<T> {
     // 对已经提交完原始值的机器进行处理
     fn summary_raw(
         machine_id: MachineId,
-        now: BlockNumberFor::<T>,
+        now: BlockNumberFor<T>,
         stake_per_order: BalanceOf<T>,
     ) -> Result<(), ()> {
         let mut machine_committee = Self::machine_committee(&machine_id);
@@ -1747,7 +1743,7 @@ impl<T: Config> Pallet<T> {
         slash_amount: BalanceOf<T>,
         summary: Summary<T::AccountId>,
         stake_per_order: BalanceOf<T>,
-        now: BlockNumberFor::<T>,
+        now: BlockNumberFor<T>,
     ) {
         let slash_id = Self::get_new_slash_id();
         PendingOnlineSlash::<T>::insert(
@@ -1955,7 +1951,7 @@ impl<T: Config> Pallet<T> {
     // 当租用结束，或者租用被终止时，将保留的金额支付给stash账户，剩余部分解锁给租用人
     // NOTE: 租金的1%将分给验证人
     fn pay_rent_fee(
-        rent_order: &RentOrderDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        rent_order: &RentOrderDetail<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
         mut rent_fee: BalanceOf<T>,
         machine_id: MachineId,
     ) -> DispatchResult {
@@ -2051,7 +2047,7 @@ impl<T: Config> Pallet<T> {
     fn change_machine_status_on_rent_end(
         machine_id: &MachineId,
         rented_gpu_num: u32,
-        rent_duration: BlockNumberFor::<T>,
+        rent_duration: BlockNumberFor<T>,
         is_last_rent: bool,
         renter: T::AccountId,
     ) -> Result<(), ()> {
@@ -2196,5 +2192,5 @@ impl<T: Config> Pallet<T> {
 
 impl<T: Config> OnlineCommitteeSummary for Pallet<T> {
     type AccountId = T::AccountId;
-    type BlockNumber = BlockNumberFor::<T>;
+    type BlockNumber = BlockNumberFor<T>;
 }

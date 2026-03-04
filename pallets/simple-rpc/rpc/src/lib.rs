@@ -61,9 +61,9 @@ where
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
 
-        let runtime_api_result = api.get_staker_identity(at_hash, account).map_err(|e| {
-            ErrorObject::owned(1, "Something wrong", Some(e.to_string()))
-        })?;
+        let runtime_api_result = api
+            .get_staker_identity(at_hash, account)
+            .map_err(|e| ErrorObject::owned(1, "Something wrong", Some(e.to_string())))?;
         Ok(String::from_utf8_lossy(&runtime_api_result).to_string())
     }
 

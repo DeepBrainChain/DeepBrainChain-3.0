@@ -11,19 +11,21 @@ use dbc_client_evm_tracing::{formatters::ResponseFormatter, types::single};
 use dbc_client_rpc_core_types::{RequestBlockId, RequestBlockTag};
 use dbc_primitives_rpc_debug::{DebugRuntimeApi, TracerInput};
 use ethereum_types::H256;
+use fc_api::Backend as FrontierBackend;
 use fc_rpc::{frontier_backend_client, internal_err};
 use fc_storage::StorageOverride;
 use fp_rpc::EthereumRuntimeRPCApi;
-use fc_api::Backend as FrontierBackend;
 use sc_client_api::backend::{Backend, StateBackend, StorageProvider};
 use sc_utils::mpsc::TracingUnboundedSender;
 use sp_api::{ApiExt, Core, ProvideRuntimeApi};
-use sp_runtime::generic::BlockId;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{
     Backend as BlockchainBackend, Error as BlockChainError, HeaderBackend, HeaderMetadata,
 };
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT, UniqueSaturatedInto};
+use sp_runtime::{
+    generic::BlockId,
+    traits::{BlakeTwo256, Block as BlockT, Header as HeaderT, UniqueSaturatedInto},
+};
 use std::{future::Future, marker::PhantomData, sync::Arc};
 
 pub enum RequesterInput {
@@ -310,9 +312,7 @@ where
 
         // Using storage overrides we align with `:ethereum_schema` which will result in proper
         // SCALE decoding in case of migration.
-        let statuses = overrides
-            .current_transaction_statuses(hash)
-            .unwrap_or_default();
+        let statuses = overrides.current_transaction_statuses(hash).unwrap_or_default();
 
         // Known ethereum transaction hashes.
         let eth_tx_hashes: Vec<_> = statuses.iter().map(|t| t.transaction_hash).collect();

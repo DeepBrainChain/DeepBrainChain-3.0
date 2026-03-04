@@ -2,6 +2,8 @@ use crate::{
     custom_err::ReportErr, report::ReportConfirmStatus, BoxPubkey, ItemList, MachineId,
     RentOrderId, ReportHash, FIVE_MINUTES, FOUR_HOURS, ONE_MINUTE, THREE_HOURS,
 };
+use alloc::{vec, vec::Vec};
+use core::{cmp::PartialEq, ops::Sub};
 use frame_support::ensure;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
@@ -9,7 +11,6 @@ use sp_runtime::{
     traits::{Saturating, Zero},
     Perbill, RuntimeDebug,
 };
-use alloc::{vec, vec::Vec}; use core::{cmp::PartialEq, ops::Sub};
 
 // 报告的详细信息
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
@@ -425,7 +426,9 @@ impl Default for ReportStatus {
 }
 
 /// Reporter stake params
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 pub struct ReporterStakeParamsInfo<Balance> {
     /// First time when report
     pub stake_baseline: Balance,

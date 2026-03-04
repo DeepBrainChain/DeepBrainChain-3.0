@@ -5,6 +5,7 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 // use generic_func::rpc_types::RpcText;
 use crate::{LiveMachine, MachineId, StakerCustomizeInfo};
+use alloc::vec::Vec;
 use dbc_support::{
     machine_info::MachineInfo,
     machine_type::{CommitteeUploadInfo, Latitude, Longitude, MachineInfoDetail, MachineStatus},
@@ -14,7 +15,6 @@ use dbc_support::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
-use alloc::vec::Vec;
 #[cfg(feature = "std")]
 use std::convert::From;
 

@@ -14,6 +14,13 @@ mod types;
 mod utils;
 
 pub mod migration;
+use alloc::{
+    boxed::Box,
+    collections::{BTreeMap, VecDeque},
+    vec,
+    vec::Vec,
+};
+use core::str;
 use dbc_support::{
     live_machine::LiveMachine,
     machine_info::MachineInfo,
@@ -35,8 +42,6 @@ use sp_runtime::{
     traits::{CheckedAdd, CheckedMul, CheckedSub, Saturating, Zero},
     Perbill, SaturatedConversion,
 };
-use alloc::{boxed::Box, collections::{BTreeMap, VecDeque}, vec, vec::Vec};
-use core::str;
 
 pub use pallet::*;
 pub use types::*;
@@ -92,7 +97,7 @@ pub mod pallet {
         T::AccountId,
         Blake2_128Concat,
         MachineId,
-        UserMutHardwareStakeInfo<BalanceOf<T>, BlockNumberFor::<T>>,
+        UserMutHardwareStakeInfo<BalanceOf<T>, BlockNumberFor<T>>,
         ValueQuery,
     >;
 
@@ -141,7 +146,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         MachineId,
-        MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        MachineInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     /// 记录机器被租用的GPU个数
@@ -289,7 +294,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         u64,
-        OPPendingSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        OPPendingSlashInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     #[pallet::storage]
@@ -298,14 +303,14 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         SlashId,
-        OPPendingSlashReviewInfo<T::AccountId, BalanceOf<T>, BlockNumberFor::<T>>,
+        OPPendingSlashReviewInfo<T::AccountId, BalanceOf<T>, BlockNumberFor<T>>,
     >;
 
     // 记录块高 -> 到期的slash_review
     #[pallet::storage]
     #[pallet::getter(fn pending_slash_review_checking)]
     pub(super) type PendingSlashReviewChecking<T: Config> =
-        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<SlashId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor<T>, Vec<SlashId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn rented_finished)]
@@ -316,12 +321,12 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn pending_exec_slash)]
     pub(super) type PendingExecSlash<T: Config> =
-        StorageMap<_, Blake2_128Concat, BlockNumberFor::<T>, Vec<SlashId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, BlockNumberFor<T>, Vec<SlashId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn max_slash_execed)]
     pub(super) type MaxSlashExeced<T: Config> =
-        StorageMap<_, Blake2_128Concat, MachineId, BlockNumberFor::<T>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, MachineId, BlockNumberFor<T>, ValueQuery>;
 
     // The current storage version.
     #[pallet::storage]
@@ -345,7 +350,7 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_initialize(block_number: BlockNumberFor::<T>) -> Weight {
+        fn on_initialize(block_number: BlockNumberFor<T>) -> Weight {
             Self::backup_and_reward(block_number);
 
             if block_number.saturated_into::<u64>() % (ONE_DAY as u64) == 1 {
@@ -852,7 +857,7 @@ pub mod pallet {
 
             let mut live_machine = Self::live_machines();
 
-            let status_before_offline: MachineStatus<BlockNumberFor::<T>, T::AccountId>;
+            let status_before_offline: MachineStatus<BlockNumberFor<T>, T::AccountId>;
             let offline_time = match machine_info.machine_status.clone() {
                 MachineStatus::StakerReportOffline(offline_time, _) => offline_time,
                 MachineStatus::ReporterReportOffline(slash_reason, ..) => match slash_reason {
@@ -1252,7 +1257,7 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         BondMachine(T::AccountId, MachineId, BalanceOf<T>),
-        Slash(T::AccountId, BalanceOf<T>, OPSlashReason<BlockNumberFor::<T>>),
+        Slash(T::AccountId, BalanceOf<T>, OPSlashReason<BlockNumberFor<T>>),
         ControllerStashBonded(T::AccountId, T::AccountId),
         // 弃用
         MachineControllerChanged(MachineId, T::AccountId, T::AccountId),
@@ -1271,7 +1276,7 @@ pub mod pallet {
         MachineRestaked(MachineId, BalanceOf<T>, BalanceOf<T>),
         MachineExit(MachineId),
         // Slash_who, reward_who, reward_amount
-        SlashAndReward(T::AccountId, T::AccountId, BalanceOf<T>, OPSlashReason<BlockNumberFor::<T>>),
+        SlashAndReward(T::AccountId, T::AccountId, BalanceOf<T>, OPSlashReason<BlockNumberFor<T>>),
         ApplySlashReview(SlashId),
         SlashExecuted(T::AccountId, MachineId, BalanceOf<T>),
         NewSlash(SlashId),
@@ -1328,7 +1333,7 @@ impl<T: Config> Pallet<T> {
     // NOTE: StashMachine.total_machine cannot be removed. Because Machine will be rewarded in 150 eras.
     pub fn do_machine_exit(
         machine_id: MachineId,
-        machine_info: MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        machine_info: MachineInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     ) -> DispatchResultWithPostInfo {
         // 下线机器，并退还奖励
         Self::change_stake(&machine_info.machine_stash, machine_info.stake_amount, false)
@@ -1392,7 +1397,7 @@ impl<T: Config> Pallet<T> {
     /// 暂时下架机器
     fn machine_offline(
         machine_id: MachineId,
-        machine_status: MachineStatus<BlockNumberFor::<T>, T::AccountId>,
+        machine_status: MachineStatus<BlockNumberFor<T>, T::AccountId>,
     ) -> Result<(), ()> {
         let mut machine_info = Self::machines_info(&machine_id).ok_or(())?;
 

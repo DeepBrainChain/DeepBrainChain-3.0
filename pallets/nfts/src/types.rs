@@ -35,7 +35,7 @@ pub(super) type CollectionDetailsFor<T, I> =
     CollectionDetails<<T as SystemConfig>::AccountId, DepositBalanceOf<T, I>>;
 pub(super) type ApprovalsOf<T, I = ()> = BoundedBTreeMap<
     <T as SystemConfig>::AccountId,
-    Option<BlockNumberFor::<T>>,
+    Option<BlockNumberFor<T>>,
     <T as Config<I>>::ApprovalsLimit,
 >;
 pub(super) type ItemAttributesApprovals<T, I = ()> =
@@ -57,22 +57,19 @@ pub(super) type ItemTipOf<T, I = ()> = ItemTip<
     <T as SystemConfig>::AccountId,
     BalanceOf<T, I>,
 >;
-pub(super) type CollectionConfigFor<T, I = ()> = CollectionConfig<
-    BalanceOf<T, I>,
-    BlockNumberFor::<T>,
-    <T as Config<I>>::CollectionId,
->;
+pub(super) type CollectionConfigFor<T, I = ()> =
+    CollectionConfig<BalanceOf<T, I>, BlockNumberFor<T>, <T as Config<I>>::CollectionId>;
 pub(super) type PreSignedMintOf<T, I = ()> = PreSignedMint<
     <T as Config<I>>::CollectionId,
     <T as Config<I>>::ItemId,
     <T as SystemConfig>::AccountId,
-    BlockNumberFor::<T>,
+    BlockNumberFor<T>,
 >;
 pub(super) type PreSignedAttributesOf<T, I = ()> = PreSignedAttributes<
     <T as Config<I>>::CollectionId,
     <T as Config<I>>::ItemId,
     <T as SystemConfig>::AccountId,
-    BlockNumberFor::<T>,
+    BlockNumberFor<T>,
 >;
 
 pub trait Incrementable {
@@ -101,7 +98,15 @@ pub struct CollectionDetails<AccountId, DepositBalance> {
 
 /// Witness data for the destroy transactions.
 #[derive(
-    Copy, Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo,
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
     MaxEncodedLen,
 )]
 pub struct DestroyWitness {
@@ -184,7 +189,17 @@ pub struct ItemMetadata<Deposit, StringLimit: Get<u32>> {
 }
 
 /// Information about the tip.
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub struct ItemTip<CollectionId, ItemId, AccountId, Amount> {
     /// The collection of the item.
     pub(super) collection: CollectionId,
@@ -228,7 +243,17 @@ pub struct ItemMetadataDeposit<DepositBalance, AccountId> {
 }
 
 /// Specifies whether the tokens will be sent or received.
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub enum PriceDirection {
     /// Tokens will be sent.
     Send,
@@ -237,7 +262,17 @@ pub enum PriceDirection {
 }
 
 /// Holds the details about the price.
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub struct PriceWithDirection<Amount> {
     /// An amount.
     pub(super) amount: Amount,
@@ -286,7 +321,18 @@ impl_codec_bitflags!(CollectionSettings, u64, CollectionSetting);
 /// Mint type. Can the NFT be create by anyone, or only the creator of the collection,
 /// or only by wallets that already hold an NFT from a certain collection?
 /// The ownership of a privately minted NFT is still publicly visible.
-#[derive(Clone, Copy, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone,
+    Copy,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub enum MintType<CollectionId> {
     /// Only an `Issuer` could mint items.
     Issuer,
@@ -297,7 +343,18 @@ pub enum MintType<CollectionId> {
 }
 
 /// Holds the information about minting.
-#[derive(Clone, Copy, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone,
+    Copy,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub struct MintSettings<Price, BlockNumber, CollectionId> {
     /// Whether anyone can mint or if minters are restricted to some subset.
     pub mint_type: MintType<CollectionId>,
@@ -325,7 +382,15 @@ impl<Price, BlockNumber, CollectionId> Default for MintSettings<Price, BlockNumb
 
 /// Attribute namespaces for non-fungible tokens.
 #[derive(
-    Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    scale_info::TypeInfo,
+    MaxEncodedLen,
 )]
 pub enum AttributeNamespace<AccountId> {
     /// An attribute was set by the pallet.
@@ -346,7 +411,17 @@ pub struct CancelAttributesApprovalWitness {
 }
 
 /// A list of possible pallet-level attributes.
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub enum PalletAttributes<CollectionId> {
     /// Marks an item as being used in order to claim another item.
     UsedToClaim(CollectionId),
@@ -356,7 +431,16 @@ pub enum PalletAttributes<CollectionId> {
 
 /// Collection's configuration.
 #[derive(
-    Clone, Copy, Decode, DecodeWithMemTracking, Default, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo,
+    Clone,
+    Copy,
+    Decode,
+    DecodeWithMemTracking,
+    Default,
+    Encode,
+    MaxEncodedLen,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
 )]
 pub struct CollectionConfig<Price, BlockNumber, CollectionId> {
     /// Collection's settings.
@@ -418,8 +502,16 @@ impl_codec_bitflags!(ItemSettings, u64, ItemSetting);
 
 /// Item's configuration.
 #[derive(
-    Encode, Decode, DecodeWithMemTracking, Default, PartialEq, RuntimeDebug, Clone, Copy,
-    MaxEncodedLen, TypeInfo,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Default,
+    PartialEq,
+    RuntimeDebug,
+    Clone,
+    Copy,
+    MaxEncodedLen,
+    TypeInfo,
 )]
 pub struct ItemConfig {
     /// Item's settings.

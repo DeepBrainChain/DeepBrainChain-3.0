@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use dbc_support::{
     verify_committee_slash::{OCPendingSlashInfo, OCSlashResult},
     verify_online::OCBookResultType,
@@ -6,7 +7,6 @@ use dbc_support::{
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec;
 
 // TODO: 1. 迁移这个存储
 // TODO: 2. 迁移 terminating_rental 存储

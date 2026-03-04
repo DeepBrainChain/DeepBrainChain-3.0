@@ -27,16 +27,16 @@ const TARGET: &'static str = "runtime";
 
 // Fix `unused_crate_dependencies` warnings.
 use dbc_evm_tracer as _;
-use sp_std as _;
+pub use dbc_primitives::{
+    AccountId, AccountIndex, Balance, BlockNumber, Hash, Index, Moment, Signature,
+};
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_nomination_pools_benchmarking as _;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_offences_benchmarking as _;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_session_benchmarking as _;
-pub use dbc_primitives::{
-    AccountId, AccountIndex, Balance, BlockNumber, Hash, Index, Moment, Signature,
-};
+use sp_std as _;
 // Fix `unused_crate_dependencies` warnings.
 use dbc_primitives_rpc_evm_tracing_events as _;
 use dbc_primitives_rpc_txpool::TxPoolResponse;
@@ -69,7 +69,6 @@ use frame_system::{
     limits::{BlockLength, BlockWeights},
     EnsureRoot, EnsureSigned, EnsureWithSuccess,
 };
-use pallet_identity::legacy::IdentityInfo;
 use pallet_election_provider_multi_phase::{GeometricDepositBase, SolutionAccuracyOf};
 use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction};
 use pallet_evm::{
@@ -78,11 +77,12 @@ use pallet_evm::{
     OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
 };
 use pallet_grandpa::AuthorityId as GrandpaId;
+use pallet_identity::legacy::IdentityInfo;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_nfts::PalletFeatures;
 use pallet_session::historical::{self as pallet_session_historical};
-pub use pallet_transaction_payment::{FungibleAdapter, Multiplier, TargetedFeeAdjustment};
 use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
+pub use pallet_transaction_payment::{FungibleAdapter, Multiplier, TargetedFeeAdjustment};
 use parity_scale_codec::{Compact, Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
@@ -201,10 +201,8 @@ where
         );
 
         if let Some(author) = pallet_authorship::Pallet::<R>::author() {
-            let _ = <pallet_balances::Pallet<R> as Balanced<R::AccountId>>::resolve(
-                &author,
-                to_author,
-            );
+            let _ =
+                <pallet_balances::Pallet<R> as Balanced<R::AccountId>>::resolve(&author, to_author);
         }
     }
 }
@@ -664,7 +662,8 @@ impl pallet_staking::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type UnixTime = Timestamp;
     type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
-    type RewardRemainder = frame_support::traits::tokens::imbalance::ResolveTo<TreasuryAccount, Balances>;
+    type RewardRemainder =
+        frame_support::traits::tokens::imbalance::ResolveTo<TreasuryAccount, Balances>;
     type Slash = frame_support::traits::tokens::imbalance::ResolveTo<TreasuryAccount, Balances>;
     type Reward = (); // rewards are minted from the void
     type SessionsPerEra = SessionsPerEra;
@@ -844,7 +843,8 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type MinerConfig = Self;
     type SignedMaxSubmissions = ConstU32<10>;
     type SignedRewardBase = SignedRewardBase;
-    type SignedDepositBase = GeometricDepositBase<Balance, SignedFixedDeposit, SignedDepositIncreaseFactor>;
+    type SignedDepositBase =
+        GeometricDepositBase<Balance, SignedFixedDeposit, SignedDepositIncreaseFactor>;
     type SignedDepositByte = SignedDepositByte;
     type SignedMaxRefunds = ConstU32<3>;
     type SignedDepositWeight = ();
@@ -1480,7 +1480,6 @@ impl dlc_price_ocw::Config for Runtime {
     type RandomnessSource = RandomnessCollectiveFlip;
 }
 
-
 // --- DBC 3.0 New Pallet Parameters ---
 parameter_types! {
     // Task Mode
@@ -1562,20 +1561,20 @@ impl pallet_zk_compute::VerifyZkProof for HashCommitmentZkVerifier {
     fn verify(proof: &[u8], dimensions: (u32, u32, u32)) -> bool {
         // Minimum proof length: 1 + 32 + 32 + 32 = 97
         if proof.len() < 97 {
-            return false;
+            return false
         }
         // Version check
         if proof[0] != 0x01 {
-            return false;
+            return false
         }
         // Dimension validity
         let (m, n, k) = dimensions;
         if m == 0 || n == 0 || k == 0 {
-            return false;
+            return false
         }
         // Max dimension guard (prevent overflow)
         if m > 65536 || n > 65536 || k > 65536 {
-            return false;
+            return false
         }
 
         let binding_hash = &proof[65..97];
@@ -1676,7 +1675,6 @@ impl pallet_x402_settlement::Config for Runtime {
     type PaymentIntentTTL = PaymentIntentTTL;
     type WeightInfo = pallet_x402_settlement::weights::SubstrateWeight<Runtime>;
 }
-
 
 impl online_profile::Config for Runtime {
     type Currency = Balances;
@@ -3316,7 +3314,10 @@ mod tests {
             let legacy_pairs = pallet_staking::Bonded::<Runtime>::iter()
                 .filter(|(stash, controller)| stash != controller)
                 .count();
-            assert_eq!(legacy_pairs, 0, "new chain genesis should not contain legacy stash/controller pairs");
+            assert_eq!(
+                legacy_pairs, 0,
+                "new chain genesis should not contain legacy stash/controller pairs"
+            );
         });
     }
 }

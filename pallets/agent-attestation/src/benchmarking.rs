@@ -1,12 +1,12 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
+use alloc::vec;
 use frame_benchmarking::v1::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::traits::Saturating;
-use alloc::vec;
 
 benchmarks! {
     register_node {

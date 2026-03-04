@@ -5,7 +5,7 @@ use fp_evm::{
 use sp_core::{Get, U256};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
-use crate::precompiles::{LOG_TARGET, to_ethabi_u256, from_ethabi_h160};
+use crate::precompiles::{from_ethabi_h160, to_ethabi_u256, LOG_TARGET};
 use alloc::format;
 use core::marker::PhantomData;
 use dbc_support::traits::MachineInfoTrait;
@@ -253,9 +253,9 @@ where
 
                 Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    output: ethabi::encode(&[ethabi::Token::Uint(
-                        to_ethabi_u256(end_at.saturated_into::<u64>().into()),
-                    )]),
+                    output: ethabi::encode(&[ethabi::Token::Uint(to_ethabi_u256(
+                        end_at.saturated_into::<u64>().into(),
+                    ))]),
                 })
             },
 

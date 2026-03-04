@@ -1,15 +1,18 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use alloc::vec;
 use crate::Pallet as ZkCompute;
+use alloc::vec;
 use frame_benchmarking::v1::whitelisted_caller;
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_runtime::traits::One;
 
 fn setup_pending_task<T: Config>(miner: T::AccountId) -> T::TaskId {
-    let _ = T::Currency::deposit_creating(&miner, T::SubmissionDeposit::get() + T::BaseReward::get() + T::SubmissionDeposit::get());
+    let _ = T::Currency::deposit_creating(
+        &miner,
+        T::SubmissionDeposit::get() + T::BaseReward::get() + T::SubmissionDeposit::get(),
+    );
     let task_id = NextTaskId::<T>::get();
     let _ = ZkCompute::<T>::submit_proof(
         RawOrigin::Signed(miner).into(),

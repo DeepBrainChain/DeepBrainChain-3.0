@@ -3,12 +3,12 @@
 use super::*;
 use alloc::vec;
 use frame_benchmarking::v1::whitelisted_caller;
-use frame_support::traits::Get;
-use frame_support::traits::{Currency, ReservableCurrency};
-use frame_system::RawOrigin;
+use frame_support::{
+    traits::{Currency, Get, ReservableCurrency},
+    BoundedVec,
+};
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use sp_core::H256;
-use frame_system::pallet_prelude::BlockNumberFor;
-use frame_support::BoundedVec;
 
 /// Set up a payment intent in Pending status with proper fund reservation.
 /// Directly inserts storage to avoid calling submit_payment_intent.
@@ -24,20 +24,23 @@ fn setup_pending_intent<T: Config>(
     let block: BlockNumberFor<T> = 1u32.into();
     let sig: BoundedVec<u8, T::MaxSignatureLen> = vec![0u8; 64].try_into().unwrap();
 
-    PaymentIntents::<T>::insert(intent_id, PaymentIntent::<T> {
+    PaymentIntents::<T>::insert(
         intent_id,
-        merchant: merchant.clone(),
-        miner: miner.clone(),
-        amount,
-        nonce: 1,
-        replay_fingerprint: H256::from_low_u64_be(1),
-        facilitator_signature: sig,
-        status: PaymentIntentStatus::Pending,
-        created_at: block,
-        verified_at: None,
-        settled_at: None,
-        expires_at: block + T::PaymentIntentTTL::get(),
-    });
+        PaymentIntent::<T> {
+            intent_id,
+            merchant: merchant.clone(),
+            miner: miner.clone(),
+            amount,
+            nonce: 1,
+            replay_fingerprint: H256::from_low_u64_be(1),
+            facilitator_signature: sig,
+            status: PaymentIntentStatus::Pending,
+            created_at: block,
+            verified_at: None,
+            settled_at: None,
+            expires_at: block + T::PaymentIntentTTL::get(),
+        },
+    );
 
     NextIntentId::<T>::put(intent_id + 1);
     intent_id
@@ -56,20 +59,23 @@ fn setup_verified_intent<T: Config>(
     let block: BlockNumberFor<T> = 1u32.into();
     let sig: BoundedVec<u8, T::MaxSignatureLen> = vec![0u8; 64].try_into().unwrap();
 
-    PaymentIntents::<T>::insert(intent_id, PaymentIntent::<T> {
+    PaymentIntents::<T>::insert(
         intent_id,
-        merchant: merchant.clone(),
-        miner: miner.clone(),
-        amount,
-        nonce: 1,
-        replay_fingerprint: H256::from_low_u64_be(1),
-        facilitator_signature: sig,
-        status: PaymentIntentStatus::Verified,
-        created_at: block,
-        verified_at: Some(block),
-        settled_at: None,
-        expires_at: block + T::PaymentIntentTTL::get(),
-    });
+        PaymentIntent::<T> {
+            intent_id,
+            merchant: merchant.clone(),
+            miner: miner.clone(),
+            amount,
+            nonce: 1,
+            replay_fingerprint: H256::from_low_u64_be(1),
+            facilitator_signature: sig,
+            status: PaymentIntentStatus::Verified,
+            created_at: block,
+            verified_at: Some(block),
+            settled_at: None,
+            expires_at: block + T::PaymentIntentTTL::get(),
+        },
+    );
 
     NextIntentId::<T>::put(intent_id + 1);
     intent_id

@@ -324,11 +324,7 @@ where
 use frame_support::BoundedBTreeMap;
 pub(super) type ApprovalsOf<T, I = ()> = BoundedBTreeMap<
     u32,
-    AssetLock<
-        <T as SystemConfig>::AccountId,
-        <T as Config<I>>::Balance,
-        BlockNumberFor<T>,
-    >,
+    AssetLock<<T as SystemConfig>::AccountId, <T as Config<I>>::Balance, BlockNumberFor<T>>,
     AssetLockLimit,
 >;
 

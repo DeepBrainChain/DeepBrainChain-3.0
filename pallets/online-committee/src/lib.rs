@@ -18,6 +18,8 @@ mod mock;
 mod tests;
 mod utils;
 
+use alloc::{vec, vec::Vec};
+use core::str;
 use dbc_support::{
     machine_type::CommitteeUploadInfo,
     traits::{GNOps, ManageCommittee, OCOps},
@@ -36,7 +38,6 @@ use frame_support::{
 };
 use frame_system::{ensure_signed, pallet_prelude::*};
 use sp_runtime::traits::Zero;
-use alloc::{vec, vec::Vec}; use core::str;
 
 pub use pallet::*;
 pub use types::*;
@@ -79,7 +80,7 @@ pub mod pallet {
             Weight::zero()
         }
 
-        fn on_finalize(_block_number: BlockNumberFor::<T>) {
+        fn on_finalize(_block_number: BlockNumberFor<T>) {
             Self::statistic_result();
             Self::distribute_machines();
         }
@@ -104,7 +105,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         MachineId,
-        OCMachineCommitteeList<T::AccountId, BlockNumberFor::<T>>,
+        OCMachineCommitteeList<T::AccountId, BlockNumberFor<T>>,
         ValueQuery,
     >;
 
@@ -121,7 +122,7 @@ pub mod pallet {
         T::AccountId,
         Blake2_128Concat,
         MachineId,
-        OCCommitteeOps<BlockNumberFor::<T>, BalanceOf<T>>,
+        OCCommitteeOps<BlockNumberFor<T>, BalanceOf<T>>,
         ValueQuery,
     >;
 
@@ -135,7 +136,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         SlashId,
-        OCPendingSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        OCPendingSlashInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     >;
 
     #[pallet::storage]
@@ -144,7 +145,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         SlashId,
-        OCPendingSlashReviewInfo<T::AccountId, BalanceOf<T>, BlockNumberFor::<T>>,
+        OCPendingSlashReviewInfo<T::AccountId, BalanceOf<T>, BlockNumberFor<T>>,
     >;
 
     #[pallet::storage]
@@ -376,8 +377,8 @@ impl<T: Config> Pallet<T> {
     // - Writes: MachineCommittee, CommitteeMachine, CommitteeOps
     fn book_one(
         machine_id: MachineId,
-        confirm_start: BlockNumberFor::<T>,
-        now: BlockNumberFor::<T>,
+        confirm_start: BlockNumberFor<T>,
+        now: BlockNumberFor<T>,
         work_index: VerifySequence<T::AccountId>,
     ) -> Result<(), ()> {
         let stake_need = <T as Config>::ManageCommittee::stake_per_order().ok_or(())?;
@@ -430,7 +431,7 @@ impl<T: Config> Pallet<T> {
     // 对已经提交完原始值的机器进行处理
     fn summary_raw(
         machine_id: MachineId,
-        now: BlockNumberFor::<T>,
+        now: BlockNumberFor<T>,
         stake_per_order: BalanceOf<T>,
     ) -> Result<(), ()> {
         let mut machine_committee = Self::machine_committee(&machine_id);
@@ -528,7 +529,7 @@ impl<T: Config> Pallet<T> {
         slash_amount: BalanceOf<T>,
         summary: Summary<T::AccountId>,
         stake_per_order: BalanceOf<T>,
-        now: BlockNumberFor::<T>,
+        now: BlockNumberFor<T>,
     ) {
         let slash_id = Self::get_new_slash_id();
         PendingSlash::<T>::insert(
@@ -667,5 +668,5 @@ impl<T: Config> Pallet<T> {
 
 impl<T: Config> OnlineCommitteeSummary for Pallet<T> {
     type AccountId = T::AccountId;
-    type BlockNumber = BlockNumberFor::<T>;
+    type BlockNumber = BlockNumberFor<T>;
 }

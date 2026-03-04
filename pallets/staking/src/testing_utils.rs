@@ -27,11 +27,13 @@ use rand_chacha::{
 };
 use sp_io::hashing::blake2_256;
 
+use alloc::vec::Vec;
 use frame_election_provider_support::SortedListProvider;
 use frame_support::pallet_prelude::*;
-use sp_runtime::traits::One;
-use sp_runtime::{traits::StaticLookup, Perbill};
-use alloc::vec::Vec;
+use sp_runtime::{
+    traits::{One, StaticLookup},
+    Perbill,
+};
 
 const SEED: u32 = 0;
 
@@ -78,7 +80,8 @@ pub fn create_stash_controller<T: Config>(
     destination: RewardDestination<T::AccountId>,
 ) -> Result<(T::AccountId, T::AccountId), &'static str> {
     let staker = create_funded_user::<T>("stash", n, balance_factor);
-    let amount = (asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into()).max(One::one());
+    let amount =
+        (asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into()).max(One::one());
     Staking::<T>::bond(RawOrigin::Signed(staker.clone()).into(), amount, destination)?;
     Ok((staker.clone(), staker))
 }
@@ -97,7 +100,8 @@ pub fn create_unique_stash_controller<T: Config>(
     } else {
         create_funded_user::<T>("controller", n, balance_factor)
     };
-    let amount = (asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into()).max(One::one());
+    let amount =
+        (asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into()).max(One::one());
     Staking::<T>::bond(RawOrigin::Signed(stash.clone()).into(), amount, destination)?;
 
     // update ledger to be a *different* controller to stash
@@ -130,7 +134,8 @@ pub fn create_stash_and_dead_payee<T: Config>(
     let staker = create_funded_user::<T>("stash", n, 0);
     // payee has no funds
     let payee = create_funded_user::<T>("payee", n, 0);
-    let amount = (asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into()).max(One::one());
+    let amount =
+        (asset::existential_deposit::<T>() * (balance_factor / 10).max(1).into()).max(One::one());
     Staking::<T>::bond(
         RawOrigin::Signed(staker.clone()).into(),
         amount,

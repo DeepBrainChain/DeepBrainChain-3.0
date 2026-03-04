@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 #[cfg(feature = "std")]
 use dbc_support::rpc_types::{serde_text, RpcText};
 use dbc_support::{
@@ -13,7 +14,6 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec;
 #[cfg(feature = "std")]
 use std::convert::From;
 

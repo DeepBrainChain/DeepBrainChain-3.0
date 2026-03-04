@@ -38,9 +38,8 @@ mod multiplier_tests {
     use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
     use sp_runtime::{
         assert_eq_error_rate,
-        BuildStorage,
         traits::{Convert, One, Zero},
-        FixedPointNumber,
+        BuildStorage, FixedPointNumber,
     };
 
     use crate::{

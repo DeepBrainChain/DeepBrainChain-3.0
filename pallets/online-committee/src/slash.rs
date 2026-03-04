@@ -1,4 +1,5 @@
 use crate::{Config, Pallet, PendingSlash, PendingSlashReview, UnhandledSlash};
+use alloc::{vec, vec::Vec};
 use dbc_support::{
     traits::{GNOps, OCOps},
     verify_committee_slash::OCSlashResult,
@@ -7,7 +8,6 @@ use dbc_support::{
 };
 use frame_support::IterableStorageMap;
 use sp_runtime::traits::Zero;
-use alloc::{vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn check_and_exec_pending_review() {

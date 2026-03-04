@@ -1,5 +1,7 @@
-use crate::mock::*;
-use crate::pallet::{AttestationStatus, Error};
+use crate::{
+    mock::*,
+    pallet::{AttestationStatus, Error},
+};
 use frame_support::{assert_noop, assert_ok};
 use sp_core::H256;
 
@@ -282,11 +284,7 @@ fn submit_benchmark_claim_works() {
 fn submit_benchmark_claim_not_registered_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            AgentAttestation::submit_benchmark_claim(
-                RuntimeOrigin::signed(1),
-                model_id(),
-                100,
-            ),
+            AgentAttestation::submit_benchmark_claim(RuntimeOrigin::signed(1), model_id(), 100,),
             Error::<Test>::NodeNotRegistered
         );
     });
@@ -308,16 +306,13 @@ fn submit_benchmark_claim_insufficient_deposit_fails() {
             to_remove,
             frame_support::traits::WithdrawReasons::TRANSFER,
             frame_support::traits::ExistenceRequirement::AllowDeath,
-        ).expect("withdraw should succeed");
+        )
+        .expect("withdraw should succeed");
         // Verify balance is now ~100
         let remaining = <Balances as Currency<u64>>::free_balance(&5);
         assert!(remaining < 500, "Balance should be < 500 but is {}", remaining);
         assert_noop!(
-            AgentAttestation::submit_benchmark_claim(
-                RuntimeOrigin::signed(5),
-                model_id(),
-                100,
-            ),
+            AgentAttestation::submit_benchmark_claim(RuntimeOrigin::signed(5), model_id(), 100,),
             Error::<Test>::InsufficientDeposit
         );
     });
@@ -328,12 +323,16 @@ fn submit_benchmark_claim_replaces_old() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
         let balance_mid = Balances::free_balance(1);
         // Submit again for same model - should replace
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 200,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            200,
         ));
         let claim = AgentAttestation::benchmark_claims(1).unwrap();
         assert_eq!(claim.score, 200);
@@ -349,11 +348,11 @@ fn challenge_benchmark_works() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
-        assert_ok!(AgentAttestation::challenge_benchmark(
-            RuntimeOrigin::signed(2), 0,
-        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(2), 0,));
         let claim = AgentAttestation::benchmark_claims(0).unwrap();
         assert_eq!(claim.status, crate::pallet::BenchmarkClaimStatus::Challenged);
         assert_eq!(claim.challenger, Some(2));
@@ -366,7 +365,9 @@ fn challenge_benchmark_self_fails() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
         assert_noop!(
             AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(1), 0),
@@ -380,11 +381,11 @@ fn challenge_benchmark_already_challenged_fails() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
-        assert_ok!(AgentAttestation::challenge_benchmark(
-            RuntimeOrigin::signed(2), 0,
-        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(2), 0,));
         assert_noop!(
             AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(3), 0),
             Error::<Test>::BenchmarkAlreadyResolved
@@ -397,15 +398,13 @@ fn resolve_benchmark_miner_guilty() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
         let challenger_before = Balances::free_balance(2);
-        assert_ok!(AgentAttestation::challenge_benchmark(
-            RuntimeOrigin::signed(2), 0,
-        ));
-        assert_ok!(AgentAttestation::resolve_benchmark(
-            RuntimeOrigin::root(), 0, false,
-        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(2), 0,));
+        assert_ok!(AgentAttestation::resolve_benchmark(RuntimeOrigin::root(), 0, false,));
         let claim = AgentAttestation::benchmark_claims(0).unwrap();
         assert_eq!(claim.status, crate::pallet::BenchmarkClaimStatus::Slashed);
         // Challenger should get challenge deposit back + half of miner deposit
@@ -420,14 +419,12 @@ fn resolve_benchmark_miner_innocent() {
         register_miner(1);
         let miner_before = Balances::free_balance(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
-        assert_ok!(AgentAttestation::challenge_benchmark(
-            RuntimeOrigin::signed(2), 0,
-        ));
-        assert_ok!(AgentAttestation::resolve_benchmark(
-            RuntimeOrigin::root(), 0, true,
-        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(2), 0,));
+        assert_ok!(AgentAttestation::resolve_benchmark(RuntimeOrigin::root(), 0, true,));
         let claim = AgentAttestation::benchmark_claims(0).unwrap();
         assert_eq!(claim.status, crate::pallet::BenchmarkClaimStatus::Defended);
         // Miner deposit (500) should be unreserved back
@@ -444,7 +441,9 @@ fn resolve_benchmark_not_challenged_fails() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
         assert_noop!(
             AgentAttestation::resolve_benchmark(RuntimeOrigin::root(), 0, true),
@@ -458,10 +457,14 @@ fn update_benchmark_claim_works() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
         assert_ok!(AgentAttestation::update_benchmark_score(
-            RuntimeOrigin::signed(1), model_id(), 200,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            200,
         ));
         let claim = AgentAttestation::benchmark_claims(0).unwrap();
         assert_eq!(claim.score, 200);
@@ -473,11 +476,11 @@ fn update_benchmark_claim_while_challenged_fails() {
     new_test_ext().execute_with(|| {
         register_miner(1);
         assert_ok!(AgentAttestation::submit_benchmark_claim(
-            RuntimeOrigin::signed(1), model_id(), 100,
+            RuntimeOrigin::signed(1),
+            model_id(),
+            100,
         ));
-        assert_ok!(AgentAttestation::challenge_benchmark(
-            RuntimeOrigin::signed(2), 0,
-        ));
+        assert_ok!(AgentAttestation::challenge_benchmark(RuntimeOrigin::signed(2), 0,));
         assert_noop!(
             AgentAttestation::update_benchmark_score(RuntimeOrigin::signed(1), model_id(), 200),
             Error::<Test>::BenchmarkAlreadyResolved

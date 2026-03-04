@@ -15,12 +15,15 @@ use sp_runtime::traits::Block as BlockT;
 
 pub use dbc3_runtime_api::Dbc3Api as Dbc3RuntimeApi;
 
-
 #[rpc(client, server)]
 pub trait Dbc3RpcApi<BlockHash, AccountId> {
     // === Task Mode ===
     #[method(name = "taskMode_getTaskDefinition")]
-    fn get_task_definition(&self, task_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+    fn get_task_definition(
+        &self,
+        task_id: u64,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<Vec<u8>>>;
 
     #[method(name = "taskMode_getTaskOrder")]
     fn get_task_order(&self, order_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
@@ -61,20 +64,36 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
 
     // === Agent Attestation ===
     #[method(name = "dbc3_getAttestation")]
-    fn get_attestation(&self, attestation_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+    fn get_attestation(
+        &self,
+        attestation_id: u64,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<Vec<u8>>>;
 
     #[method(name = "dbc3_getNodeRegistration")]
-    fn get_node_registration(&self, who: AccountId, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+    fn get_node_registration(
+        &self,
+        who: AccountId,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<Vec<u8>>>;
 
     #[method(name = "dbc3_getPendingAttestationCount")]
     fn get_pending_attestation_count(&self, at: Option<BlockHash>) -> RpcResult<u64>;
 
     // === X402 Settlement ===
     #[method(name = "dbc3_getPaymentIntent")]
-    fn get_payment_intent(&self, intent_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+    fn get_payment_intent(
+        &self,
+        intent_id: u64,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<Vec<u8>>>;
 
     #[method(name = "dbc3_getSettlementReceipt")]
-    fn get_settlement_receipt(&self, intent_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+    fn get_settlement_receipt(
+        &self,
+        intent_id: u64,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<Vec<u8>>>;
 
     // === ZK Compute ===
     #[method(name = "dbc3_getZkTask")]
@@ -85,10 +104,18 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
 
     // === Delegated Staking ===
     #[method(name = "dbc3_getDelegatedAgent")]
-    fn get_delegated_agent(&self, agent: AccountId, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+    fn get_delegated_agent(
+        &self,
+        agent: AccountId,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<Vec<u8>>>;
 
     #[method(name = "dbc3_getDelegatorState")]
-    fn get_delegator_state(&self, delegator: AccountId, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
+    fn get_delegator_state(
+        &self,
+        delegator: AccountId,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<Vec<u8>>>;
 
     #[method(name = "dbc3_getDelegatedAgentCount")]
     fn get_delegated_agent_count(&self, at: Option<BlockHash>) -> RpcResult<u64>;
@@ -100,17 +127,31 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
     fn list_delegated_agents(&self, limit: u32, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
 
     #[method(name = "dbc3_listAgentDelegators")]
-    fn list_agent_delegators(&self, agent: AccountId, limit: u32, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
+    fn list_agent_delegators(
+        &self,
+        agent: AccountId,
+        limit: u32,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Vec<u8>>;
 
     // === Staking Controller Deprecation ===
     #[method(name = "dbc3_getLegacyController")]
-    fn get_legacy_controller(&self, stash: AccountId, at: Option<BlockHash>) -> RpcResult<Option<AccountId>>;
+    fn get_legacy_controller(
+        &self,
+        stash: AccountId,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<AccountId>>;
 
     #[method(name = "dbc3_getLegacyStash")]
-    fn get_legacy_stash(&self, controller: AccountId, at: Option<BlockHash>) -> RpcResult<Option<AccountId>>;
+    fn get_legacy_stash(
+        &self,
+        controller: AccountId,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Option<AccountId>>;
 
     #[method(name = "dbc3_listLegacyControllerPairs")]
-    fn list_legacy_controller_pairs(&self, limit: u32, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
+    fn list_legacy_controller_pairs(&self, limit: u32, at: Option<BlockHash>)
+        -> RpcResult<Vec<u8>>;
 
     #[method(name = "dbc3_getLegacyControllerCount")]
     fn get_legacy_controller_count(&self, at: Option<BlockHash>) -> RpcResult<u64>;
@@ -140,15 +181,10 @@ impl<C, M> Dbc3Storage<C, M> {
 }
 
 fn map_err(e: impl std::fmt::Debug) -> jsonrpsee::types::ErrorObjectOwned {
-    ErrorObject::owned(
-        ErrorCode::InternalError.code(),
-        format!("{e:?}"),
-        None::<()>,
-    )
+    ErrorObject::owned(ErrorCode::InternalError.code(), format!("{e:?}"), None::<()>)
 }
 
-impl<C, Block, AccountId>
-    Dbc3RpcApiServer<<Block as BlockT>::Hash, AccountId>
+impl<C, Block, AccountId> Dbc3RpcApiServer<<Block as BlockT>::Hash, AccountId>
     for Dbc3Storage<C, Block>
 where
     Block: BlockT,
@@ -158,7 +194,11 @@ where
     C::Api: Dbc3StorageRuntimeApi<Block, AccountId, u32, u128>,
     AccountId: Clone + std::fmt::Display + Codec + Send + 'static,
 {
-    fn get_task_definition(&self, task_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_task_definition(
+        &self,
+        task_id: u64,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_task_definition(at_hash, task_id).map_err(map_err)
@@ -188,7 +228,11 @@ where
         api.get_current_era(at_hash).map_err(map_err)
     }
 
-    fn get_compute_pool(&self, pool_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_compute_pool(
+        &self,
+        pool_id: u64,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_compute_pool(at_hash, pool_id).map_err(map_err)
@@ -200,7 +244,11 @@ where
         api.get_active_pools(at_hash).map_err(map_err)
     }
 
-    fn get_compute_task(&self, task_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_compute_task(
+        &self,
+        task_id: u64,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_compute_task(at_hash, task_id).map_err(map_err)
@@ -236,13 +284,21 @@ where
         api.list_active_tasks(at_hash, pool_id).map_err(map_err)
     }
 
-    fn get_attestation(&self, attestation_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_attestation(
+        &self,
+        attestation_id: u64,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_attestation(at_hash, attestation_id).map_err(map_err)
     }
 
-    fn get_node_registration(&self, who: AccountId, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_node_registration(
+        &self,
+        who: AccountId,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_node_registration(at_hash, who).map_err(map_err)
@@ -254,13 +310,21 @@ where
         api.get_pending_attestation_count(at_hash).map_err(map_err)
     }
 
-    fn get_payment_intent(&self, intent_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_payment_intent(
+        &self,
+        intent_id: u64,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_payment_intent(at_hash, intent_id).map_err(map_err)
     }
 
-    fn get_settlement_receipt(&self, intent_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_settlement_receipt(
+        &self,
+        intent_id: u64,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_settlement_receipt(at_hash, intent_id).map_err(map_err)
@@ -278,13 +342,21 @@ where
         api.get_miner_score(at_hash, miner).map_err(map_err)
     }
 
-    fn get_delegated_agent(&self, agent: AccountId, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_delegated_agent(
+        &self,
+        agent: AccountId,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_delegated_agent(at_hash, agent).map_err(map_err)
     }
 
-    fn get_delegator_state(&self, delegator: AccountId, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
+    fn get_delegator_state(
+        &self,
+        delegator: AccountId,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<Vec<u8>>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_delegator_state(at_hash, delegator).map_err(map_err)
@@ -320,7 +392,11 @@ where
         api.list_agent_delegators(at_hash, agent, limit).map_err(map_err)
     }
 
-    fn get_legacy_controller(&self, stash: AccountId, at: Option<Block::Hash>) -> RpcResult<Option<AccountId>> {
+    fn get_legacy_controller(
+        &self,
+        stash: AccountId,
+        at: Option<Block::Hash>,
+    ) -> RpcResult<Option<AccountId>> {
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_legacy_controller(at_hash, stash).map_err(map_err)

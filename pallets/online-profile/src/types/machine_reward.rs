@@ -1,9 +1,12 @@
+use alloc::{
+    collections::{BTreeMap, VecDeque},
+    vec::Vec,
+};
+use core::ops::{Add, Sub};
 use dbc_support::{EraIndex, MachineId};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{Perbill, RuntimeDebug};
-use alloc::{collections::{BTreeMap, VecDeque}, vec::Vec};
-use core::ops::{Add, Sub};
 
 #[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
 pub struct MachineRecentRewardInfo<AccountId, Balance> {

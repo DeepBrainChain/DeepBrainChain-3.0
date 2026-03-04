@@ -1,9 +1,9 @@
 use crate::{MachineId, RentOrderId};
+use alloc::vec::Vec;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::RuntimeDebug;
 use sp_core::H160;
-use alloc::vec::Vec;
+use sp_runtime::RuntimeDebug;
 
 pub trait PhaseReward {
     type Balance;
@@ -249,7 +249,6 @@ pub trait GNOps {
         reward_who: Vec<Self::AccountId>,
     ) -> Result<(), ()>;
 }
-
 
 // ============================================================
 // DBC 3.0 Cross-Pallet Integration Traits

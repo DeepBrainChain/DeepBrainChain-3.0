@@ -49,10 +49,7 @@ impl StepEventFilter {
 
     /// Unpack from a u32.
     pub fn from_u32(v: u32) -> Self {
-        Self {
-            enable_stack: (v & 1) != 0,
-            enable_memory: (v & 2) != 0,
-        }
+        Self { enable_stack: (v & 1) != 0, enable_memory: (v & 2) != 0 }
     }
 }
 

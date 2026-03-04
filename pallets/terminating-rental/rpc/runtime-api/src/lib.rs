@@ -6,9 +6,9 @@
 extern crate alloc;
 use sp_std as _;
 
+use alloc::vec::Vec;
 use parity_scale_codec::Codec;
 use sp_runtime::traits::MaybeDisplay;
-use alloc::vec::Vec;
 
 use dbc_support::{
     live_machine::LiveMachine,

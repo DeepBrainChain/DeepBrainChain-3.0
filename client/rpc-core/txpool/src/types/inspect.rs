@@ -33,7 +33,9 @@ impl GetT for Summary {
             EthereumTransaction::Legacy(t) => (t.action, t.value, t.gas_price, t.gas_limit),
             EthereumTransaction::EIP2930(t) => (t.action, t.value, t.gas_price, t.gas_limit),
             EthereumTransaction::EIP1559(t) => (t.action, t.value, t.max_fee_per_gas, t.gas_limit),
-            EthereumTransaction::EIP7702(t) => (t.destination, t.value, t.max_fee_per_gas, t.gas_limit),
+            EthereumTransaction::EIP7702(t) => {
+                (t.destination, t.value, t.max_fee_per_gas, t.gas_limit)
+            },
         };
         Self {
             to: match action {

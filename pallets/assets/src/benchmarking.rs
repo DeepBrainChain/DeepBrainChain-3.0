@@ -20,13 +20,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
+use alloc::vec;
 use frame_benchmarking::v1::{
     account, benchmarks_instance_pallet, whitelist_account, whitelisted_caller, BenchmarkError,
 };
 use frame_support::traits::{EnsureOrigin, Get, UnfilteredDispatchable};
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin as SystemOrigin};
 use sp_runtime::traits::Bounded;
-use alloc::vec;
 
 use crate::Pallet as Assets;
 

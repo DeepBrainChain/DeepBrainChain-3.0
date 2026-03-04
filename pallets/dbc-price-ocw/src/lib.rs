@@ -6,6 +6,8 @@ extern crate alloc;
 use sp_std as _;
 
 // use alt_serde::{Deserialize, Deserializer};
+use alloc::{collections::VecDeque, vec::Vec};
+use core::str;
 use dbc_support::traits::DbcPrice;
 use frame_support::traits::{Currency, Randomness, ReservableCurrency};
 use frame_system::offchain::SubmitTransaction;
@@ -14,7 +16,6 @@ use sp_runtime::{
     offchain::{http, Duration},
     traits::{CheckedDiv, CheckedMul, SaturatedConversion},
 };
-use alloc::{collections::VecDeque, vec::Vec}; use core::str;
 
 pub use pallet::*;
 pub mod parse_price;
@@ -25,9 +26,12 @@ type BalanceOf<T> =
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
-    use frame_system::{offchain::{CreateSignedTransaction, CreateBare}, pallet_prelude::*};
     use alloc::vec::Vec;
+    use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
+    use frame_system::{
+        offchain::{CreateBare, CreateSignedTransaction},
+        pallet_prelude::*,
+    };
 
     /// The type to sign and send transactions.
     pub const UNSIGNED_TXS_PRIORITY: u64 = 100;
@@ -36,9 +40,12 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config + CreateSignedTransaction<Call<Self>> + CreateBare<Call<Self>> + generic_func::Config
+        frame_system::Config
+        + CreateSignedTransaction<Call<Self>>
+        + CreateBare<Call<Self>>
+        + generic_func::Config
     {
-        type RandomnessSource: Randomness<H256, BlockNumberFor::<Self>>;
+        type RandomnessSource: Randomness<H256, BlockNumberFor<Self>>;
         type Currency: ReservableCurrency<Self::AccountId>;
     }
 
@@ -89,7 +96,7 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn offchain_worker(block_number: BlockNumberFor::<T>) {
+        fn offchain_worker(block_number: BlockNumberFor<T>) {
             if Self::price_url().is_none() {
                 return
             };

@@ -21,13 +21,14 @@
 use coins_bip32::ecdsa::{SigningKey, VerifyingKey};
 use coins_bip39::{English, Mnemonic, Wordlist};
 use dbc_runtime::{
-    constants::currency::*, opaque::SessionKeys, wasm_binary_unwrap,
-    BabeConfig, BalancesConfig, BaseFeeConfig, Block, CouncilConfig, DefaultBaseFeePerGas,
-    DefaultElasticity, DemocracyConfig, EVMChainIdConfig, EVMConfig, ElectionsConfig,
-    ImOnlineConfig, IndicesConfig, MaxNominations, NominationPoolsConfig,
-    SessionConfig, StakerStatus, StakingConfig, SudoConfig, TechnicalCommitteeConfig,
+    constants::currency::*, opaque::SessionKeys, wasm_binary_unwrap, BabeConfig, BalancesConfig,
+    BaseFeeConfig, Block, CouncilConfig, DefaultBaseFeePerGas, DefaultElasticity, DemocracyConfig,
+    EVMChainIdConfig, EVMConfig, ElectionsConfig, ImOnlineConfig, IndicesConfig, MaxNominations,
+    NominationPoolsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig,
+    TechnicalCommitteeConfig,
 };
 use fp_evm::GenesisAccount;
+use frame_support::PalletId;
 use k256::{elliptic_curve::sec1::ToEncodedPoint, EncodedPoint};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -43,7 +44,6 @@ use sp_runtime::{
     traits::{AccountIdConversion, IdentifyAccount, Verify},
     Perbill,
 };
-use frame_support::PalletId;
 use std::str::FromStr;
 
 pub use dbc_primitives::{AccountId, Balance, Signature};
@@ -195,11 +195,17 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
     let endowed_accounts: Vec<AccountId> = vec![
         root_key.clone(),
         // 5G1mm2uGN5gpdgEByh56o8rUcrP2ANEADZBKa3fF98k8o9t9
-        array_bytes::hex_n_into_unchecked("aeb455f2d49ca816dd4a93f138915443b4f469ba92bc10eb11c8b8cf59bfcb2f"),
+        array_bytes::hex_n_into_unchecked(
+            "aeb455f2d49ca816dd4a93f138915443b4f469ba92bc10eb11c8b8cf59bfcb2f",
+        ),
         // 5Gp9yJDvKdtCReWusHK8qDSVzjZs3SaZLHFMF5BNRKBAXoJf
-        array_bytes::hex_n_into_unchecked("d214650e20befed10b46962245cfc2b3b723452ac50f9909c06b716c2fe4793c"),
+        array_bytes::hex_n_into_unchecked(
+            "d214650e20befed10b46962245cfc2b3b723452ac50f9909c06b716c2fe4793c",
+        ),
         // 5Ew9thvjcFkX624BNXVrLG3gR2JXiyhJFxhj45gQQUCeH2gu
-        array_bytes::hex_n_into_unchecked("7ef26112cb714815241bf974d7cbbf72c68dcc459dd6018c3396c72ea6f13969"),
+        array_bytes::hex_n_into_unchecked(
+            "7ef26112cb714815241bf974d7cbbf72c68dcc459dd6018c3396c72ea6f13969",
+        ),
     ];
 
     testnet_genesis(initial_authorities, vec![], root_key, Some(endowed_accounts))
@@ -212,9 +218,7 @@ pub fn staging_testnet_config() -> ChainSpec {
         .with_name("DBC Testnet 2024")
         .with_id("staging_testnet_2024")
         .with_chain_type(ChainType::Live)
-        .with_genesis_config(
-            serde_json::to_value(genesis).expect("genesis config serializes"),
-        )
+        .with_genesis_config(serde_json::to_value(genesis).expect("genesis config serializes"))
         .with_telemetry_endpoints(
             TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
                 .expect("Staging telemetry url is valid; qed"),
@@ -324,7 +328,8 @@ pub fn dev_testnet_genesis(
     let evm_accounts = get_evm_accounts(None);
 
     // Build balances: endowed accounts + pallet accounts
-    let mut balances: Vec<(AccountId, Balance)> = endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
+    let mut balances: Vec<(AccountId, Balance)> =
+        endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
     balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
 
     GenesisConfig {
@@ -490,7 +495,8 @@ pub fn testnet_genesis(
     // Pre-fund ZkCompute pallet account so it can pay rewards
     let zk_pallet_account: AccountId = PalletId(*b"dbc/zkcp").into_account_truncating();
 
-    let mut balances: Vec<(AccountId, Balance)> = endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
+    let mut balances: Vec<(AccountId, Balance)> =
+        endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
     balances.push((zk_pallet_account, 1_000_000 * DOLLARS));
 
     GenesisConfig {
@@ -576,9 +582,7 @@ fn generate_mainnet_config() -> ChainSpec {
         .with_name("DBC Mainnet")
         .with_id("dbc_network_mainnet")
         .with_chain_type(ChainType::Live)
-        .with_genesis_config(
-            serde_json::to_value(genesis).expect("genesis config serializes"),
-        )
+        .with_genesis_config(serde_json::to_value(genesis).expect("genesis config serializes"))
         .with_telemetry_endpoints(
             TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
                 .expect("Staging telemetry url is valid; qed"),
@@ -782,7 +786,8 @@ pub fn mainnet_genesis(
     // Pre-fund ZkCompute pallet account so it can pay rewards
     let zk_pallet_account: AccountId = PalletId(*b"dbc/zkcp").into_account_truncating();
 
-    let mut balances: Vec<(AccountId, Balance)> = endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
+    let mut balances: Vec<(AccountId, Balance)> =
+        endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect();
     balances.push((zk_pallet_account, 10_000_000 * DOLLARS)); // 10M DBC for ZK rewards pool
 
     GenesisConfig {
@@ -876,9 +881,7 @@ pub fn development_config() -> ChainSpec {
         .with_name("Development")
         .with_id("dev")
         .with_chain_type(ChainType::Development)
-        .with_genesis_config(
-            serde_json::to_value(genesis).expect("genesis config serializes"),
-        )
+        .with_genesis_config(serde_json::to_value(genesis).expect("genesis config serializes"))
         .with_properties(serde_json::from_str(DEFAULT_PROPS).unwrap())
         .build()
 }
@@ -899,9 +902,7 @@ pub fn local_testnet_config() -> ChainSpec {
         .with_name("Local Testnet")
         .with_id("local_testnet")
         .with_chain_type(ChainType::Local)
-        .with_genesis_config(
-            serde_json::to_value(genesis).expect("genesis config serializes"),
-        )
+        .with_genesis_config(serde_json::to_value(genesis).expect("genesis config serializes"))
         .with_properties(serde_json::from_str(DEFAULT_PROPS).unwrap())
         .build()
 }
@@ -964,9 +965,7 @@ pub(crate) mod tests {
             .with_name("Integration Test")
             .with_id("test")
             .with_chain_type(ChainType::Development)
-            .with_genesis_config(
-                serde_json::to_value(genesis).expect("genesis config serializes"),
-            )
+            .with_genesis_config(serde_json::to_value(genesis).expect("genesis config serializes"))
             .build()
     }
 
@@ -977,9 +976,7 @@ pub(crate) mod tests {
             .with_name("Integration Test")
             .with_id("test")
             .with_chain_type(ChainType::Development)
-            .with_genesis_config(
-                serde_json::to_value(genesis).expect("genesis config serializes"),
-            )
+            .with_genesis_config(serde_json::to_value(genesis).expect("genesis config serializes"))
             .build()
     }
 

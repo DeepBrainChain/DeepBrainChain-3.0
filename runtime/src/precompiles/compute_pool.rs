@@ -1,9 +1,9 @@
+use crate::precompiles::to_ethabi_u256;
 use fp_evm::{
     ExitRevert, ExitSucceed, Precompile, PrecompileFailure, PrecompileHandle, PrecompileOutput,
     PrecompileResult,
 };
 use sp_core::U256;
-use crate::precompiles::to_ethabi_u256;
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
@@ -52,21 +52,22 @@ where
     T: pallet_evm::Config + pallet_compute_pool_scheduler::Config,
 {
     fn query_pool(handle: &mut impl PrecompileHandle) -> PrecompileResult {
-        handle.record_cost(T::GasWeightMapping::weight_to_gas(
-            Weight::from_parts(10_000, 0),
-        ))?;
+        handle.record_cost(T::GasWeightMapping::weight_to_gas(Weight::from_parts(10_000, 0)))?;
         let input = handle.input();
-        let param = ethabi::decode(
-            &[ethabi::ParamType::Uint(64)],
-            &input.get(4..).unwrap_or_default(),
-        ).map_err(|e| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: format!("decode failed: {:?}", e).into(),
-        })?;
-        let pool_id = param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "decode pool_id failed".into(),
-        })?.as_u64();
+        let param =
+            ethabi::decode(&[ethabi::ParamType::Uint(64)], &input.get(4..).unwrap_or_default())
+                .map_err(|e| PrecompileFailure::Revert {
+                    exit_status: ExitRevert::Reverted,
+                    output: format!("decode failed: {:?}", e).into(),
+                })?;
+        let pool_id = param[0]
+            .clone()
+            .into_uint()
+            .ok_or_else(|| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "decode pool_id failed".into(),
+            })?
+            .as_u64();
         let pool = pallet_compute_pool_scheduler::Pools::<T>::get(pool_id);
         let (active, gpu_count, max_tasks) = match pool {
             Some(p) => (true, p.gpu_memory, p.total_tasks),
@@ -77,28 +78,26 @@ where
             ethabi::Token::Uint(to_ethabi_u256(U256::from(gpu_count))),
             ethabi::Token::Uint(to_ethabi_u256(U256::from(max_tasks))),
         ]);
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            output: encoded,
-        })
+        Ok(PrecompileOutput { exit_status: ExitSucceed::Returned, output: encoded })
     }
 
     fn query_task(handle: &mut impl PrecompileHandle) -> PrecompileResult {
-        handle.record_cost(T::GasWeightMapping::weight_to_gas(
-            Weight::from_parts(10_000, 0),
-        ))?;
+        handle.record_cost(T::GasWeightMapping::weight_to_gas(Weight::from_parts(10_000, 0)))?;
         let input = handle.input();
-        let param = ethabi::decode(
-            &[ethabi::ParamType::Uint(64)],
-            &input.get(4..).unwrap_or_default(),
-        ).map_err(|e| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: format!("decode failed: {:?}", e).into(),
-        })?;
-        let task_id = param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "decode task_id failed".into(),
-        })?.as_u64();
+        let param =
+            ethabi::decode(&[ethabi::ParamType::Uint(64)], &input.get(4..).unwrap_or_default())
+                .map_err(|e| PrecompileFailure::Revert {
+                    exit_status: ExitRevert::Reverted,
+                    output: format!("decode failed: {:?}", e).into(),
+                })?;
+        let task_id = param[0]
+            .clone()
+            .into_uint()
+            .ok_or_else(|| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "decode task_id failed".into(),
+            })?
+            .as_u64();
         let task = pallet_compute_pool_scheduler::Tasks::<T>::get(task_id);
         let (exists, pool_id, status) = match task {
             Some(t) => {
@@ -120,9 +119,6 @@ where
             ethabi::Token::Uint(to_ethabi_u256(U256::from(pool_id))),
             ethabi::Token::Uint(to_ethabi_u256(U256::from(status))),
         ]);
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            output: encoded,
-        })
+        Ok(PrecompileOutput { exit_status: ExitSucceed::Returned, output: encoded })
     }
 }

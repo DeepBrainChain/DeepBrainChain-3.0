@@ -1,15 +1,15 @@
 use crate::{BalanceOf, CommitteeUploadInfo, Config, Pallet};
-use frame_system::pallet_prelude::BlockNumberFor;
+use alloc::vec::Vec;
 use dbc_support::{
     verify_online::{OCCommitteeMachineList, OCMachineCommitteeList, OCMachineStatus},
     MachineId,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec;
 
 // for RPC
 #[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
@@ -31,7 +31,7 @@ pub struct RpcOCCommitteeOps<BlockNumber, Balance> {
 impl<T: Config> Pallet<T> {
     pub fn get_machine_committee_list(
         machine_id: MachineId,
-    ) -> OCMachineCommitteeList<T::AccountId, BlockNumberFor::<T>> {
+    ) -> OCMachineCommitteeList<T::AccountId, BlockNumberFor<T>> {
         Self::machine_committee(machine_id)
     }
 
@@ -42,7 +42,7 @@ impl<T: Config> Pallet<T> {
     pub fn get_committee_ops(
         committee: T::AccountId,
         machine_id: MachineId,
-    ) -> Option<RpcOCCommitteeOps<BlockNumberFor::<T>, BalanceOf<T>>> {
+    ) -> Option<RpcOCCommitteeOps<BlockNumberFor<T>, BalanceOf<T>>> {
         let oc_committee_ops = Self::committee_ops(&committee, &machine_id);
 
         let committee_info = Self::machine_committee(&machine_id);

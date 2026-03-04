@@ -17,11 +17,12 @@
 
 //! Implementations for the Staking FRAME Pallet.
 
+use alloc::{boxed::Box, vec, vec::Vec};
 use dbc_support::traits::PhaseReward;
 use frame_election_provider_support::{
     bounds::DataProviderBounds, data_provider, BoundedSupportsOf, ElectionDataProvider,
-    ElectionProvider, PageIndex, ScoreProvider, SortedListProvider, TryFromOtherBounds,
-    VoteWeight, VoterOf,
+    ElectionProvider, PageIndex, ScoreProvider, SortedListProvider, TryFromOtherBounds, VoteWeight,
+    VoterOf,
 };
 use frame_support::{
     defensive,
@@ -43,7 +44,6 @@ use sp_staking::{
     offence::{OffenceDetails, OnOffenceHandler},
     EraIndex, SessionIndex, Stake, StakingAccount, StakingInterface,
 };
-use alloc::{boxed::Box, vec, vec::Vec};
 
 use crate::{
     asset, log, slashing, weights::WeightInfo, ActiveEraInfo, BalanceOf, EraPayout, Exposure,
@@ -140,27 +140,27 @@ impl<T: Config> Pallet<T> {
         };
 
         let used_weight = if should_kill {
-                // This account must have called `unbond()` with some value that caused the active
-                // portion to fall below existential deposit + will have no more unlocking chunks
-                // left. We can now safely remove all staking-related information.
-                Self::kill_stash(&stash, num_slashing_spans)?;
+            // This account must have called `unbond()` with some value that caused the active
+            // portion to fall below existential deposit + will have no more unlocking chunks
+            // left. We can now safely remove all staking-related information.
+            Self::kill_stash(&stash, num_slashing_spans)?;
 
-                T::WeightInfo::withdraw_unbonded_kill(num_slashing_spans)
-            } else {
-                // This was the consequence of a partial unbond. just update the ledger and move on.
-                let new_total = ledger.total;
-                ledger.update()?;
+            T::WeightInfo::withdraw_unbonded_kill(num_slashing_spans)
+        } else {
+            // This was the consequence of a partial unbond. just update the ledger and move on.
+            let new_total = ledger.total;
+            ledger.update()?;
 
-                // This is only an update, so we use less overall weight.
-                // `old_total` should never be less than the new total because
-                // `consolidate_unlocked` strictly subtracts balance.
-                if new_total < old_total {
-                    let value = old_total - new_total;
-                    Self::deposit_event(Event::<T>::Withdrawn { stash: stash.clone(), amount: value });
-                }
+            // This is only an update, so we use less overall weight.
+            // `old_total` should never be less than the new total because
+            // `consolidate_unlocked` strictly subtracts balance.
+            if new_total < old_total {
+                let value = old_total - new_total;
+                Self::deposit_event(Event::<T>::Withdrawn { stash: stash.clone(), amount: value });
+            }
 
-                T::WeightInfo::withdraw_unbonded_update(num_slashing_spans)
-            };
+            T::WeightInfo::withdraw_unbonded_update(num_slashing_spans)
+        };
 
         Ok(used_weight)
     }
@@ -188,12 +188,10 @@ impl<T: Config> Pallet<T> {
                 .with_weight(T::WeightInfo::payout_stakers_alive_staked(0))
         })?;
 
-        let mut ledger = StakingLedger::<T>::get(
-            StakingAccount::Stash(validator_stash.clone()),
-        )
-        .map_err(|_| {
-            Error::<T>::NotStash.with_weight(T::WeightInfo::payout_stakers_alive_staked(0))
-        })?;
+        let mut ledger = StakingLedger::<T>::get(StakingAccount::Stash(validator_stash.clone()))
+            .map_err(|_| {
+                Error::<T>::NotStash.with_weight(T::WeightInfo::payout_stakers_alive_staked(0))
+            })?;
 
         ledger
             .legacy_claimed_rewards
@@ -229,11 +227,8 @@ impl<T: Config> Pallet<T> {
 
         let era_reward_points = <ErasRewardPoints<T>>::get(&era);
         let total_reward_points = era_reward_points.total;
-        let validator_reward_points = era_reward_points
-            .individual
-            .get(&stash)
-            .copied()
-            .unwrap_or_else(Zero::zero);
+        let validator_reward_points =
+            era_reward_points.individual.get(&stash).copied().unwrap_or_else(Zero::zero);
 
         // Nothing to do if they have no reward points.
         if validator_reward_points.is_zero() {
@@ -321,17 +316,17 @@ impl<T: Config> Pallet<T> {
             // compatibility, but route rewards to stash balance.
             RewardDestination::Controller => asset::mint_into_existing::<T>(stash, amount),
             RewardDestination::Stash => asset::mint_into_existing::<T>(stash, amount),
-            RewardDestination::Staked => StakingLedger::<T>::get(
-                StakingAccount::Stash(stash.clone()),
-            )
-            .ok()
-            .and_then(|mut l| {
-                l.active += amount;
-                l.total += amount;
-                let r = asset::mint_into_existing::<T>(stash, amount);
-                let _ = l.update();
-                r
-            }),
+            RewardDestination::Staked => {
+                StakingLedger::<T>::get(StakingAccount::Stash(stash.clone())).ok().and_then(
+                    |mut l| {
+                        l.active += amount;
+                        l.total += amount;
+                        let r = asset::mint_into_existing::<T>(stash, amount);
+                        let _ = l.update();
+                        r
+                    },
+                )
+            },
             RewardDestination::Account(dest_account) => {
                 Some(asset::mint_creating::<T>(&dest_account, amount))
             },
@@ -624,18 +619,22 @@ impl<T: Config> Pallet<T> {
     ) -> Option<BoundedVec<T::AccountId, MaxWinnersOf<T>>> {
         let election_result = if is_genesis {
             // This pallet only supports single page elections.
-            let result = <T::GenesisElectionProvider>::elect(0).map_err(|e| {
-                log!(warn, "genesis election provider failed due to {:?}", e);
-                Self::deposit_event(Event::StakingElectionFailed);
-            }).ok()?;
+            let result = <T::GenesisElectionProvider>::elect(0)
+                .map_err(|e| {
+                    log!(warn, "genesis election provider failed due to {:?}", e);
+                    Self::deposit_event(Event::StakingElectionFailed);
+                })
+                .ok()?;
 
             BoundedSupportsOf::<T::ElectionProvider>::try_from_other_bounds(result).ok()?
         } else {
             // This pallet only supports single page elections.
-            <T::ElectionProvider>::elect(0).map_err(|e| {
-                log!(warn, "election provider failed due to {:?}", e);
-                Self::deposit_event(Event::StakingElectionFailed);
-            }).ok()?
+            <T::ElectionProvider>::elect(0)
+                .map_err(|e| {
+                    log!(warn, "election provider failed due to {:?}", e);
+                    Self::deposit_event(Event::StakingElectionFailed);
+                })
+                .ok()?
         };
 
         let exposures = Self::collect_exposures(election_result);
@@ -1126,7 +1125,10 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(Self::validator_count())
     }
 
-    fn electing_voters(bounds: DataProviderBounds, _page: PageIndex) -> data_provider::Result<Vec<VoterOf<Self>>> {
+    fn electing_voters(
+        bounds: DataProviderBounds,
+        _page: PageIndex,
+    ) -> data_provider::Result<Vec<VoterOf<Self>>> {
         let maybe_max_len = bounds.count.map(|c| c.0 as usize);
         // This can never fail -- if `maybe_max_len` is `Some(_)` we handle it.
         let voters = Self::get_npos_voters(maybe_max_len);
@@ -1135,7 +1137,10 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(voters)
     }
 
-    fn electable_targets(bounds: DataProviderBounds, _page: PageIndex) -> data_provider::Result<Vec<T::AccountId>> {
+    fn electable_targets(
+        bounds: DataProviderBounds,
+        _page: PageIndex,
+    ) -> data_provider::Result<Vec<T::AccountId>> {
         let maybe_max_len = bounds.count.map(|c| c.0 as usize);
         let target_count = T::TargetList::count();
 
@@ -1147,7 +1152,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
         Ok(Self::get_npos_targets(None))
     }
 
-    fn next_election_prediction(now: BlockNumberFor::<T>) -> BlockNumberFor::<T> {
+    fn next_election_prediction(now: BlockNumberFor<T>) -> BlockNumberFor<T> {
         let current_era = Self::current_era().unwrap_or(0);
         let current_session = Self::current_planned_session();
         let current_era_start_session_index =
@@ -1164,7 +1169,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
 
         let session_length = T::NextNewSession::average_session_length();
 
-        let sessions_left: BlockNumberFor::<T> = match ForceEra::<T>::get() {
+        let sessions_left: BlockNumberFor<T> = match ForceEra::<T>::get() {
             Forcing::ForceNone => Bounded::max_value(),
             Forcing::ForceNew | Forcing::ForceAlways => Zero::zero(),
             Forcing::NotForcing if era_progress >= T::SessionsPerEra::get() => Zero::zero(),
@@ -1190,10 +1195,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
             panic!("cannot convert a VoteWeight into BalanceOf, benchmark needs reconfiguring.")
         });
         <Bonded<T>>::insert(voter.clone(), voter.clone());
-        <Ledger<T>>::insert(
-            voter.clone(),
-            StakingLedger::<T>::new(voter.clone(), stake),
-        );
+        <Ledger<T>>::insert(voter.clone(), StakingLedger::<T>::new(voter.clone(), stake));
 
         Self::do_add_nominator(&voter, Nominations { targets, submitted_in: 0, suppressed: false });
     }
@@ -1202,10 +1204,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
     fn add_target(target: T::AccountId) {
         let stake = MinValidatorBond::<T>::get() * 100u32.into();
         <Bonded<T>>::insert(target.clone(), target.clone());
-        <Ledger<T>>::insert(
-            target.clone(),
-            StakingLedger::<T>::new(target.clone(), stake),
-        );
+        <Ledger<T>>::insert(target.clone(), StakingLedger::<T>::new(target.clone(), stake));
         Self::do_add_validator(
             &target,
             ValidatorPrefs { commission: Perbill::zero(), blocked: false },
@@ -1237,10 +1236,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
                 .and_then(|w| <BalanceOf<T>>::try_from(w).ok())
                 .unwrap_or_else(|| MinNominatorBond::<T>::get() * 100u32.into());
             <Bonded<T>>::insert(v.clone(), v.clone());
-            <Ledger<T>>::insert(
-                v.clone(),
-                StakingLedger::<T>::new(v.clone(), stake),
-            );
+            <Ledger<T>>::insert(v.clone(), StakingLedger::<T>::new(v.clone(), stake));
             Self::do_add_validator(
                 &v,
                 ValidatorPrefs { commission: Perbill::zero(), blocked: false },
@@ -1252,10 +1248,7 @@ impl<T: Config> ElectionDataProvider for Pallet<T> {
                 panic!("cannot convert a VoteWeight into BalanceOf, benchmark needs reconfiguring.")
             });
             <Bonded<T>>::insert(v.clone(), v.clone());
-            <Ledger<T>>::insert(
-                v.clone(),
-                StakingLedger::<T>::new(v.clone(), stake),
-            );
+            <Ledger<T>>::insert(v.clone(), StakingLedger::<T>::new(v.clone(), stake));
             Self::do_add_nominator(
                 &v,
                 Nominations { targets: t, submitted_in: 0, suppressed: false },
@@ -1339,7 +1332,7 @@ impl<T: Config> historical::SessionManager<T::AccountId, Exposure<T::AccountId, 
 
 /// Add reward points to block authors:
 /// * 20 points to the block producer for producing a (non-uncle) block,
-impl<T> pallet_authorship::EventHandler<T::AccountId, BlockNumberFor::<T>> for Pallet<T>
+impl<T> pallet_authorship::EventHandler<T::AccountId, BlockNumberFor<T>> for Pallet<T>
 where
     T: Config + pallet_authorship::Config + pallet_session::Config,
 {
@@ -1852,10 +1845,7 @@ impl<T: Config> sp_staking::StakingUnchecked for Pallet<T> {
         ensure!(keyless_who != payee, Error::<T>::RewardDestinationRestricted);
 
         VirtualStakers::<T>::insert(keyless_who, ());
-        Self::deposit_event(Event::<T>::Bonded {
-            stash: keyless_who.clone(),
-            amount: value,
-        });
+        Self::deposit_event(Event::<T>::Bonded { stash: keyless_who.clone(), amount: value });
 
         let ledger = StakingLedger::<T>::new(keyless_who.clone(), value);
         ledger.bond(RewardDestination::Account(payee.clone()))?;
@@ -1865,8 +1855,7 @@ impl<T: Config> sp_staking::StakingUnchecked for Pallet<T> {
     #[cfg(feature = "runtime-benchmarks")]
     fn migrate_to_direct_staker(who: &Self::AccountId) {
         assert!(VirtualStakers::<T>::contains_key(who));
-        let ledger =
-            StakingLedger::<T>::get(StakingAccount::Stash(who.clone())).unwrap();
+        let ledger = StakingLedger::<T>::get(StakingAccount::Stash(who.clone())).unwrap();
         let _ = asset::update_stake::<T>(who, ledger.total)
             .expect("funds must be transferred to stash");
         VirtualStakers::<T>::remove(who);

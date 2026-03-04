@@ -7,6 +7,7 @@ use sp_std as _;
 
 mod traits;
 
+use alloc::vec::Vec;
 use frame_support::{
     pallet_prelude::*,
     traits::{Currency, OnUnbalanced, Randomness, ReservableCurrency},
@@ -19,7 +20,6 @@ use rand_chacha::{
 };
 use sp_core::H256;
 use sp_runtime::traits::Saturating;
-use alloc::vec::Vec;
 
 pub use pallet::*;
 

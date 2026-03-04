@@ -1,10 +1,10 @@
 use super::MachineId;
+use alloc::vec::Vec;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec;
 
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
 pub struct OPPendingSlashInfo<AccountId, BlockNumber, Balance> {

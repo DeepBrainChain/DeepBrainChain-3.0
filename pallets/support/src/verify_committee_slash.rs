@@ -1,8 +1,9 @@
 use crate::{verify_online::OCBookResultType, MachineId};
+use alloc::vec::Vec;
+use core::cmp;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec; use core::cmp;
 
 // NOTE: If slash is from maintain committee, and reporter is slashed, but when
 // committee support the reporter's slash is canceled, reporter's slash is not canceled at the same

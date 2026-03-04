@@ -5,10 +5,10 @@
 extern crate alloc;
 use sp_std as _;
 
+use alloc::vec::Vec;
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use sp_core::H160;
-use alloc::vec::Vec;
 
 pub use pallet::*;
 

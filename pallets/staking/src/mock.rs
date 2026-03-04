@@ -23,8 +23,8 @@ use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
 use frame_support::{
     assert_ok, ord_parameter_types, parameter_types,
     traits::{
-        ConstU32, ConstU64, EitherOfDiverse, FindAuthor, Get, Hooks,
-        Imbalance, OnUnbalanced, OneSessionHandler,
+        ConstU32, ConstU64, EitherOfDiverse, FindAuthor, Get, Hooks, Imbalance, OnUnbalanced,
+        OneSessionHandler,
     },
     weights::constants::RocksDbWeight,
 };
@@ -75,10 +75,9 @@ impl sp_runtime::BoundToRuntimeAppPublic for OtherSessionHandler {
 }
 
 pub fn is_disabled(controller: AccountId) -> bool {
-    let stash = StakingLedger::<Test>::paired_account(
-        sp_staking::StakingAccount::Controller(controller),
-    )
-    .unwrap();
+    let stash =
+        StakingLedger::<Test>::paired_account(sp_staking::StakingAccount::Controller(controller))
+            .unwrap();
     let validator_index = match Session::validators().iter().position(|v| *v == stash) {
         Some(index) => index as u32,
         None => return false,

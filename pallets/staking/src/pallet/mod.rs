@@ -17,19 +17,15 @@
 
 //! Staking FRAME Pallet.
 
-use frame_election_provider_support::{
-    ElectionProvider, SortedListProvider, VoteWeight,
-};
+use alloc::vec::Vec;
 use codec::{Codec, HasCompact};
+use frame_election_provider_support::{ElectionProvider, SortedListProvider, VoteWeight};
 use frame_support::{
     pallet_prelude::*,
     traits::{
-        tokens::fungible::{
-            hold::Mutate as FunHoldMutate, Mutate as FunMutate,
-        },
-        Contains, Defensive, DefensiveSaturating, EnsureOrigin,
-        EstimateNextNewSession, Get, InspectLockableCurrency, OnUnbalanced,
-        UnixTime,
+        tokens::fungible::{hold::Mutate as FunHoldMutate, Mutate as FunMutate},
+        Contains, Defensive, DefensiveSaturating, EnsureOrigin, EstimateNextNewSession, Get,
+        InspectLockableCurrency, OnUnbalanced, UnixTime,
     },
     weights::Weight,
     BoundedVec,
@@ -40,7 +36,6 @@ use sp_runtime::{
     ArithmeticError, Perbill, Percent,
 };
 use sp_staking::{EraIndex, SessionIndex, StakingAccount};
-use alloc::vec::Vec;
 
 mod impls;
 
@@ -96,13 +91,19 @@ pub mod pallet {
         /// Needed to compute and check a threshold for the offending validators.
         type OldCurrency: InspectLockableCurrency<
             Self::AccountId,
-            Moment = BlockNumberFor::<Self>,
+            Moment = BlockNumberFor<Self>,
             Balance = Self::CurrencyBalance,
         >;
         /// The staking balance.
-        type Currency: FunHoldMutate<Self::AccountId, Reason = Self::RuntimeHoldReason, Balance = Self::CurrencyBalance>
-            + FunMutate<Self::AccountId, Balance = Self::CurrencyBalance>
-            + frame_support::traits::fungible::hold::Balanced<Self::AccountId, Balance = Self::CurrencyBalance>;
+        type Currency: FunHoldMutate<
+                Self::AccountId,
+                Reason = Self::RuntimeHoldReason,
+                Balance = Self::CurrencyBalance,
+            > + FunMutate<Self::AccountId, Balance = Self::CurrencyBalance>
+            + frame_support::traits::fungible::hold::Balanced<
+                Self::AccountId,
+                Balance = Self::CurrencyBalance,
+            >;
         /// Overarching hold reason.
         type RuntimeHoldReason: From<HoldReason>;
         /// Just the `Currency::Balance` type; we have this item to allow us to constrain it to
@@ -137,14 +138,14 @@ pub mod pallet {
         /// Something that provides the election functionality.
         type ElectionProvider: ElectionProvider<
             AccountId = Self::AccountId,
-            BlockNumber = BlockNumberFor::<Self>,
+            BlockNumber = BlockNumberFor<Self>,
             // we only accept an election provider that has staking as data provider.
             DataProvider = Pallet<Self>,
         >;
         /// Something that provides the election functionality at genesis.
         type GenesisElectionProvider: ElectionProvider<
             AccountId = Self::AccountId,
-            BlockNumber = BlockNumberFor::<Self>,
+            BlockNumber = BlockNumberFor<Self>,
             DataProvider = Pallet<Self>,
         >;
 
@@ -216,7 +217,7 @@ pub mod pallet {
 
         /// Something that can estimate the next session change, accurately or as a best effort
         /// guess.
-        type NextNewSession: EstimateNextNewSession<BlockNumberFor::<Self>>;
+        type NextNewSession: EstimateNextNewSession<BlockNumberFor<Self>>;
 
         /// The maximum number of nominators rewarded for each validator.
         ///
@@ -600,7 +601,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn reward_start_height)]
-    pub type RewardStartHeight<T: Config> = StorageValue<_, BlockNumberFor::<T>, ValueQuery>;
+    pub type RewardStartHeight<T: Config> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
@@ -700,10 +701,7 @@ pub mod pallet {
                     ),
                     _ => Ok(()),
                 });
-                assert!(
-                    ValidatorCount::<T>::get() <=
-                        T::MaxValidatorSet::get()
-                );
+                assert!(ValidatorCount::<T>::get() <= T::MaxValidatorSet::get());
             }
 
             // all voters are reported to the `VoterList`.
@@ -1031,8 +1029,7 @@ pub mod pallet {
                 ledger.update()?;
                 // update this staker in the sorted list, if they exist in it.
                 if T::VoterList::contains(&stash) {
-                    let _ =
-                        T::VoterList::on_update(&stash, Self::weight_of(&stash)).defensive();
+                    let _ = T::VoterList::on_update(&stash, Self::weight_of(&stash)).defensive();
                 }
 
                 Self::deposit_event(Event::<T>::Bonded { stash, amount: extra });
@@ -1132,8 +1129,7 @@ pub mod pallet {
 
                 // update this staker in the sorted list, if they exist in it.
                 if T::VoterList::contains(&stash) {
-                    let _ = T::VoterList::on_update(&stash, Self::weight_of(&stash))
-                        .defensive();
+                    let _ = T::VoterList::on_update(&stash, Self::weight_of(&stash)).defensive();
                 }
 
                 Self::deposit_event(Event::<T>::Unbonded { stash, amount: value });
@@ -1249,7 +1245,10 @@ pub mod pallet {
             }
 
             ensure!(!targets.is_empty(), Error::<T>::EmptyTargets);
-            ensure!(targets.len() <= MaxNominationsOf::<T>::get() as usize, Error::<T>::TooManyTargets);
+            ensure!(
+                targets.len() <= MaxNominationsOf::<T>::get() as usize,
+                Error::<T>::TooManyTargets
+            );
 
             let old = Nominators::<T>::get(stash).map_or_else(Vec::new, |x| x.targets.into_inner());
 
@@ -1362,10 +1361,7 @@ pub mod pallet {
             ensure_root(origin)?;
             // ensure new validator count does not exceed maximum winners
             // support by election provider.
-            ensure!(
-                new <= T::MaxValidatorSet::get(),
-                Error::<T>::TooManyValidators
-            );
+            ensure!(new <= T::MaxValidatorSet::get(), Error::<T>::TooManyValidators);
             ValidatorCount::<T>::put(new);
             Ok(())
         }
@@ -1386,10 +1382,7 @@ pub mod pallet {
             ensure_root(origin)?;
             let old = ValidatorCount::<T>::get();
             let new = old.checked_add(additional).ok_or(ArithmeticError::Overflow)?;
-            ensure!(
-                new <= T::MaxValidatorSet::get(),
-                Error::<T>::TooManyValidators
-            );
+            ensure!(new <= T::MaxValidatorSet::get(), Error::<T>::TooManyValidators);
 
             ValidatorCount::<T>::put(new);
             Ok(())
@@ -1409,10 +1402,7 @@ pub mod pallet {
             let old = ValidatorCount::<T>::get();
             let new = old.checked_add(factor.mul_floor(old)).ok_or(ArithmeticError::Overflow)?;
 
-            ensure!(
-                new <= T::MaxValidatorSet::get(),
-                Error::<T>::TooManyValidators
-            );
+            ensure!(new <= T::MaxValidatorSet::get(), Error::<T>::TooManyValidators);
 
             ValidatorCount::<T>::put(new);
             Ok(())
@@ -1584,7 +1574,10 @@ pub mod pallet {
             let initial_unlocking = ledger.unlocking.len() as u32;
             let (ledger, rebonded_value) = ledger.rebond(value);
             // Last check: the new active amount of ledger must be more than ED.
-            ensure!(ledger.active >= asset::existential_deposit::<T>(), Error::<T>::InsufficientBond);
+            ensure!(
+                ledger.active >= asset::existential_deposit::<T>(),
+                Error::<T>::InsufficientBond
+            );
 
             Self::deposit_event(Event::<T>::Bonded {
                 stash: stash.clone(),
@@ -1595,8 +1588,7 @@ pub mod pallet {
             // NOTE: ledger must be updated prior to calling `Self::weight_of`.
             ledger.update()?;
             if T::VoterList::contains(&stash) {
-                let _ = T::VoterList::on_update(&stash, Self::weight_of(&stash))
-                    .defensive();
+                let _ = T::VoterList::on_update(&stash, Self::weight_of(&stash)).defensive();
             }
 
             let removed_chunks = 1u32 // for the case where the last iterated chunk is not removed
@@ -1860,7 +1852,7 @@ pub mod pallet {
         #[pallet::weight(frame_support::weights::Weight::from_parts(10000, 0))]
         pub fn set_reward_start_height(
             origin: OriginFor<T>,
-            reward_start_height: BlockNumberFor::<T>,
+            reward_start_height: BlockNumberFor<T>,
         ) -> DispatchResult {
             ensure_root(origin)?;
             RewardStartHeight::<T>::put(reward_start_height);
@@ -1987,8 +1979,7 @@ pub mod pallet {
             ledger.update()?;
 
             if T::VoterList::contains(&account) {
-                let _ = T::VoterList::on_update(&account, Self::weight_of(&account))
-                    .defensive();
+                let _ = T::VoterList::on_update(&account, Self::weight_of(&account)).defensive();
             }
 
             Self::deposit_event(Event::<T>::UpdateUnlock {
@@ -2048,7 +2039,9 @@ pub mod pallet {
                 Error::<T>::BoundNotMet
             );
 
-            for stash in stashes.into_iter().map(T::Lookup::lookup).collect::<Result<Vec<_>, _>>()? {
+            for stash in
+                stashes.into_iter().map(T::Lookup::lookup).collect::<Result<Vec<_>, _>>()?
+            {
                 if Bonded::<T>::get(&stash) == Some(stash.clone()) {
                     continue
                 }

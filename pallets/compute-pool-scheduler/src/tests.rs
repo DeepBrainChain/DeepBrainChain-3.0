@@ -1,6 +1,6 @@
 use crate::{
     mock::*,
-    pallet::{Error, PoolStatus, TaskDimensions, TaskPriority, TaskStatus, ComplaintStatus},
+    pallet::{ComplaintStatus, Error, PoolStatus, TaskDimensions, TaskPriority, TaskStatus},
 };
 use frame_support::{assert_noop, assert_ok, traits::Hooks, BoundedVec};
 
@@ -25,10 +25,10 @@ fn register_pool_works() {
         assert_ok!(ComputePoolScheduler::register_pool(
             RuntimeOrigin::signed(1),
             gpu_model(),
-            24,     // 24GB GPU memory
-            true,   // has NVLink
-            130,    // NVLink efficiency (must be 120-150)
-            100,    // price per task
+            24,   // 24GB GPU memory
+            true, // has NVLink
+            130,  // NVLink efficiency (must be 120-150)
+            100,  // price per task
         ));
         let pool = ComputePoolScheduler::pools(0).unwrap();
         assert_eq!(pool.owner, 1);
@@ -43,11 +43,21 @@ fn register_pool_works() {
 fn register_pool_duplicate_fails() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_noop!(
             ComputePoolScheduler::register_pool(
-                RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+                RuntimeOrigin::signed(1),
+                gpu_model(),
+                24,
+                true,
+                130,
+                100,
             ),
             Error::<Test>::PoolAlreadyExists
         );
@@ -59,7 +69,12 @@ fn register_pool_zero_memory_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
             ComputePoolScheduler::register_pool(
-                RuntimeOrigin::signed(1), gpu_model(), 0, false, 100, 100,
+                RuntimeOrigin::signed(1),
+                gpu_model(),
+                0,
+                false,
+                100,
+                100,
             ),
             Error::<Test>::InvalidDimensions
         );
@@ -71,7 +86,12 @@ fn register_pool_zero_price_fails() {
     new_test_ext().execute_with(|| {
         assert_noop!(
             ComputePoolScheduler::register_pool(
-                RuntimeOrigin::signed(1), gpu_model(), 24, false, 100, 0,
+                RuntimeOrigin::signed(1),
+                gpu_model(),
+                24,
+                false,
+                100,
+                0,
             ),
             Error::<Test>::InsufficientBalance
         );
@@ -83,7 +103,12 @@ fn submit_task_works() {
     new_test_ext().execute_with(|| {
         // Register a pool first
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
 
         // Submit a task (from different account)
@@ -121,7 +146,12 @@ fn submit_task_no_pool_fails() {
 fn submit_task_invalid_dimensions_fails() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_noop!(
             ComputePoolScheduler::submit_task(
@@ -139,15 +169,18 @@ fn submit_task_invalid_dimensions_fails() {
 fn deregister_pool_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, false, 100, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            false,
+            100,
+            100,
         ));
-        assert_ok!(ComputePoolScheduler::deregister_pool(
-            RuntimeOrigin::signed(1), 0,
-        ));
+        assert_ok!(ComputePoolScheduler::deregister_pool(RuntimeOrigin::signed(1), 0,));
         // Pool may be removed from storage or marked as deregistered
         match ComputePoolScheduler::pools(0) {
             Some(pool) => assert_eq!(pool.status, PoolStatus::Deregistered),
-            None => {} // Pool was removed from storage
+            None => {}, // Pool was removed from storage
         }
     });
 }
@@ -156,7 +189,12 @@ fn deregister_pool_works() {
 fn deregister_pool_not_owner_fails() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, false, 100, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            false,
+            100,
+            100,
         ));
         assert_noop!(
             ComputePoolScheduler::deregister_pool(RuntimeOrigin::signed(2), 0),
@@ -169,18 +207,25 @@ fn deregister_pool_not_owner_fails() {
 fn submit_proof_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_ok!(ComputePoolScheduler::submit_task(
-            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal,
+            RuntimeOrigin::signed(2),
+            dims(),
+            TaskPriority::Normal,
             None,
         ));
 
         // Pool owner submits proof (no verification_result — just proof hash)
         assert_ok!(ComputePoolScheduler::submit_proof(
             RuntimeOrigin::signed(1),
-            0,  // task_id
-            [42u8; 32],  // proof_hash
+            0,          // task_id
+            [42u8; 32], // proof_hash
         ));
 
         let task = ComputePoolScheduler::tasks(0).unwrap();
@@ -196,19 +241,23 @@ fn verify_proof_works() {
     new_test_ext().execute_with(|| {
         // Account 1 = pool owner, Account 2 = task user, Account 3 = independent verifier
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_ok!(ComputePoolScheduler::submit_task(
-            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+            RuntimeOrigin::signed(2),
+            dims(),
+            TaskPriority::Normal,
+            None,
         ));
-        assert_ok!(ComputePoolScheduler::submit_proof(
-            RuntimeOrigin::signed(1), 0, [42u8; 32],
-        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(RuntimeOrigin::signed(1), 0, [42u8; 32],));
 
         // Independent verifier (account 3) approves the proof
-        assert_ok!(ComputePoolScheduler::verify_proof(
-            RuntimeOrigin::signed(3), 0, true,
-        ));
+        assert_ok!(ComputePoolScheduler::verify_proof(RuntimeOrigin::signed(3), 0, true,));
 
         let task = ComputePoolScheduler::tasks(0).unwrap();
         assert_eq!(task.status, TaskStatus::Completed);
@@ -220,19 +269,23 @@ fn verify_proof_works() {
 fn verify_proof_reject_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_ok!(ComputePoolScheduler::submit_task(
-            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+            RuntimeOrigin::signed(2),
+            dims(),
+            TaskPriority::Normal,
+            None,
         ));
-        assert_ok!(ComputePoolScheduler::submit_proof(
-            RuntimeOrigin::signed(1), 0, [42u8; 32],
-        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(RuntimeOrigin::signed(1), 0, [42u8; 32],));
 
         // Independent verifier rejects the proof
-        assert_ok!(ComputePoolScheduler::verify_proof(
-            RuntimeOrigin::signed(3), 0, false,
-        ));
+        assert_ok!(ComputePoolScheduler::verify_proof(RuntimeOrigin::signed(3), 0, false,));
 
         let task = ComputePoolScheduler::tasks(0).unwrap();
         assert_eq!(task.status, TaskStatus::Failed);
@@ -244,14 +297,20 @@ fn verify_proof_reject_works() {
 fn self_verification_fails() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_ok!(ComputePoolScheduler::submit_task(
-            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+            RuntimeOrigin::signed(2),
+            dims(),
+            TaskPriority::Normal,
+            None,
         ));
-        assert_ok!(ComputePoolScheduler::submit_proof(
-            RuntimeOrigin::signed(1), 0, [42u8; 32],
-        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(RuntimeOrigin::signed(1), 0, [42u8; 32],));
 
         // Pool owner (account 1) tries to verify their own proof — MUST FAIL
         assert_noop!(
@@ -269,14 +328,20 @@ fn self_verification_fails() {
 fn auto_verify_on_timeout() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_ok!(ComputePoolScheduler::submit_task(
-            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+            RuntimeOrigin::signed(2),
+            dims(),
+            TaskPriority::Normal,
+            None,
         ));
-        assert_ok!(ComputePoolScheduler::submit_proof(
-            RuntimeOrigin::signed(1), 0, [42u8; 32],
-        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(RuntimeOrigin::signed(1), 0, [42u8; 32],));
 
         let task = ComputePoolScheduler::tasks(0).unwrap();
         assert_eq!(task.status, TaskStatus::ProofSubmitted);
@@ -295,7 +360,12 @@ fn auto_verify_on_timeout() {
 
 fn setup_default_pool() {
     assert_ok!(ComputePoolScheduler::register_pool(
-        RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+        RuntimeOrigin::signed(1),
+        gpu_model(),
+        24,
+        true,
+        130,
+        100,
     ));
 }
 
@@ -312,7 +382,6 @@ fn staking_works() {
     });
 }
 
-
 // ============================================================
 // Complaint Mechanism Tests
 // ============================================================
@@ -321,18 +390,22 @@ fn staking_works() {
 fn setup_completed_task() -> (u64, u64) {
     // Account 1 = pool owner, Account 2 = task user
     assert_ok!(ComputePoolScheduler::register_pool(
-        RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+        RuntimeOrigin::signed(1),
+        gpu_model(),
+        24,
+        true,
+        130,
+        100,
     ));
     assert_ok!(ComputePoolScheduler::submit_task(
-        RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+        RuntimeOrigin::signed(2),
+        dims(),
+        TaskPriority::Normal,
+        None,
     ));
-    assert_ok!(ComputePoolScheduler::submit_proof(
-        RuntimeOrigin::signed(1), 0, [42u8; 32],
-    ));
+    assert_ok!(ComputePoolScheduler::submit_proof(RuntimeOrigin::signed(1), 0, [42u8; 32],));
     // Independent verifier approves
-    assert_ok!(ComputePoolScheduler::verify_proof(
-        RuntimeOrigin::signed(3), 0, true,
-    ));
+    assert_ok!(ComputePoolScheduler::verify_proof(RuntimeOrigin::signed(3), 0, true,));
     let task = ComputePoolScheduler::tasks(0).unwrap();
     assert_eq!(task.status, TaskStatus::Completed);
     assert_eq!(task.verification_result, Some(true));
@@ -392,12 +465,16 @@ fn file_complaint_duplicate_fails() {
         let (_pool_id, task_id) = setup_completed_task();
 
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad".to_vec(),
         ));
 
         assert_noop!(
             ComputePoolScheduler::file_complaint(
-                RuntimeOrigin::signed(2), task_id, b"Bad again".to_vec(),
+                RuntimeOrigin::signed(2),
+                task_id,
+                b"Bad again".to_vec(),
             ),
             Error::<Test>::ComplaintAlreadyFiled
         );
@@ -409,17 +486,23 @@ fn file_complaint_incomplete_task_fails() {
     new_test_ext().execute_with(|| {
         // Register pool and submit task but don't complete it
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
         assert_ok!(ComputePoolScheduler::submit_task(
-            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+            RuntimeOrigin::signed(2),
+            dims(),
+            TaskPriority::Normal,
+            None,
         ));
 
         // Task is in Computing state, not Completed
         assert_noop!(
-            ComputePoolScheduler::file_complaint(
-                RuntimeOrigin::signed(2), 0, b"Bad".to_vec(),
-            ),
+            ComputePoolScheduler::file_complaint(RuntimeOrigin::signed(2), 0, b"Bad".to_vec(),),
             Error::<Test>::InvalidTaskState
         );
     });
@@ -429,7 +512,12 @@ fn file_complaint_incomplete_task_fails() {
 fn file_complaint_too_many_fails() {
     new_test_ext().execute_with(|| {
         assert_ok!(ComputePoolScheduler::register_pool(
-            RuntimeOrigin::signed(1), gpu_model(), 24, true, 130, 100,
+            RuntimeOrigin::signed(1),
+            gpu_model(),
+            24,
+            true,
+            130,
+            100,
         ));
 
         // Max is 10, fill up complaints by directly setting storage
@@ -437,19 +525,16 @@ fn file_complaint_too_many_fails() {
 
         // Submit and complete a task
         assert_ok!(ComputePoolScheduler::submit_task(
-            RuntimeOrigin::signed(2), dims(), TaskPriority::Normal, None,
+            RuntimeOrigin::signed(2),
+            dims(),
+            TaskPriority::Normal,
+            None,
         ));
-        assert_ok!(ComputePoolScheduler::submit_proof(
-            RuntimeOrigin::signed(1), 0, [42u8; 32],
-        ));
-        assert_ok!(ComputePoolScheduler::verify_proof(
-            RuntimeOrigin::signed(3), 0, true,
-        ));
+        assert_ok!(ComputePoolScheduler::submit_proof(RuntimeOrigin::signed(1), 0, [42u8; 32],));
+        assert_ok!(ComputePoolScheduler::verify_proof(RuntimeOrigin::signed(3), 0, true,));
 
         assert_noop!(
-            ComputePoolScheduler::file_complaint(
-                RuntimeOrigin::signed(2), 0, b"Bad".to_vec(),
-            ),
+            ComputePoolScheduler::file_complaint(RuntimeOrigin::signed(2), 0, b"Bad".to_vec(),),
             Error::<Test>::TooManyOpenComplaints
         );
     });
@@ -461,15 +546,15 @@ fn resolve_complaint_valid() {
         let (_pool_id, task_id) = setup_completed_task();
 
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad result".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad result".to_vec(),
         ));
 
         let balance_before = Balances::free_balance(2);
 
         // Root resolves as valid
-        assert_ok!(ComputePoolScheduler::resolve_complaint(
-            RuntimeOrigin::root(), 0, true,
-        ));
+        assert_ok!(ComputePoolScheduler::resolve_complaint(RuntimeOrigin::root(), 0, true,));
 
         let complaint = ComputePoolScheduler::complaints(0).unwrap();
         assert_eq!(complaint.status, ComplaintStatus::ResolvedValid);
@@ -497,15 +582,15 @@ fn resolve_complaint_invalid() {
         let (_pool_id, task_id) = setup_completed_task();
 
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad result".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad result".to_vec(),
         ));
 
         let pool_owner_balance_before = Balances::free_balance(1);
 
         // Root resolves as invalid
-        assert_ok!(ComputePoolScheduler::resolve_complaint(
-            RuntimeOrigin::root(), 0, false,
-        ));
+        assert_ok!(ComputePoolScheduler::resolve_complaint(RuntimeOrigin::root(), 0, false,));
 
         let complaint = ComputePoolScheduler::complaints(0).unwrap();
         assert_eq!(complaint.status, ComplaintStatus::ResolvedInvalid);
@@ -524,11 +609,11 @@ fn resolve_complaint_already_resolved_fails() {
         let (_pool_id, task_id) = setup_completed_task();
 
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad".to_vec(),
         ));
-        assert_ok!(ComputePoolScheduler::resolve_complaint(
-            RuntimeOrigin::root(), 0, true,
-        ));
+        assert_ok!(ComputePoolScheduler::resolve_complaint(RuntimeOrigin::root(), 0, true,));
 
         // Try resolving again
         assert_noop!(
@@ -545,15 +630,15 @@ fn cancel_complaint_works() {
 
         let balance_before = Balances::free_balance(2);
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad".to_vec(),
         ));
 
         // Balance decreased by deposit
         assert_eq!(Balances::free_balance(2), balance_before - 100);
 
-        assert_ok!(ComputePoolScheduler::cancel_complaint(
-            RuntimeOrigin::signed(2), 0,
-        ));
+        assert_ok!(ComputePoolScheduler::cancel_complaint(RuntimeOrigin::signed(2), 0,));
 
         let complaint = ComputePoolScheduler::complaints(0).unwrap();
         assert_eq!(complaint.status, ComplaintStatus::Cancelled);
@@ -572,7 +657,9 @@ fn cancel_complaint_not_owner_fails() {
         let (_pool_id, task_id) = setup_completed_task();
 
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad".to_vec(),
         ));
 
         // Account 3 is not the complainant
@@ -589,19 +676,17 @@ fn appeal_complaint_works() {
         let (_pool_id, task_id) = setup_completed_task();
 
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad result".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad result".to_vec(),
         ));
 
         // Resolve as valid (creates PendingComplaintSlash)
-        assert_ok!(ComputePoolScheduler::resolve_complaint(
-            RuntimeOrigin::root(), 0, true,
-        ));
+        assert_ok!(ComputePoolScheduler::resolve_complaint(RuntimeOrigin::root(), 0, true,));
         assert!(ComputePoolScheduler::pending_complaint_slash(0).is_some());
 
         // Pool owner appeals within grace period
-        assert_ok!(ComputePoolScheduler::appeal_complaint(
-            RuntimeOrigin::signed(1), 0,
-        ));
+        assert_ok!(ComputePoolScheduler::appeal_complaint(RuntimeOrigin::signed(1), 0,));
 
         let complaint = ComputePoolScheduler::complaints(0).unwrap();
         assert_eq!(complaint.status, ComplaintStatus::Appealed);
@@ -617,13 +702,13 @@ fn execute_pending_slash_on_initialize() {
         let (_pool_id, task_id) = setup_completed_task();
 
         assert_ok!(ComputePoolScheduler::file_complaint(
-            RuntimeOrigin::signed(2), task_id, b"Bad result".to_vec(),
+            RuntimeOrigin::signed(2),
+            task_id,
+            b"Bad result".to_vec(),
         ));
 
         // Resolve as valid
-        assert_ok!(ComputePoolScheduler::resolve_complaint(
-            RuntimeOrigin::root(), 0, true,
-        ));
+        assert_ok!(ComputePoolScheduler::resolve_complaint(RuntimeOrigin::root(), 0, true,));
 
         // PendingComplaintSlash exists
         assert!(ComputePoolScheduler::pending_complaint_slash(0).is_some());

@@ -30,7 +30,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
         desired_collection_id: T::CollectionId,
         maybe_desired_item_id: Option<T::ItemId>,
         maybe_price: Option<PriceWithDirection<ItemPrice<T, I>>>,
-        duration: BlockNumberFor::<T>,
+        duration: BlockNumberFor<T>,
     ) -> DispatchResult {
         ensure!(
             Self::is_pallet_feature_enabled(PalletFeature::Swaps),

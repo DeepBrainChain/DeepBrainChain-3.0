@@ -12,7 +12,8 @@ use std::result::Result as StdResult;
     Eq,
     PartialEq,
     Encode,
-    Decode, DecodeWithMemTracking,
+    Decode,
+    DecodeWithMemTracking,
     Default,
     Clone,
     Copy,
@@ -53,7 +54,17 @@ mod serde_balance {
 
 #[cfg(feature = "std")]
 #[derive(
-    Eq, PartialEq, Encode, Decode, DecodeWithMemTracking, Default, Clone, Serialize, Deserialize, RuntimeDebug, TypeInfo,
+    Eq,
+    PartialEq,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Default,
+    Clone,
+    Serialize,
+    Deserialize,
+    RuntimeDebug,
+    TypeInfo,
 )]
 pub struct RpcText(#[serde(with = "self::serde_text")] Vec<u8>);
 

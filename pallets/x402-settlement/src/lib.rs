@@ -13,20 +13,17 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::traits::StorageVersion;
+    use crate::weights::WeightInfo;
+    use alloc::vec::Vec;
     use frame_support::{
-        traits::EnsureOrigin,
         dispatch::DispatchResult,
         pallet_prelude::*,
-        traits::{Currency, ReservableCurrency},
+        traits::{Currency, EnsureOrigin, ReservableCurrency, StorageVersion},
         BoundedVec,
     };
     use frame_system::pallet_prelude::*;
-    use alloc::vec::Vec;
     use sp_core::H256;
-    use crate::weights::WeightInfo;
     use sp_runtime::traits::{SaturatedConversion, Saturating};
-
 
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum PaymentIntentStatus {
@@ -104,8 +101,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn payment_intent_of)]
-    pub type PaymentIntents<T: Config> =
-        StorageMap<_, Blake2_128Concat, u64, PaymentIntent<T>>;
+    pub type PaymentIntents<T: Config> = StorageMap<_, Blake2_128Concat, u64, PaymentIntent<T>>;
 
     #[pallet::storage]
     #[pallet::getter(fn nonce_used)]
@@ -173,7 +169,6 @@ pub mod pallet {
         TooManyPendingIntents,
     }
 
-
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
         pub _phantom: core::marker::PhantomData<T>,
@@ -199,7 +194,9 @@ pub mod pallet {
 
             for id in &pending {
                 if let Some(intent) = PaymentIntents::<T>::get(id) {
-                    if now >= intent.expires_at && matches!(intent.status, PaymentIntentStatus::Pending) {
+                    if now >= intent.expires_at &&
+                        matches!(intent.status, PaymentIntentStatus::Pending)
+                    {
                         T::Currency::unreserve(&intent.merchant, intent.amount);
                         PaymentIntents::<T>::mutate(id, |maybe| {
                             if let Some(ref mut i) = maybe {
@@ -224,11 +221,11 @@ pub mod pallet {
             }
 
             let expired_count = expired_ids.len() as u64;
-            T::DbWeight::get().reads(total_checked.saturating_add(1))
-                .saturating_add(T::DbWeight::get().writes(expired_count.saturating_mul(2).saturating_add(1)))
+            T::DbWeight::get().reads(total_checked.saturating_add(1)).saturating_add(
+                T::DbWeight::get().writes(expired_count.saturating_mul(2).saturating_add(1)),
+            )
         }
     }
-
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -257,9 +254,8 @@ pub mod pallet {
             );
 
             // Verify facilitator signature
-            let signature_bytes = facilitator_signature
-                .try_into()
-                .map_err(|_| Error::<T>::ArithmeticOverflow)?;
+            let signature_bytes =
+                facilitator_signature.try_into().map_err(|_| Error::<T>::ArithmeticOverflow)?;
             ensure!(
                 Self::verify_facilitator_signature(
                     &merchant,
@@ -273,8 +269,7 @@ pub mod pallet {
             );
 
             // Reserve merchant balance
-            T::Currency::reserve(&merchant, amount)
-                .map_err(|_| Error::<T>::InsufficientBalance)?;
+            T::Currency::reserve(&merchant, amount).map_err(|_| Error::<T>::InsufficientBalance)?;
 
             let intent_id = NextIntentId::<T>::get();
             let next_intent_id = intent_id.checked_add(1).ok_or(Error::<T>::ArithmeticOverflow)?;
@@ -301,7 +296,8 @@ pub mod pallet {
                     created_at: <frame_system::Pallet<T>>::block_number(),
                     verified_at: None,
                     settled_at: None,
-                    expires_at: <frame_system::Pallet<T>>::block_number().saturating_add(T::PaymentIntentTTL::get()),
+                    expires_at: <frame_system::Pallet<T>>::block_number()
+                        .saturating_add(T::PaymentIntentTTL::get()),
                 },
             );
 
@@ -318,15 +314,9 @@ pub mod pallet {
 
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::verify_settlement())]
-        pub fn verify_settlement(
-            origin: OriginFor<T>,
-            intent_id: u64,
-        ) -> DispatchResult {
+        pub fn verify_settlement(origin: OriginFor<T>, intent_id: u64) -> DispatchResult {
             let facilitator = ensure_signed(origin)?;
-            ensure!(
-                facilitator == T::FacilitatorAccount::get(),
-                Error::<T>::NotAuthorized
-            );
+            ensure!(facilitator == T::FacilitatorAccount::get(), Error::<T>::NotAuthorized);
 
             PaymentIntents::<T>::try_mutate(intent_id, |maybe_intent| -> DispatchResult {
                 let intent = maybe_intent.as_mut().ok_or(Error::<T>::PaymentIntentNotFound)?;
@@ -348,23 +338,18 @@ pub mod pallet {
                 Ok(())
             })?;
 
-            Self::deposit_event(Event::PaymentIntentVerified {
-                intent_id,
-                facilitator,
-            });
+            Self::deposit_event(Event::PaymentIntentVerified { intent_id, facilitator });
 
             Ok(())
         }
 
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::finalize_settlement())]
-        pub fn finalize_settlement(
-            origin: OriginFor<T>,
-            intent_id: u64,
-        ) -> DispatchResult {
+        pub fn finalize_settlement(origin: OriginFor<T>, intent_id: u64) -> DispatchResult {
             let caller = ensure_signed(origin)?;
 
-            let mut intent = PaymentIntents::<T>::get(intent_id).ok_or(Error::<T>::PaymentIntentNotFound)?;
+            let mut intent =
+                PaymentIntents::<T>::get(intent_id).ok_or(Error::<T>::PaymentIntentNotFound)?;
             ensure!(
                 matches!(intent.status, PaymentIntentStatus::Verified),
                 Error::<T>::InvalidPaymentIntentStatus
@@ -427,20 +412,17 @@ pub mod pallet {
 
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::fail_payment_intent())]
-        pub fn fail_payment_intent(
-            origin: OriginFor<T>,
-            intent_id: u64,
-        ) -> DispatchResult {
+        pub fn fail_payment_intent(origin: OriginFor<T>, intent_id: u64) -> DispatchResult {
             let facilitator = ensure_signed(origin)?;
-            ensure!(
-                facilitator == T::FacilitatorAccount::get(),
-                Error::<T>::NotAuthorized
-            );
+            ensure!(facilitator == T::FacilitatorAccount::get(), Error::<T>::NotAuthorized);
 
             PaymentIntents::<T>::try_mutate(intent_id, |maybe_intent| -> DispatchResult {
                 let intent = maybe_intent.as_mut().ok_or(Error::<T>::PaymentIntentNotFound)?;
                 ensure!(
-                    matches!(intent.status, PaymentIntentStatus::Pending | PaymentIntentStatus::Verified),
+                    matches!(
+                        intent.status,
+                        PaymentIntentStatus::Pending | PaymentIntentStatus::Verified
+                    ),
                     Error::<T>::InvalidPaymentIntentStatus
                 );
 
@@ -477,14 +459,14 @@ pub mod pallet {
             #[cfg(feature = "runtime-benchmarks")]
             {
                 let _ = (merchant, miner, amount, nonce, replay_fingerprint, signature_bytes);
-                return true;
+                return true
             }
 
             #[cfg(not(feature = "runtime-benchmarks"))]
             {
                 // Sr25519 signature must be exactly 64 bytes
                 if signature_bytes.len() != 64 {
-                    return false;
+                    return false
                 }
 
                 // Build the message: SCALE-encode all payment parameters
@@ -512,7 +494,9 @@ pub mod pallet {
             PaymentIntents::<T>::get(intent_id)
         }
 
-        pub fn get_settlement_receipt(intent_id: u64) -> Option<SettlementReceipt<T::AccountId, BalanceOf<T>>> {
+        pub fn get_settlement_receipt(
+            intent_id: u64,
+        ) -> Option<SettlementReceipt<T::AccountId, BalanceOf<T>>> {
             SettlementReceipts::<T>::get(intent_id)
         }
 

@@ -168,7 +168,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .expect("frame system storage builds");
 
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(1, 1_000_000_000_000), (2, 1_000_000_000_000), (3, 1_000_000_000_000), (99, 1_000_000_000_000)],
+        balances: vec![
+            (1, 1_000_000_000_000),
+            (2, 1_000_000_000_000),
+            (3, 1_000_000_000_000),
+            (99, 1_000_000_000_000),
+        ],
         dev_accounts: None,
     }
     .assimilate_storage(&mut t)

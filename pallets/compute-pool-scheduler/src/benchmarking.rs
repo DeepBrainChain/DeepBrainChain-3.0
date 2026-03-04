@@ -1,11 +1,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use frame_benchmarking::v1::{account, benchmarks};
-use frame_support::traits::{Currency, Get, ReservableCurrency};
-use frame_support::BoundedVec;
-use frame_system::RawOrigin;
 use alloc::vec::Vec;
+use frame_benchmarking::v1::{account, benchmarks};
+use frame_support::{
+    traits::{Currency, Get, ReservableCurrency},
+    BoundedVec,
+};
+use frame_system::RawOrigin;
 use sp_runtime::traits::Saturating;
 
 fn funded_account<T: Config>(name: &'static str, index: u32) -> T::AccountId {
@@ -24,12 +26,17 @@ fn create_pool<T: Config>(owner: &T::AccountId) -> PoolId {
         true,
         130u32,
         1000u32.into(),
-    ).expect("register_pool failed");
+    )
+    .expect("register_pool failed");
     NextPoolId::<T>::get().saturating_sub(1)
 }
 
 /// Create a task and force it into Computing status with escrow set up.
-fn create_computing_task<T: Config>(owner: &T::AccountId, user: &T::AccountId, pool_id: PoolId) -> TaskId {
+fn create_computing_task<T: Config>(
+    owner: &T::AccountId,
+    user: &T::AccountId,
+    pool_id: PoolId,
+) -> TaskId {
     let task_id = NextTaskId::<T>::get();
     let now = frame_system::Pallet::<T>::block_number();
     let reward: BalanceOf<T> = 500u32.into();
@@ -39,27 +46,33 @@ fn create_computing_task<T: Config>(owner: &T::AccountId, user: &T::AccountId, p
     let total_reserved = reward.saturating_add(task_deposit);
     T::Currency::reserve(user, total_reserved).expect("reserve failed");
 
-    Tasks::<T>::insert(task_id, ComputeTask {
+    Tasks::<T>::insert(
         task_id,
-        user: user.clone(),
-        pool_id,
-        dimensions: TaskDimensions { m: 128, n: 128, k: 128 },
-        priority: TaskPriority::Normal,
-        status: TaskStatus::Computing,
-        submitted_at: now,
-        proof_hash: None,
-        verification_result: None,
-        reward_amount: Some(reward),
-        disputed: false,
-    });
+        ComputeTask {
+            task_id,
+            user: user.clone(),
+            pool_id,
+            dimensions: TaskDimensions { m: 128, n: 128, k: 128 },
+            priority: TaskPriority::Normal,
+            status: TaskStatus::Computing,
+            submitted_at: now,
+            proof_hash: None,
+            verification_result: None,
+            reward_amount: Some(reward),
+            disputed: false,
+        },
+    );
 
-    TaskEscrowStore::<T>::insert(task_id, TaskEscrow {
-        user: user.clone(),
-        pool_owner: owner.clone(),
-        reward_amount: reward,
-        task_deposit,
-        claimed: false,
-    });
+    TaskEscrowStore::<T>::insert(
+        task_id,
+        TaskEscrow {
+            user: user.clone(),
+            pool_owner: owner.clone(),
+            reward_amount: reward,
+            task_deposit,
+            claimed: false,
+        },
+    );
 
     ActiveTaskCount::<T>::mutate(pool_id, |v| *v = v.saturating_add(1));
     NextTaskId::<T>::put(task_id.saturating_add(1));

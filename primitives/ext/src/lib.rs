@@ -8,15 +8,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
-use sp_runtime_interface::runtime_interface;
-use sp_runtime_interface::pass_by::PassFatPointerAndRead;
+use sp_runtime_interface::{pass_by::PassFatPointerAndRead, runtime_interface};
 
-use parity_scale_codec::Decode;
 use alloc::vec::Vec;
+use parity_scale_codec::Decode;
 
-use dbc_primitives_rpc_evm_tracing_events::{
-    Event, EvmEvent, GasometerEvent, RuntimeEvent,
-};
+use dbc_primitives_rpc_evm_tracing_events::{Event, EvmEvent, GasometerEvent, RuntimeEvent};
 
 #[runtime_interface]
 pub trait TracingExt {

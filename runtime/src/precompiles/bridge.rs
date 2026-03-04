@@ -5,7 +5,7 @@ use fp_evm::{
 use sp_core::{Get, U256};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
-use crate::precompiles::{LOG_TARGET, from_ethabi_h160, from_ethabi_u256};
+use crate::precompiles::{from_ethabi_h160, from_ethabi_u256, LOG_TARGET};
 use alloc::format;
 use core::marker::PhantomData;
 use dbc_primitives::AccountId;
@@ -72,7 +72,8 @@ where
                         exit_status: ExitRevert::Reverted,
                         output: "decode param[0] failed".into(),
                     })?;
-                let from: T::AccountId = T::AddressMapping::into_account_id(from_ethabi_h160(from_raw)).into();
+                let from: T::AccountId =
+                    T::AddressMapping::into_account_id(from_ethabi_h160(from_raw)).into();
 
                 let to =
                     param[1].clone().into_string().ok_or_else(|| PrecompileFailure::Revert {

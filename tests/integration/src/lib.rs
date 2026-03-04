@@ -10,12 +10,12 @@ mod tests {
         traits::{ConstU16, ConstU32, Everything},
     };
     use sp_core::H256;
+    use sp_io;
     use sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Percent,
     };
     use std::cell::RefCell;
-    use sp_io;
 
     use dbc_support::traits::DbcPrice;
 
@@ -335,11 +335,11 @@ mod tests {
 
         pallet_balances::GenesisConfig::<Test> {
             balances: vec![
-                (1, 1_000_000_000_000),  // customer
-                (2, 1_000_000_000_000),  // miner / pool owner
-                (3, 1_000_000_000_000),  // admin / challenger
-                (4, 1_000_000_000_000),  // extra account
-                (99, 1_000_000_000_000), // treasury
+                (1, 1_000_000_000_000),   // customer
+                (2, 1_000_000_000_000),   // miner / pool owner
+                (3, 1_000_000_000_000),   // admin / challenger
+                (4, 1_000_000_000_000),   // extra account
+                (99, 1_000_000_000_000),  // treasury
                 (100, 1_000_000_000_000), // facilitator
             ],
             dev_accounts: None,
@@ -355,7 +355,10 @@ mod tests {
             // Fund ZK pallet account
             use sp_runtime::traits::AccountIdConversion;
             let zk_account: AccountId = ZkPalletId::get().into_account_truncating();
-            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(&zk_account, 1_000_000);
+            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(
+                &zk_account,
+                1_000_000,
+            );
         });
         ext
     }
@@ -387,7 +390,8 @@ mod tests {
                 false,
                 100, // nvlink_efficiency (100 = no nvlink)
                 10,  // price_per_task
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify pool exists
             let pool = pallet_compute_pool_scheduler::Pools::<Test>::get(0).unwrap();
@@ -398,7 +402,8 @@ mod tests {
                 RuntimeOrigin::signed(miner),
                 b"GPU-UUID-001".to_vec(),
                 312, // tflops
-            ).is_ok());
+            )
+            .is_ok());
 
             // ----- Step 3: Create a task definition (admin) -----
             assert!(pallet_task_mode::Pallet::<Test>::create_task_definition(
@@ -409,7 +414,8 @@ mod tests {
                 15,   // output_price_usd_per_1k
                 4096, // max_tokens_per_request
                 b"QmPolicyCid123".to_vec(),
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify task definition
             let task_def = pallet_task_mode::TaskDefinitions::<Test>::get(0).unwrap();
@@ -423,16 +429,14 @@ mod tests {
                 miner, // miner
                 500,   // input_tokens
                 1000,  // output_tokens
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify task order exists and is InProgress
             let order = pallet_task_mode::TaskOrders::<Test>::get(0).unwrap();
             assert_eq!(order.customer, customer);
             assert_eq!(order.miner, miner);
-            assert!(matches!(
-                order.status,
-                pallet_task_mode::pallet::TaskOrderStatus::InProgress
-            ));
+            assert!(matches!(order.status, pallet_task_mode::pallet::TaskOrderStatus::InProgress));
 
             // ----- Step 5: Submit a compute task directly via scheduler -----
             // (In a real runtime, TaskMode would call schedule_compute internally)
@@ -446,7 +450,8 @@ mod tests {
                 dimensions,
                 pallet_compute_pool_scheduler::pallet::TaskPriority::Normal,
                 None,
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify task was assigned to the pool
             let compute_task = pallet_compute_pool_scheduler::Tasks::<Test>::get(0).unwrap();
@@ -462,7 +467,8 @@ mod tests {
                 RuntimeOrigin::signed(miner),
                 0,          // task_id
                 proof_hash, // proof_hash
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify proof (must be someone OTHER than pool owner)
             // Pool owner is miner (2), so use admin (3) as verifier
@@ -470,7 +476,8 @@ mod tests {
                 RuntimeOrigin::signed(admin),
                 0,    // task_id
                 true, // approve
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify task completed (verify_proof triggers OnTaskCompleted -> AgentAttestation)
             let completed_task = pallet_compute_pool_scheduler::Tasks::<Test>::get(0).unwrap();
@@ -494,8 +501,9 @@ mod tests {
 
             assert!(pallet_agent_attestation::Pallet::<Test>::confirm_attestation(
                 RuntimeOrigin::signed(admin), // anyone can confirm after window
-                0, // attestation_id
-            ).is_ok());
+                0,                            // attestation_id
+            )
+            .is_ok());
 
             // Verify attestation is confirmed
             let confirmed_att = pallet_agent_attestation::Attestations::<Test>::get(0).unwrap();
@@ -515,20 +523,23 @@ mod tests {
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::claim_reward(
                 RuntimeOrigin::signed(miner),
                 0, // task_id
-            ).is_ok());
+            )
+            .is_ok());
 
             // ----- Step 10: Settle the TaskMode order -----
             assert!(pallet_task_mode::Pallet::<Test>::mark_order_completed(
                 RuntimeOrigin::signed(miner),
-                0, // order_id
+                0,         // order_id
                 [2u8; 32], // attestation_hash
-            ).is_ok());
+            )
+            .is_ok());
 
             assert!(pallet_task_mode::Pallet::<Test>::settle_task_order(
                 RuntimeOrigin::signed(customer),
                 0,    // order_id
                 None, // attestation_hash
-            ).is_ok());
+            )
+            .is_ok());
 
             let settled_order = pallet_task_mode::TaskOrders::<Test>::get(0).unwrap();
             assert!(matches!(
@@ -559,14 +570,16 @@ mod tests {
                 false, // no nvlink
                 100,   // nvlink_efficiency
                 5,     // price_per_task
-            ).is_ok());
+            )
+            .is_ok());
 
             // Register pool owner as attestation node (needed for on_task_completed)
             assert!(pallet_agent_attestation::Pallet::<Test>::register_node(
                 RuntimeOrigin::signed(pool_owner),
                 b"GPU-RTX4090-UUID".to_vec(),
                 200, // tflops
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify pool registered
             assert!(pallet_compute_pool_scheduler::Pools::<Test>::get(0).is_some());
@@ -576,17 +589,15 @@ mod tests {
             );
 
             // ----- Submit task -----
-            let dims = pallet_compute_pool_scheduler::pallet::TaskDimensions {
-                m: 50,
-                n: 50,
-                k: 10,
-            };
+            let dims =
+                pallet_compute_pool_scheduler::pallet::TaskDimensions { m: 50, n: 50, k: 10 };
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::submit_task(
                 RuntimeOrigin::signed(task_user),
                 dims,
                 pallet_compute_pool_scheduler::pallet::TaskPriority::High,
                 None,
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify task assigned to pool
             let task = pallet_compute_pool_scheduler::Tasks::<Test>::get(0).unwrap();
@@ -606,7 +617,8 @@ mod tests {
                 RuntimeOrigin::signed(pool_owner),
                 0,
                 proof_hash,
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify proof (must be someone OTHER than pool owner)
             // Pool owner is pool_owner (2), so use task_user (1) as verifier
@@ -614,7 +626,8 @@ mod tests {
                 RuntimeOrigin::signed(task_user),
                 0,    // task_id
                 true, // approve
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify task completed
             let completed = pallet_compute_pool_scheduler::Tasks::<Test>::get(0).unwrap();
@@ -635,7 +648,8 @@ mod tests {
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::claim_reward(
                 RuntimeOrigin::signed(pool_owner),
                 0,
-            ).is_ok());
+            )
+            .is_ok());
             let balance_after = pallet_balances::Pallet::<Test>::free_balance(pool_owner);
             assert!(balance_after > balance_before, "Pool owner should have received reward");
 
@@ -668,7 +682,8 @@ mod tests {
                 RuntimeOrigin::signed(attester),
                 b"GPU-UUID-ATTEST".to_vec(),
                 250,
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify node registered
             let node = pallet_agent_attestation::Nodes::<Test>::get(attester).unwrap();
@@ -679,12 +694,13 @@ mod tests {
             let result_hash = H256::from([0xAB; 32]);
             assert!(pallet_agent_attestation::Pallet::<Test>::submit_attestation(
                 RuntimeOrigin::signed(attester),
-                42,   // task_id
+                42, // task_id
                 result_hash,
                 b"gpt-4-turbo".to_vec(),
                 1000, // input_tokens
                 2000, // output_tokens
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify attestation created
             let att = pallet_agent_attestation::Attestations::<Test>::get(0).unwrap();
@@ -700,20 +716,23 @@ mod tests {
             assert!(pallet_agent_attestation::Pallet::<Test>::challenge_attestation(
                 RuntimeOrigin::signed(challenger),
                 0, // attestation_id
-            ).is_ok());
+            )
+            .is_ok());
 
             let challenged_att = pallet_agent_attestation::Attestations::<Test>::get(0).unwrap();
             assert_eq!(challenged_att.challenger, Some(challenger));
 
             // ----- Resolve challenge: attester is guilty (slash) -----
             let _attester_balance_before = pallet_balances::Pallet::<Test>::free_balance(attester);
-            let attester_reserved_before = pallet_balances::Pallet::<Test>::reserved_balance(attester);
+            let attester_reserved_before =
+                pallet_balances::Pallet::<Test>::reserved_balance(attester);
 
             assert!(pallet_agent_attestation::Pallet::<Test>::resolve_challenge(
                 RuntimeOrigin::root(), // root only
-                0,    // attestation_id
-                true, // attester_is_guilty
-            ).is_ok());
+                0,                     // attestation_id
+                true,                  // attester_is_guilty
+            )
+            .is_ok());
 
             let slashed_att = pallet_agent_attestation::Attestations::<Test>::get(0).unwrap();
             assert!(matches!(
@@ -722,7 +741,8 @@ mod tests {
             ));
 
             // Verify slash occurred: reserved balance decreased
-            let attester_reserved_after = pallet_balances::Pallet::<Test>::reserved_balance(attester);
+            let attester_reserved_after =
+                pallet_balances::Pallet::<Test>::reserved_balance(attester);
             assert!(
                 attester_reserved_after < attester_reserved_before,
                 "Attester should have been slashed"
@@ -736,22 +756,26 @@ mod tests {
                 b"llama-70b".to_vec(),
                 500,
                 800,
-            ).is_ok());
+            )
+            .is_ok());
 
             // Challenge it
             assert!(pallet_agent_attestation::Pallet::<Test>::challenge_attestation(
                 RuntimeOrigin::signed(challenger),
                 1, // second attestation
-            ).is_ok());
+            )
+            .is_ok());
 
             // Resolve: attester wins (defended)
-            let reserved_before_defend = pallet_balances::Pallet::<Test>::reserved_balance(attester);
+            let reserved_before_defend =
+                pallet_balances::Pallet::<Test>::reserved_balance(attester);
 
             assert!(pallet_agent_attestation::Pallet::<Test>::resolve_challenge(
                 RuntimeOrigin::root(),
                 1,     // attestation_id
                 false, // attester is NOT guilty
-            ).is_ok());
+            )
+            .is_ok());
 
             let defended_att = pallet_agent_attestation::Attestations::<Test>::get(1).unwrap();
             assert!(matches!(
@@ -768,7 +792,6 @@ mod tests {
 
             println!("PASS: attestation_challenge_flow - slash and defend paths verified");
         });
-    
     }
     // ================================================================
     // Test 4: Pool staking integration (P1-4)
@@ -786,55 +809,55 @@ mod tests {
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::register_pool(
                 RuntimeOrigin::signed(pool_owner),
                 gpu_model,
-                80, false, 100, 10,
-            ).is_ok());
+                80,
+                false,
+                100,
+                10,
+            )
+            .is_ok());
 
             // Stake to pool
             let stake_amount: Balance = 5_000;
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::stake_to_pool(
                 RuntimeOrigin::signed(staker),
-                0, stake_amount,
-            ).is_ok());
+                0,
+                stake_amount,
+            )
+            .is_ok());
 
             // Verify stake recorded
             assert_eq!(
                 pallet_compute_pool_scheduler::PoolStakes::<Test>::get(0, staker),
                 stake_amount
             );
-            assert_eq!(
-                pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0),
-                stake_amount
-            );
+            assert_eq!(pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0), stake_amount);
 
             // Second staker
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::stake_to_pool(
                 RuntimeOrigin::signed(staker2),
-                0, 3_000,
-            ).is_ok());
-            assert_eq!(
-                pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0),
-                8_000
-            );
+                0,
+                3_000,
+            )
+            .is_ok());
+            assert_eq!(pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0), 8_000);
 
             // Unstake partial
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::unstake_from_pool(
                 RuntimeOrigin::signed(staker),
-                0, 2_000,
-            ).is_ok());
-            assert_eq!(
-                pallet_compute_pool_scheduler::PoolStakes::<Test>::get(0, staker),
-                3_000
-            );
-            assert_eq!(
-                pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0),
-                6_000
-            );
+                0,
+                2_000,
+            )
+            .is_ok());
+            assert_eq!(pallet_compute_pool_scheduler::PoolStakes::<Test>::get(0, staker), 3_000);
+            assert_eq!(pallet_compute_pool_scheduler::TotalPoolStake::<Test>::get(0), 6_000);
 
             // Cannot unstake more than staked
             assert!(pallet_compute_pool_scheduler::Pallet::<Test>::unstake_from_pool(
                 RuntimeOrigin::signed(staker),
-                0, 10_000,
-            ).is_err());
+                0,
+                10_000,
+            )
+            .is_err());
 
             println!("PASS: pool_staking_integration");
         });
@@ -853,21 +876,20 @@ mod tests {
                 RuntimeOrigin::signed(agent),
                 b"GPU-CAP-TEST".to_vec(),
                 400,
-            ).is_ok());
+            )
+            .is_ok());
 
             // Register capabilities
-            let models = vec![
-                b"llama-70b".to_vec(),
-                b"gpt-4-turbo".to_vec(),
-                b"mixtral-8x7b".to_vec(),
-            ];
+            let models =
+                vec![b"llama-70b".to_vec(), b"gpt-4-turbo".to_vec(), b"mixtral-8x7b".to_vec()];
             assert!(pallet_agent_attestation::Pallet::<Test>::update_capability(
                 RuntimeOrigin::signed(agent),
                 models,
-                4,    // max_concurrent
-                100,  // price_per_token
+                4,   // max_concurrent
+                100, // price_per_token
                 b"us-east".to_vec(),
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify capability stored
             let cap = pallet_agent_attestation::AgentCapabilities::<Test>::get(agent).unwrap();
@@ -884,8 +906,11 @@ mod tests {
             assert!(pallet_agent_attestation::Pallet::<Test>::update_capability(
                 RuntimeOrigin::signed(agent),
                 new_models,
-                8, 200, b"eu-west".to_vec(),
-            ).is_ok());
+                8,
+                200,
+                b"eu-west".to_vec(),
+            )
+            .is_ok());
 
             // Old model should be removed from index
             assert!(!pallet_agent_attestation::ModelProviders::<Test>::get(&model_key, agent));
@@ -899,8 +924,11 @@ mod tests {
             assert!(pallet_agent_attestation::Pallet::<Test>::update_capability(
                 RuntimeOrigin::signed(4), // not registered
                 vec![b"test".to_vec()],
-                1, 10, b"us".to_vec(),
-            ).is_err());
+                1,
+                10,
+                b"us".to_vec(),
+            )
+            .is_err());
 
             println!("PASS: agent_capability_registry");
         });
@@ -1014,14 +1042,20 @@ mod tests {
             // Submit intent
             assert!(pallet_x402_settlement::Pallet::<Test>::submit_payment_intent(
                 RuntimeOrigin::signed(merchant),
-                miner, amount, nonce, replay_fingerprint, sig,
-            ).is_ok());
+                miner,
+                amount,
+                nonce,
+                replay_fingerprint,
+                sig,
+            )
+            .is_ok());
 
             // Verify settlement (facilitator only)
             assert!(pallet_x402_settlement::Pallet::<Test>::verify_settlement(
                 RuntimeOrigin::signed(facilitator),
                 0,
-            ).is_ok());
+            )
+            .is_ok());
 
             let verified = pallet_x402_settlement::pallet::PaymentIntents::<Test>::get(0).unwrap();
             assert!(matches!(
@@ -1037,7 +1071,8 @@ mod tests {
             assert!(pallet_x402_settlement::Pallet::<Test>::finalize_settlement(
                 RuntimeOrigin::signed(merchant),
                 0,
-            ).is_ok());
+            )
+            .is_ok());
 
             let settled = pallet_x402_settlement::pallet::PaymentIntents::<Test>::get(0).unwrap();
             assert!(matches!(
@@ -1053,8 +1088,13 @@ mod tests {
             let bad_sig: Vec<u8> = vec![0u8; 32];
             assert!(pallet_x402_settlement::Pallet::<Test>::submit_payment_intent(
                 RuntimeOrigin::signed(merchant),
-                miner, amount, 2, H256::from_low_u64_be(100), bad_sig,
-            ).is_err());
+                miner,
+                amount,
+                2,
+                H256::from_low_u64_be(100),
+                bad_sig,
+            )
+            .is_err());
 
             println!("PASS: x402_full_settlement_with_signature");
         });
@@ -1070,7 +1110,10 @@ mod tests {
 
             // Fund the pallet account for slash operations
             let pallet_account = pallet_zk_compute::Pallet::<Test>::account_id();
-            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(&pallet_account, 1_000_000);
+            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(
+                &pallet_account,
+                1_000_000,
+            );
 
             // Submit a ZK proof
             assert!(pallet_zk_compute::Pallet::<Test>::submit_proof(
@@ -1079,7 +1122,8 @@ mod tests {
                 (8, 8, 8), // dimensions
                 120,       // execution_time
                 42,        // request_id
-            ).is_ok());
+            )
+            .is_ok());
 
             // Verify task is pending
             let task_id = pallet_zk_compute::pallet::NextTaskId::<Test>::get() - 1u64;
@@ -1094,7 +1138,8 @@ mod tests {
                 RuntimeOrigin::none(),
                 task_id,
                 true, // verified
-            ).is_ok());
+            )
+            .is_ok());
 
             // Task should now be Verified
             let verified_task = pallet_zk_compute::Tasks::<Test>::get(task_id).unwrap();
@@ -1105,16 +1150,24 @@ mod tests {
 
             // Score should be increased
             let score = pallet_zk_compute::MinerScores::<Test>::get(miner);
-            assert!(score.unwrap_or(0) > 0, "Score should be positive after successful verification");
+            assert!(
+                score.unwrap_or(0) > 0,
+                "Score should be positive after successful verification"
+            );
 
             // Give miner more funds for second submission
-            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(&miner, 1_000_000);
+            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(
+                &miner, 1_000_000,
+            );
             // Submit another proof and fail verification
             assert!(pallet_zk_compute::Pallet::<Test>::submit_proof(
                 RuntimeOrigin::signed(miner),
                 b"bad-proof".to_vec(),
-                (4, 4, 4), 120, 43,
-            ).is_ok());
+                (4, 4, 4),
+                120,
+                43,
+            )
+            .is_ok());
 
             let task_id2 = pallet_zk_compute::pallet::NextTaskId::<Test>::get() - 1u64;
 
@@ -1122,7 +1175,8 @@ mod tests {
                 RuntimeOrigin::none(),
                 task_id2,
                 false, // failed verification
-            ).is_ok());
+            )
+            .is_ok());
 
             let failed_task = pallet_zk_compute::Tasks::<Test>::get(task_id2).unwrap();
             assert!(matches!(
@@ -1133,5 +1187,4 @@ mod tests {
             println!("PASS: ocw_unsigned_verification");
         });
     }
-
 }

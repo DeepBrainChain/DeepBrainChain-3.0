@@ -16,8 +16,8 @@
 // limitations under the License.
 
 use crate::*;
-use frame_support::pallet_prelude::*;
 use alloc::collections::BTreeMap;
+use frame_support::pallet_prelude::*;
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
     pub(crate) fn do_set_team(

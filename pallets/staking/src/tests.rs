@@ -20,6 +20,7 @@
 
 use super::{ConfigOp, Event, *};
 use crate::{asset, ledger::StakingLedgerInspect};
+use alloc::vec::Vec;
 use frame_election_provider_support::{
     bounds::DataProviderBounds, ElectionProvider, SortedListProvider, Support,
 };
@@ -29,11 +30,10 @@ use frame_support::{
     pallet_prelude::*,
     traits::{Currency, Get, ReservableCurrency},
 };
-use sp_runtime::bounded_vec;
 use mock::*;
 use pallet_balances::Error as BalancesError;
 use sp_runtime::{
-    assert_eq_error_rate,
+    assert_eq_error_rate, bounded_vec,
     traits::{BadOrigin, Dispatchable},
     Perbill, Percent, Rounding, TokenError,
 };
@@ -41,7 +41,6 @@ use sp_staking::{
     offence::{OffenceDetails, OnOffenceHandler},
     SessionIndex, StakingAccount,
 };
-use alloc::vec::Vec;
 use substrate_test_utils::assert_eq_uvec;
 
 #[test]
@@ -306,20 +305,14 @@ fn deprecate_controller_batch_migrates_legacy_pairs() {
 
         assert_eq!(Staking::bonded(&stash), Some(controller));
 
-        assert_ok!(Staking::deprecate_controller_batch(
-            RuntimeOrigin::root(),
-            vec![stash.into()],
-        ));
+        assert_ok!(Staking::deprecate_controller_batch(RuntimeOrigin::root(), vec![stash.into()],));
 
         assert_eq!(Staking::bonded(&stash), Some(stash));
         assert_noop!(
             Staking::validate(RuntimeOrigin::signed(controller), ValidatorPrefs::default()),
             Error::<Test>::NotController,
         );
-        assert_ok!(Staking::validate(
-            RuntimeOrigin::signed(stash),
-            ValidatorPrefs::default()
-        ));
+        assert_ok!(Staking::validate(RuntimeOrigin::signed(stash), ValidatorPrefs::default()));
     })
 }
 
@@ -348,7 +341,10 @@ fn legacy_controller_cannot_execute_control_calls() {
 
         assert_eq!(Staking::bonded(&stash), Some(controller));
 
-        assert_noop!(Staking::chill(RuntimeOrigin::signed(controller)), Error::<Test>::NotController);
+        assert_noop!(
+            Staking::chill(RuntimeOrigin::signed(controller)),
+            Error::<Test>::NotController
+        );
         assert_noop!(
             Staking::validate(RuntimeOrigin::signed(controller), ValidatorPrefs::default()),
             Error::<Test>::NotController
@@ -719,8 +715,14 @@ fn nominating_and_rewards_should_work() {
             let initial_balance_41 = asset::stakeable_balance::<Test>(&41);
             let mut initial_balance_21 = asset::stakeable_balance::<Test>(&21);
             mock::make_all_reward_payment(0);
-            assert_eq!(asset::stakeable_balance::<Test>(&41), initial_balance_41 + total_payout_0 / 2);
-            assert_eq!(asset::stakeable_balance::<Test>(&21), initial_balance_21 + total_payout_0 / 2);
+            assert_eq!(
+                asset::stakeable_balance::<Test>(&41),
+                initial_balance_41 + total_payout_0 / 2
+            );
+            assert_eq!(
+                asset::stakeable_balance::<Test>(&21),
+                initial_balance_21 + total_payout_0 / 2
+            );
             initial_balance_21 = asset::stakeable_balance::<Test>(&21);
 
             assert_eq!(ErasStakers::<Test>::iter_prefix_values(active_era()).count(), 2);
@@ -1257,8 +1259,16 @@ fn validator_payment_prefs_work() {
         let shared_cut = total_payout_1 - taken_cut;
         let reward_of_10 = shared_cut * exposure_1.own / exposure_1.total + taken_cut;
         let reward_of_100 = shared_cut * exposure_1.others[0].value / exposure_1.total;
-        assert_eq_error_rate!(asset::stakeable_balance::<Test>(&11), balance_era_1_11 + reward_of_10, 2);
-        assert_eq_error_rate!(asset::stakeable_balance::<Test>(&101), balance_era_1_101 + reward_of_100, 2);
+        assert_eq_error_rate!(
+            asset::stakeable_balance::<Test>(&11),
+            balance_era_1_11 + reward_of_10,
+            2
+        );
+        assert_eq_error_rate!(
+            asset::stakeable_balance::<Test>(&101),
+            balance_era_1_101 + reward_of_100,
+            2
+        );
     });
 }
 
@@ -2163,7 +2173,10 @@ fn bond_with_duplicate_vote_should_be_ignored_by_election_provider() {
             // winners should be 21 and 31. Otherwise this election is taking duplicates into
             // account.
             let supports = <Test as Config>::ElectionProvider::elect(0).unwrap();
-            let supports_vec: Vec<_> = supports.iter().map(|(id, s)| (*id, Support { total: s.total, voters: s.voters.to_vec() })).collect();
+            let supports_vec: Vec<_> = supports
+                .iter()
+                .map(|(id, s)| (*id, Support { total: s.total, voters: s.voters.to_vec() }))
+                .collect();
             assert_eq!(
                 supports_vec,
                 vec![
@@ -2216,7 +2229,10 @@ fn bond_with_duplicate_vote_should_be_ignored_by_election_provider_elected() {
 
             // winners should be 21 and 11.
             let supports = <Test as Config>::ElectionProvider::elect(0).unwrap();
-            let supports_vec: Vec<_> = supports.iter().map(|(id, s)| (*id, Support { total: s.total, voters: s.voters.to_vec() })).collect();
+            let supports_vec: Vec<_> = supports
+                .iter()
+                .map(|(id, s)| (*id, Support { total: s.total, voters: s.voters.to_vec() }))
+                .collect();
             assert_eq!(
                 supports_vec,
                 vec![
@@ -2625,8 +2641,11 @@ fn invulnerables_are_not_slashed() {
         let exposure = Staking::eras_stakers(active_era(), 21);
         let initial_balance = Staking::slashable_balance_of(&21);
 
-        let nominator_balances: Vec<_> =
-            exposure.others.iter().map(|o| asset::stakeable_balance::<Test>(&o.who)).collect();
+        let nominator_balances: Vec<_> = exposure
+            .others
+            .iter()
+            .map(|o| asset::stakeable_balance::<Test>(&o.who))
+            .collect();
 
         on_offence_now(
             &[
@@ -3923,7 +3942,10 @@ fn test_payout_stakers() {
                 total: 1000,
                 active: 1000,
                 unlocking: Default::default(),
-                legacy_claimed_rewards: bounded_vec![expected_start_reward_era, expected_last_reward_era]
+                legacy_claimed_rewards: bounded_vec![
+                    expected_start_reward_era,
+                    expected_last_reward_era
+                ]
             }
         );
 
@@ -4587,12 +4609,18 @@ mod election_data_provider {
             .add_staker(71, 71, 10, StakerStatus::<AccountId>::Nominator(vec![21]))
             .add_staker(81, 81, 50, StakerStatus::<AccountId>::Nominator(vec![21]))
             .build_and_execute(|| {
-                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds::default(), 0));
+                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(
+                    DataProviderBounds::default(),
+                    0
+                ));
                 assert_eq!(MinimumActiveStake::<Test>::get(), 10);
 
                 // remove staker with lower bond by limiting the number of voters and check
                 // `MinimumActiveStake` again after electing voters.
-                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds { count: Some((5 as u32).into()), size: None }, 0));
+                assert_ok!(<Staking as ElectionDataProvider>::electing_voters(
+                    DataProviderBounds { count: Some((5 as u32).into()), size: None },
+                    0
+                ));
                 assert_eq!(MinimumActiveStake::<Test>::get(), 50);
             });
     }
@@ -4600,7 +4628,10 @@ mod election_data_provider {
     #[test]
     fn set_minimum_active_stake_zero_correct() {
         ExtBuilder::default().has_stakers(false).build_and_execute(|| {
-            assert_ok!(<Staking as ElectionDataProvider>::electing_voters(DataProviderBounds::default(), 0));
+            assert_ok!(<Staking as ElectionDataProvider>::electing_voters(
+                DataProviderBounds::default(),
+                0
+            ));
             assert_eq!(MinimumActiveStake::<Test>::get(), 0);
         });
     }
@@ -4608,7 +4639,10 @@ mod election_data_provider {
     #[test]
     fn voters_include_self_vote() {
         ExtBuilder::default().nominate(false).build_and_execute(|| {
-            assert!(<Validators<Test>>::iter().map(|(x, _)| x).all(|v| Staking::electing_voters(DataProviderBounds::default(), 0)
+            assert!(<Validators<Test>>::iter().map(|(x, _)| x).all(|v| Staking::electing_voters(
+                DataProviderBounds::default(),
+                0
+            )
             .unwrap()
             .into_iter()
             .any(|(w, _, t)| { v == w && t[0] == w })))
@@ -4624,21 +4658,65 @@ mod election_data_provider {
                 assert_eq!(<Test as Config>::VoterList::count(), 5);
 
                 // if limits is less..
-                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((1 as u32).into()), size: None }, 0).unwrap().len(), 1);
+                assert_eq!(
+                    Staking::electing_voters(
+                        DataProviderBounds { count: Some((1 as u32).into()), size: None },
+                        0
+                    )
+                    .unwrap()
+                    .len(),
+                    1
+                );
 
                 // if limit is equal..
-                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((5 as u32).into()), size: None }, 0).unwrap().len(), 5);
+                assert_eq!(
+                    Staking::electing_voters(
+                        DataProviderBounds { count: Some((5 as u32).into()), size: None },
+                        0
+                    )
+                    .unwrap()
+                    .len(),
+                    5
+                );
 
                 // if limit is more.
-                assert_eq!(Staking::electing_voters(DataProviderBounds { count: Some((55 as u32).into()), size: None }, 0).unwrap().len(), 5);
+                assert_eq!(
+                    Staking::electing_voters(
+                        DataProviderBounds { count: Some((55 as u32).into()), size: None },
+                        0
+                    )
+                    .unwrap()
+                    .len(),
+                    5
+                );
 
                 // if target limit is more..
-                assert_eq!(Staking::electable_targets(DataProviderBounds { count: Some((6 as u32).into()), size: None }, 0).unwrap().len(), 4);
-                assert_eq!(Staking::electable_targets(DataProviderBounds { count: Some((4 as u32).into()), size: None }, 0).unwrap().len(), 4);
+                assert_eq!(
+                    Staking::electable_targets(
+                        DataProviderBounds { count: Some((6 as u32).into()), size: None },
+                        0
+                    )
+                    .unwrap()
+                    .len(),
+                    4
+                );
+                assert_eq!(
+                    Staking::electable_targets(
+                        DataProviderBounds { count: Some((4 as u32).into()), size: None },
+                        0
+                    )
+                    .unwrap()
+                    .len(),
+                    4
+                );
 
                 // if target limit is less, then we return an error.
                 assert_eq!(
-                    Staking::electable_targets(DataProviderBounds { count: Some((1 as u32).into()), size: None }, 0).unwrap_err(),
+                    Staking::electable_targets(
+                        DataProviderBounds { count: Some((1 as u32).into()), size: None },
+                        0
+                    )
+                    .unwrap_err(),
                     "Target snapshot too big"
                 );
             });
@@ -4687,12 +4765,15 @@ mod election_data_provider {
                 // 11 is taken;
                 // we finish since the 2x limit is reached.
                 assert_eq!(
-                    Staking::electing_voters(DataProviderBounds { count: Some((2 as u32).into()), size: None }, 0)
-                        .unwrap()
-                        .iter()
-                        .map(|(stash, _, _)| stash)
-                        .copied()
-                        .collect::<Vec<_>>(),
+                    Staking::electing_voters(
+                        DataProviderBounds { count: Some((2 as u32).into()), size: None },
+                        0
+                    )
+                    .unwrap()
+                    .iter()
+                    .map(|(stash, _, _)| stash)
+                    .copied()
+                    .collect::<Vec<_>>(),
                     vec![11],
                 );
             });
@@ -5150,7 +5231,10 @@ fn change_of_max_nominations() {
                 vec![(101, 2), (71, 3), (61, 1)]
             );
             // 3 validators and 3 nominators
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 3);
+            assert_eq!(
+                Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(),
+                3 + 3
+            );
 
             // abrupt change from 16 to 4, everyone should be fine.
             MaxNominations::set(4);
@@ -5161,7 +5245,10 @@ fn change_of_max_nominations() {
                     .collect::<Vec<_>>(),
                 vec![(101, 2), (71, 3), (61, 1)]
             );
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 3);
+            assert_eq!(
+                Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(),
+                3 + 3
+            );
 
             // abrupt change from 4 to 3, everyone should be fine.
             MaxNominations::set(3);
@@ -5172,7 +5259,10 @@ fn change_of_max_nominations() {
                     .collect::<Vec<_>>(),
                 vec![(101, 2), (71, 3), (61, 1)]
             );
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 3);
+            assert_eq!(
+                Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(),
+                3 + 3
+            );
 
             // abrupt change from 3 to 2, this should cause some nominators to be non-decodable, and
             // thus non-existent unless if they update.
@@ -5189,7 +5279,10 @@ fn change_of_max_nominations() {
             // but its value cannot be decoded and default is returned.
             assert!(Nominators::<Test>::get(71).is_none());
 
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 2);
+            assert_eq!(
+                Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(),
+                3 + 2
+            );
             assert!(Nominators::<Test>::contains_key(101));
 
             // abrupt change from 2 to 1, this should cause some nominators to be non-decodable, and
@@ -5206,7 +5299,10 @@ fn change_of_max_nominations() {
             assert!(Nominators::<Test>::contains_key(61));
             assert!(Nominators::<Test>::get(71).is_none());
             assert!(Nominators::<Test>::get(61).is_some());
-            assert_eq!(Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(), 3 + 1);
+            assert_eq!(
+                Staking::electing_voters(DataProviderBounds::default(), 0).unwrap().len(),
+                3 + 1
+            );
 
             // now one of them can revive themselves by re-nominating to a proper value.
             assert_ok!(Staking::nominate(RuntimeOrigin::signed(71), vec![1]));
@@ -5700,7 +5796,10 @@ fn reducing_max_unlocking_chunks_abrupt() {
         // => 10 + 3 = 13
         let expected_unlocking: BoundedVec<UnlockChunk<Balance>, MaxUnlockingChunks> =
             bounded_vec![UnlockChunk { value: 20 as Balance, era: 13 as EraIndex }];
-        assert_eq!(Staking::ledger(3.into()).unwrap().unlocking.into_inner(), expected_unlocking.into_inner());
+        assert_eq!(
+            Staking::ledger(3.into()).unwrap().unlocking.into_inner(),
+            expected_unlocking.into_inner()
+        );
 
         // when staker unbonds at next era
         start_active_era(11);
@@ -5708,7 +5807,10 @@ fn reducing_max_unlocking_chunks_abrupt() {
         // then another unlock chunk is added
         let expected_unlocking: BoundedVec<UnlockChunk<Balance>, MaxUnlockingChunks> =
             bounded_vec![UnlockChunk { value: 20, era: 13 }, UnlockChunk { value: 50, era: 14 }];
-        assert_eq!(Staking::ledger(3.into()).unwrap().unlocking.into_inner(), expected_unlocking.into_inner());
+        assert_eq!(
+            Staking::ledger(3.into()).unwrap().unlocking.into_inner(),
+            expected_unlocking.into_inner()
+        );
 
         // when staker unbonds further
         start_active_era(12);

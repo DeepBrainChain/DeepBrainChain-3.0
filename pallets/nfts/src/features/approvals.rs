@@ -25,7 +25,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
         collection: T::CollectionId,
         item: T::ItemId,
         delegate: T::AccountId,
-        maybe_deadline: Option<BlockNumberFor::<T>>,
+        maybe_deadline: Option<BlockNumberFor<T>>,
     ) -> DispatchResult {
         ensure!(
             Self::is_pallet_feature_enabled(PalletFeature::Approvals),

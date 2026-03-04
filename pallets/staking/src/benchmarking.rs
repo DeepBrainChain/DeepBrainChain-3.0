@@ -21,6 +21,7 @@ use super::*;
 use crate::{ConfigOp, Pallet as Staking};
 use testing_utils::*;
 
+use alloc::vec::Vec;
 use codec::Decode;
 use frame_election_provider_support::SortedListProvider;
 use frame_support::{
@@ -32,7 +33,6 @@ use sp_runtime::{
     Perbill, Percent,
 };
 use sp_staking::{currency_to_vote::CurrencyToVote, SessionIndex};
-use alloc::vec::Vec;
 
 pub use frame_benchmarking::v1::{
     account, benchmarks, impl_benchmark_test_suite, whitelist_account, whitelisted_caller,
@@ -132,7 +132,8 @@ pub fn create_validator_with_nominators<T: Config>(
     ErasRewardPoints::<T>::insert(current_era, reward);
 
     // Create reward pool
-    let total_payout = asset::existential_deposit::<T>().max(One::one())
+    let total_payout = asset::existential_deposit::<T>()
+        .max(One::one())
         .saturating_mul(upper_bound.into())
         .saturating_mul(1000u32.into());
     <ErasValidatorReward<T>>::insert(current_era, total_payout);

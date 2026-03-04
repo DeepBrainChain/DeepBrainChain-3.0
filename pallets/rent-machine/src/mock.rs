@@ -182,7 +182,6 @@ parameter_types! {
 
 impl committee::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     // type WeightInfo = ();
 }
 
@@ -204,7 +203,6 @@ impl dbc_price_ocw::Config for TestRuntime {
 }
 
 impl online_committee::Config for TestRuntime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type OCOps = OnlineProfile;
     type ManageCommittee = Committee;
@@ -233,13 +231,14 @@ impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for T
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_signed_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+    fn create_signed_transaction<
+        C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>,
+    >(
         call: RuntimeCall,
         _public: <Signature as Verify>::Signer,
         _account: <TestRuntime as frame_system::Config>::AccountId,
         nonce: <TestRuntime as frame_system::Config>::Nonce,
-    ) -> Option<Self::Extrinsic>
-    {
+    ) -> Option<Self::Extrinsic> {
         Some(TestXt::new_signed(call, nonce.into(), (), ()))
     }
 }

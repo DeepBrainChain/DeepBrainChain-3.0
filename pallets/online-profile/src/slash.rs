@@ -2,6 +2,7 @@ use crate::{
     BalanceOf, Config, Event, NextSlashId, Pallet, PendingSlash, PendingSlashReview,
     PendingSlashReviewChecking, StashStake, SysInfo,
 };
+use alloc::{vec, vec::Vec};
 use dbc_support::{
     machine_info::MachineInfo,
     machine_type::MachineStatus,
@@ -15,7 +16,6 @@ use sp_runtime::{
     traits::{CheckedMul, Saturating, Zero},
     Perbill, SaturatedConversion,
 };
-use alloc::{vec, vec::Vec};
 
 impl<T: Config> Pallet<T> {
     pub fn get_new_slash_id() -> u64 {
@@ -104,13 +104,13 @@ impl<T: Config> Pallet<T> {
     // 当机器主动下线/被举报下线时，返回一个待执行的惩罚信息
     pub fn new_slash_when_offline(
         machine_id: MachineId,
-        slash_reason: OPSlashReason<BlockNumberFor::<T>>,
+        slash_reason: OPSlashReason<BlockNumberFor<T>>,
         reporter: Option<T::AccountId>,
         // 机器当前租用人
         renters: Vec<T::AccountId>,
         committee: Option<Vec<T::AccountId>>,
-        duration: BlockNumberFor::<T>,
-    ) -> Result<OPPendingSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>, ()> {
+        duration: BlockNumberFor<T>,
+    ) -> Result<OPPendingSlashInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>, ()> {
         let percent = Self::slash_percent(&slash_reason, duration);
 
         let (reporter, renters, committee) = match slash_reason {
@@ -151,8 +151,8 @@ impl<T: Config> Pallet<T> {
         reporter: Option<T::AccountId>,
         renters: Vec<T::AccountId>,
         committee: Option<Vec<T::AccountId>>,
-        slash_reason: OPSlashReason<BlockNumberFor::<T>>,
-    ) -> Result<OPPendingSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>, ()> {
+        slash_reason: OPSlashReason<BlockNumberFor<T>>,
+    ) -> Result<OPPendingSlashInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>, ()> {
         let now = <frame_system::Pallet<T>>::block_number();
         let machine_info = Self::machines_info(&machine_id).ok_or(())?;
 
@@ -174,7 +174,7 @@ impl<T: Config> Pallet<T> {
     // FIXME: 是否奖励其他租用人
     // 惩罚掉机器押金，如果执行惩罚后机器押金不够，则状态变为补充质押
     pub fn do_slash_deposit(
-        slash_info: &OPPendingSlashInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        slash_info: &OPPendingSlashInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     ) -> Result<(), ()> {
         let machine_info = Self::machines_info(&slash_info.machine_id).ok_or(())?;
         if <T as Config>::Currency::reserved_balance(&machine_info.machine_stash) <
@@ -223,7 +223,7 @@ impl<T: Config> Pallet<T> {
     // 检查已质押资金是否满足单GPU质押金额*gpu数量 若不满足则变更机器状态为fulfill
     pub fn try_to_change_machine_status_to_fulfill(
         slash_account: &T::AccountId,
-        mut machine_info: MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>,
+        mut machine_info: MachineInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>,
     ) -> Result<(), ()> {
         let staked_amount = Self::stash_stake(&slash_account);
 

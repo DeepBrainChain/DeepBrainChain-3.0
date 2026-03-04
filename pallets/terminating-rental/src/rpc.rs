@@ -2,6 +2,7 @@ use crate::{
     rpc_types::{MachineBriefInfo, RpcIRCommitteeOps, StakerInfo},
     BalanceOf, Config, Pallet, RentOrderDetail, RentOrderId, StashMachines,
 };
+use alloc::vec::Vec;
 use dbc_support::{
     live_machine::LiveMachine,
     machine_info::MachineInfo,
@@ -12,7 +13,6 @@ use dbc_support::{
 use frame_support::IterableStorageMap;
 use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::EncodeLike;
-use alloc::vec::Vec;
 
 impl<T: Config> Pallet<T> {
     pub fn get_total_staker_num() -> u64 {
@@ -21,7 +21,7 @@ impl<T: Config> Pallet<T> {
 
     pub fn get_staker_info(
         account: impl EncodeLike<T::AccountId>,
-    ) -> StakerInfo<BalanceOf<T>, BlockNumberFor::<T>, T::AccountId> {
+    ) -> StakerInfo<BalanceOf<T>, BlockNumberFor<T>, T::AccountId> {
         let staker_info = Self::stash_machines(account);
 
         let mut staker_machines = Vec::new();
@@ -50,7 +50,7 @@ impl<T: Config> Pallet<T> {
     /// 获取机器详情
     pub fn get_machine_info(
         machine_id: MachineId,
-    ) -> Option<MachineInfo<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>> {
+    ) -> Option<MachineInfo<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>> {
         Self::machines_info(&machine_id)
     }
 }
@@ -59,7 +59,7 @@ impl<T: Config> Pallet<T> {
 impl<T: Config> Pallet<T> {
     pub fn get_machine_committee_list(
         machine_id: MachineId,
-    ) -> OCMachineCommitteeList<T::AccountId, BlockNumberFor::<T>> {
+    ) -> OCMachineCommitteeList<T::AccountId, BlockNumberFor<T>> {
         Self::machine_committee(machine_id)
     }
 
@@ -70,7 +70,7 @@ impl<T: Config> Pallet<T> {
     pub fn get_committee_ops(
         committee: T::AccountId,
         machine_id: MachineId,
-    ) -> Option<RpcIRCommitteeOps<BlockNumberFor::<T>, BalanceOf<T>>> {
+    ) -> Option<RpcIRCommitteeOps<BlockNumberFor<T>, BalanceOf<T>>> {
         let oc_committee_ops = Self::committee_online_ops(&committee, &machine_id);
 
         let committee_info = Self::machine_committee(&machine_id);
@@ -90,7 +90,7 @@ impl<T: Config> Pallet<T> {
 impl<T: Config> Pallet<T> {
     pub fn get_rent_order(
         rent_id: RentOrderId,
-    ) -> Option<RentOrderDetail<T::AccountId, BlockNumberFor::<T>, BalanceOf<T>>> {
+    ) -> Option<RentOrderDetail<T::AccountId, BlockNumberFor<T>, BalanceOf<T>>> {
         Self::rent_order(&rent_id)
     }
 

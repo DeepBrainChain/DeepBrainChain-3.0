@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
-use parity_scale_codec::Codec;
 use alloc::vec::Vec;
+use parity_scale_codec::Codec;
 
 sp_api::decl_runtime_apis! {
     pub trait X402SettlementApi<AccountId, Balance> where

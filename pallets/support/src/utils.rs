@@ -1,7 +1,7 @@
-use parity_scale_codec::{Decode, Encode};
-use sp_runtime::traits::{IdentifyAccount, Verify};
 use alloc::{vec, vec::Vec};
 use core::str;
+use parity_scale_codec::{Decode, Encode};
+use sp_runtime::traits::{IdentifyAccount, Verify};
 
 // Reference： primitives/core/src/crypto.rs: impl Ss58Codec for AccountId32
 // from_ss58check_with_version
@@ -64,7 +64,8 @@ use crate::{
     verify_online::{OCMachineCommitteeList, Summary, VerifyResult},
     ItemList,
 };
-use alloc::collections::BTreeSet; use core::ops;
+use alloc::collections::BTreeSet;
+use core::ops;
 pub trait OnlineCommitteeSummary {
     //<AccountId, BlockNumber> {
     type AccountId;

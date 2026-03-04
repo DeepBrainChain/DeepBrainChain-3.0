@@ -122,13 +122,14 @@ impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for T
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_signed_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+    fn create_signed_transaction<
+        C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>,
+    >(
         call: RuntimeCall,
         _public: <Signature as Verify>::Signer,
         _account: <TestRuntime as frame_system::Config>::AccountId,
         nonce: <TestRuntime as frame_system::Config>::Nonce,
-    ) -> Option<Self::Extrinsic>
-    {
+    ) -> Option<Self::Extrinsic> {
         Some(TestXt::new_signed(call, nonce.into(), (), ()))
     }
 }
@@ -262,7 +263,6 @@ impl maintain_committee::Config for TestRuntime {
 
 impl rent_machine::Config for TestRuntime {
     type Currency = Balances;
-    type RuntimeEvent = RuntimeEvent;
     type RTOps = OnlineProfile;
     type DbcPrice = DBCPriceOCW;
 }

@@ -1,11 +1,11 @@
 use crate::{BalanceOf, Config, Pallet};
+use alloc::vec::Vec;
 use dbc_support::traits::GNOps;
 use frame_support::traits::{BalanceStatus, OnUnbalanced, ReservableCurrency};
 use sp_runtime::{
     traits::{CheckedSub, Zero},
     Perbill,
 };
-use alloc::vec::Vec;
 
 impl<T: Config> GNOps for Pallet<T> {
     type AccountId = T::AccountId;

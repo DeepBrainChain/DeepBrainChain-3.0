@@ -1,6 +1,8 @@
 use crate::{
     custom_err::VerifyErr, machine_type::CommitteeUploadInfo, ItemList, MachineId, ONE_HOUR,
 };
+use alloc::{vec, vec::Vec};
+use core::ops;
 use frame_support::ensure;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
@@ -10,7 +12,6 @@ use sp_runtime::{
     traits::{CheckedAdd, Saturating, Zero},
     RuntimeDebug,
 };
-use alloc::{vec, vec::Vec}; use core::ops;
 
 /// After order distribution 36 hours, allow committee submit raw info
 pub const SUBMIT_RAW_START: u32 = 36 * ONE_HOUR;
@@ -132,7 +133,9 @@ impl Default for OCMachineStatus {
 }
 
 /// A record of committee’s operations when verifying machine info
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 pub struct OCCommitteeOps<BlockNumber, Balance> {
     pub staked_dbc: Balance,
     /// When one committee can start the virtual machine to verify machine info
@@ -162,7 +165,9 @@ impl<BlockNumber, Balance> OCCommitteeOps<BlockNumber, Balance> {
 }
 
 /// Query distributed machines by committee address
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct OCCommitteeMachineList {
@@ -336,7 +341,9 @@ pub struct VerifySequence<AccountId> {
 }
 
 /// stash account overview self-status
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct StashMachine<Balance> {

@@ -10,6 +10,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+use alloc::{vec, vec::Vec};
 use dbc_support::traits::DbcPrice;
 use frame_support::{
     pallet_prelude::*,
@@ -18,7 +19,6 @@ use frame_support::{
 use frame_system::pallet_prelude::*;
 use pallet_collective::Instance1;
 use pallet_elections_phragmen::SeatHolder;
-use alloc::{vec, vec::Vec};
 
 pub use pallet::*;
 
@@ -41,7 +41,7 @@ pub mod pallet {
         /// How long each seat is kept. This defines the next block number at which an election
         /// round will happen. If set to zero, no elections are ever triggered and the module will
         /// be in passive mode.
-        type RewardFrequency: Get<BlockNumberFor::<Self>>;
+        type RewardFrequency: Get<BlockNumberFor<Self>>;
 
         // 奖励特定(USD or DBC)
         type PrimerReward: Get<(u64, BalanceOf<Self>)>;

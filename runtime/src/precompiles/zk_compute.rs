@@ -1,9 +1,9 @@
+use crate::precompiles::to_ethabi_u256;
 use fp_evm::{
     ExitRevert, ExitSucceed, Precompile, PrecompileFailure, PrecompileHandle, PrecompileOutput,
     PrecompileResult,
 };
 use sp_core::U256;
-use crate::precompiles::to_ethabi_u256;
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
@@ -54,26 +54,25 @@ where
     pallet_evm::AccountIdOf<T>: Into<T::AccountId>,
 {
     fn query_task(handle: &mut impl PrecompileHandle) -> PrecompileResult {
-        handle.record_cost(T::GasWeightMapping::weight_to_gas(
-            Weight::from_parts(10_000, 0),
-        ))?;
+        handle.record_cost(T::GasWeightMapping::weight_to_gas(Weight::from_parts(10_000, 0)))?;
         let input = handle.input();
-        let param = ethabi::decode(
-            &[ethabi::ParamType::Uint(64)],
-            &input.get(4..).unwrap_or_default(),
-        ).map_err(|e| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: format!("decode failed: {:?}", e).into(),
-        })?;
-        let task_id_u256 = param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "decode task_id failed".into(),
-        })?;
+        let param =
+            ethabi::decode(&[ethabi::ParamType::Uint(64)], &input.get(4..).unwrap_or_default())
+                .map_err(|e| PrecompileFailure::Revert {
+                    exit_status: ExitRevert::Reverted,
+                    output: format!("decode failed: {:?}", e).into(),
+                })?;
+        let task_id_u256 =
+            param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "decode task_id failed".into(),
+            })?;
         let task_id = task_id_u256.as_u64();
-        let task_id_typed: T::TaskId = task_id.try_into().map_err(|_| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "invalid task_id".into(),
-        })?;
+        let task_id_typed: T::TaskId =
+            task_id.try_into().map_err(|_| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "invalid task_id".into(),
+            })?;
         let task = pallet_zk_compute::Tasks::<T>::get(task_id_typed);
         let (status, m, n, k) = match task {
             Some(t) => {
@@ -92,42 +91,37 @@ where
             ethabi::Token::Uint(to_ethabi_u256(U256::from(n))),
             ethabi::Token::Uint(to_ethabi_u256(U256::from(k))),
         ]);
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            output: encoded,
-        })
+        Ok(PrecompileOutput { exit_status: ExitSucceed::Returned, output: encoded })
     }
 
     fn claim_reward(handle: &mut impl PrecompileHandle) -> PrecompileResult {
-        handle.record_cost(T::GasWeightMapping::weight_to_gas(
-            Weight::from_parts(50_000, 0),
-        ))?;
+        handle.record_cost(T::GasWeightMapping::weight_to_gas(Weight::from_parts(50_000, 0)))?;
         let input = handle.input();
-        let param = ethabi::decode(
-            &[ethabi::ParamType::Uint(64)],
-            &input.get(4..).unwrap_or_default(),
-        ).map_err(|e| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: format!("decode failed: {:?}", e).into(),
-        })?;
-        let task_id_u256 = param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "decode task_id failed".into(),
-        })?;
+        let param =
+            ethabi::decode(&[ethabi::ParamType::Uint(64)], &input.get(4..).unwrap_or_default())
+                .map_err(|e| PrecompileFailure::Revert {
+                    exit_status: ExitRevert::Reverted,
+                    output: format!("decode failed: {:?}", e).into(),
+                })?;
+        let task_id_u256 =
+            param[0].clone().into_uint().ok_or_else(|| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "decode task_id failed".into(),
+            })?;
         let task_id = task_id_u256.as_u64();
-        let task_id_typed: T::TaskId = task_id.try_into().map_err(|_| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: "invalid task_id".into(),
-        })?;
+        let task_id_typed: T::TaskId =
+            task_id.try_into().map_err(|_| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: "invalid task_id".into(),
+            })?;
         let from: T::AccountId = T::AddressMapping::into_account_id(handle.context().caller).into();
         let origin = frame_system::RawOrigin::Signed(from);
-        pallet_zk_compute::Pallet::<T>::claim_reward(
-            origin.into(),
-            task_id_typed,
-        ).map_err(|e| PrecompileFailure::Revert {
-            exit_status: ExitRevert::Reverted,
-            output: format!("claim_reward failed: {:?}", e).into(),
-        })?;
+        pallet_zk_compute::Pallet::<T>::claim_reward(origin.into(), task_id_typed).map_err(
+            |e| PrecompileFailure::Revert {
+                exit_status: ExitRevert::Reverted,
+                output: format!("claim_reward failed: {:?}", e).into(),
+            },
+        )?;
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
             output: ethabi::encode(&[ethabi::Token::Bool(true)]),

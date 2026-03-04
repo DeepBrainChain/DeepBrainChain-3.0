@@ -54,6 +54,7 @@ use crate::{
     OffendingValidators, Pallet, Perbill, SessionInterface, SpanSlash, StakingLedger,
     UnappliedSlash, ValidatorSlashInEra,
 };
+use alloc::vec::Vec;
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
     ensure,
@@ -65,7 +66,6 @@ use sp_runtime::{
     DispatchResult, RuntimeDebug,
 };
 use sp_staking::EraIndex;
-use alloc::vec::Vec;
 
 /// The proportion of the slashing reward to be paid out on the first slashing detection.
 /// This is f_1 in the paper.
@@ -593,7 +593,8 @@ pub fn do_slash<T: Config>(
     slashed_imbalance: &mut NegativeImbalanceOf<T>,
     slash_era: EraIndex,
 ) {
-    let mut ledger = match StakingLedger::<T>::get(sp_staking::StakingAccount::Stash(stash.clone())) {
+    let mut ledger = match StakingLedger::<T>::get(sp_staking::StakingAccount::Stash(stash.clone()))
+    {
         Ok(ledger) => ledger,
         Err(_) => return, // nothing to do.
     };

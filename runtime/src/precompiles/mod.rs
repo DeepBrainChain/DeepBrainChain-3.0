@@ -1,10 +1,10 @@
+use core::marker::PhantomData;
 use fp_evm::{ExitRevert, PrecompileFailure};
 use pallet_evm::{
     IsPrecompileResult, Precompile, PrecompileHandle, PrecompileResult, PrecompileSet,
 };
 use scale_info::prelude::format;
 use sp_core::H160;
-use core::marker::PhantomData;
 
 use pallet_evm_precompile_blake2::Blake2F;
 use pallet_evm_precompile_bn128::{Bn128Add, Bn128Mul, Bn128Pairing};

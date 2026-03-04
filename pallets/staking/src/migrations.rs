@@ -19,7 +19,8 @@
 use super::*;
 use frame_election_provider_support::SortedListProvider;
 use frame_support::{
-    pallet_prelude::ValueQuery, storage_alias,
+    pallet_prelude::ValueQuery,
+    storage_alias,
     traits::{GetStorageVersion, OnRuntimeUpgrade},
 };
 
@@ -352,9 +353,9 @@ pub mod v10 {
 pub mod v9 {
     use super::*;
     #[cfg(feature = "try-runtime")]
-    use codec::{Decode, Encode};
-    #[cfg(feature = "try-runtime")]
     use alloc::vec::Vec;
+    #[cfg(feature = "try-runtime")]
+    use codec::{Decode, Encode};
 
     /// Migration implementation that injects all validators into sorted list.
     ///
@@ -427,8 +428,8 @@ pub mod v9 {
 
 pub mod v8 {
     use super::*;
-    use alloc::boxed::Box;
     use crate::{Config, Nominators, Pallet, Weight};
+    use alloc::boxed::Box;
     use frame_election_provider_support::SortedListProvider;
     use frame_support::traits::Get;
 

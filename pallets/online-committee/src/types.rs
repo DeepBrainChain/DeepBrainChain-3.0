@@ -1,9 +1,9 @@
 use crate::{Config, Error};
+use alloc::vec::Vec;
 use dbc_support::custom_err::VerifyErr;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec;
 
 /// 36 hours divide into 9 intervals for verification
 pub const DISTRIBUTION: u32 = 9;

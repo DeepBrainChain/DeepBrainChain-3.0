@@ -82,13 +82,13 @@ where
     use substrate_frame_rpc_system::{System, SystemApiServer};
 
     use committee_rpc::{CmRpcApiServer, CmStorage};
+    use dbc3_rpc::{Dbc3RpcApiServer, Dbc3Storage};
     use online_committee_rpc::{OcRpcApiServer, OcStorage};
     use online_profile_rpc::{OpRpcApiServer, OpStorage};
     use rent_machine_rpc::{RmRpcApiServer, RmStorage};
     use simple_rpc_rpc::{SimpleRpcApiServer, SrStorage};
     use terminating_rental_rpc::{IrRpcApiServer, IrStorage};
-    use dbc3_rpc::{Dbc3RpcApiServer, Dbc3Storage};
-    use x402_settlement_rpc::{X402SettlementRpcApiServer, X402Settlement};
+    use x402_settlement_rpc::{X402Settlement, X402SettlementRpcApiServer};
 
     let mut io = RpcModule::new(());
     let FullDeps {
@@ -125,12 +125,10 @@ where
         finality_provider,
     } = grandpa;
 
-    io.merge(System::new(Arc::clone(&client), Arc::clone(&pool)).into_rpc())
-        .ok();
+    io.merge(System::new(Arc::clone(&client), Arc::clone(&pool)).into_rpc()).ok();
     io.merge(TransactionPayment::new(Arc::clone(&client)).into_rpc()).ok();
     io.merge(
-        Babe::new(client.clone(), babe_worker_handle.clone(), keystore, select_chain)
-            .into_rpc(),
+        Babe::new(client.clone(), babe_worker_handle.clone(), keystore, select_chain).into_rpc(),
     )
     .ok();
     io.merge(

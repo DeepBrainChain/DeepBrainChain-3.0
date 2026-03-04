@@ -13,11 +13,10 @@ use substrate_prometheus_endpoint::Registry as PrometheusRegistry;
 use tokio::sync::Semaphore;
 
 use sp_api::ProvideRuntimeApi;
-use sp_runtime::traits::{Block as BlockT, Header as HeaderT};
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_core::H256;
-use sp_runtime::traits::BlakeTwo256;
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT};
 
 use std::{sync::Arc, time::Duration};
 

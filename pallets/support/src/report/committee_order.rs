@@ -1,12 +1,15 @@
 use crate::{custom_err::ReportErr, report::MachineFaultType, ItemList, ReportHash, ReportId};
+use alloc::vec::Vec;
+use core::cmp::PartialEq;
 use frame_support::ensure;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use alloc::vec::Vec; use core::cmp::PartialEq;
 
 /// 委员会抢到的报告的列表
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 pub struct MTCommitteeOrderList {
     /// 委员会预订的报告
     pub booked_report: Vec<ReportId>,
@@ -72,7 +75,9 @@ impl Default for MTOrderStatus {
 }
 
 /// 委员会对报告的操作信息
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+)]
 pub struct MTCommitteeOpsDetail<BlockNumber, Balance> {
     pub booked_time: BlockNumber,
     /// reporter 提交的加密后的信息

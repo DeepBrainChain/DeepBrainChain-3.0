@@ -20,6 +20,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
+use alloc::vec::Vec;
 use enumflags2::{BitFlag, BitFlags};
 use frame_benchmarking::v1::{
     account, benchmarks_instance_pallet, whitelist_account, whitelisted_caller, BenchmarkError,
@@ -29,14 +30,12 @@ use frame_support::{
     traits::{EnsureOrigin, Get, UnfilteredDispatchable},
     BoundedVec,
 };
-use frame_system::RawOrigin as SystemOrigin;
-use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin as SystemOrigin};
 use sp_io::crypto::{sr25519_generate, sr25519_sign};
 use sp_runtime::{
     traits::{Bounded, IdentifyAccount, One},
     AccountId32, MultiSignature, MultiSigner,
 };
-use alloc::vec::Vec;
 
 use crate::Pallet as Nfts;
 

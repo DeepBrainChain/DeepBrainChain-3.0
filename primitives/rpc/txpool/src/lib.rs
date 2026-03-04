@@ -5,10 +5,10 @@
 
 extern crate alloc;
 
+use alloc::vec::Vec;
 pub use ethereum::{TransactionV0 as LegacyTransaction, TransactionV3 as Transaction};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::{scale_info::TypeInfo, traits::Block as BlockT, RuntimeDebug};
-use alloc::vec::Vec;
 
 #[derive(Eq, PartialEq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct TxPoolResponseLegacy {

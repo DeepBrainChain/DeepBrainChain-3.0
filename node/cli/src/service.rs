@@ -28,27 +28,25 @@ use dbc_node_common::{
 };
 use dbc_primitives::Block;
 use dbc_runtime::RuntimeApi;
-use fc_db::Backend;
 use fc_api;
+use fc_db::Backend;
 use fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy};
-use sc_executor::WasmExecutor;
 use fc_rpc::EthTask;
 use fc_rpc_core::types::{FeeHistoryCache, FilterPool};
 use futures::prelude::*;
 use jsonrpsee::RpcModule;
 use sc_client_api::{BlockBackend, BlockchainEvents};
 use sc_consensus_babe::{self, SlotProportion};
-use sc_network::{
-    config::FullNetworkConfiguration, event::Event, NetworkEventStream,
-};
+use sc_executor::WasmExecutor;
+use sc_network::{config::FullNetworkConfiguration, event::Event, NetworkEventStream};
 use sc_network_sync::{strategy::warp::WarpSyncConfig, SyncingService};
-use sc_transaction_pool_api::OffchainTransactionPoolFactory;
-use sp_consensus_babe::inherents::BabeCreateInherentDataProviders;
 use sc_rpc_api::DenyUnsafe;
 use sc_service::{
     config::Configuration, error::Error as ServiceError, RpcHandlers, SpawnTaskHandle, TaskManager,
 };
 use sc_telemetry::{Telemetry, TelemetryWorker};
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use sp_consensus_babe::inherents::BabeCreateInherentDataProviders;
 use sp_runtime::traits::{Block as BlockT, NumberFor};
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
@@ -90,7 +88,9 @@ type FullGrandpaBlockImport =
 /// Clone a frontier backend by cloning each variant's inner Arc.
 /// This is needed because the derive(Clone) on fc_db::Backend requires C: Clone,
 /// but FullClient does not implement Clone.
-fn clone_frontier_backend(backend: &fc_db::Backend<Block, FullClient>) -> fc_db::Backend<Block, FullClient> {
+fn clone_frontier_backend(
+    backend: &fc_db::Backend<Block, FullClient>,
+) -> fc_db::Backend<Block, FullClient> {
     match backend {
         fc_db::Backend::KeyValue(b) => fc_db::Backend::KeyValue(b.clone()),
         fc_db::Backend::Sql(b) => fc_db::Backend::Sql(b.clone()),
@@ -149,7 +149,13 @@ pub fn new_partial(
         sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::BasicPool<FullChainApi, Block>,
         (
-            sc_consensus_babe::BabeBlockImport<Block, FullClient, FullGrandpaBlockImport, BabeCreateInherentDataProviders<Block>, FullSelectChain>,
+            sc_consensus_babe::BabeBlockImport<
+                Block,
+                FullClient,
+                FullGrandpaBlockImport,
+                BabeCreateInherentDataProviders<Block>,
+                FullSelectChain,
+            >,
             sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
             sc_consensus_babe::BabeLink<Block>,
             sc_consensus_babe::BabeWorkerHandle<Block>,
@@ -284,10 +290,7 @@ pub fn new_full_base(
         Block,
         <Block as BlockT>::Hash,
         sc_network::NetworkWorker<Block, <Block as BlockT>::Hash>,
-    >::new(
-        &config.network,
-        config.prometheus_registry().cloned(),
-    );
+    >::new(&config.network, config.prometheus_registry().cloned());
 
     let shared_voter_state = sc_consensus_grandpa::SharedVoterState::empty();
     let auth_disc_publish_non_global_ips = config.network.allow_non_globals_in_dht;
@@ -297,9 +300,8 @@ pub fn new_full_base(
     );
 
     let peer_store_handle = net_config.peer_store_handle();
-    let grandpa_notification_metrics = sc_network::NotificationMetrics::new(
-        config.prometheus_registry(),
-    );
+    let grandpa_notification_metrics =
+        sc_network::NotificationMetrics::new(config.prometheus_registry());
     let (grandpa_protocol_config, grandpa_notification_service) =
         sc_consensus_grandpa::grandpa_peers_set_config::<
             Block,
@@ -317,9 +319,7 @@ pub fn new_full_base(
         Vec::default(),
     ));
 
-    let metrics = sc_network::NotificationMetrics::new(
-        config.prometheus_registry(),
-    );
+    let metrics = sc_network::NotificationMetrics::new(config.prometheus_registry());
     let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
@@ -504,9 +504,7 @@ pub fn new_full_base(
             voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
             prometheus_registry,
             shared_voter_state,
-            offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(
-                transaction_pool.clone(),
-            ),
+            offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool.clone()),
         };
 
         // the GRANDPA voter task is considered infallible, i.e.
@@ -525,8 +523,7 @@ pub fn build_rpc_extensions_builder(
     config: &Configuration,
     rpc_config: RpcConfig,
     builder: RpcExtensionsBuilder,
-) -> impl Fn(sc_rpc::SubscriptionTaskExecutor) -> Result<RpcModule<()>, sc_service::Error>
-{
+) -> impl Fn(sc_rpc::SubscriptionTaskExecutor) -> Result<RpcModule<()>, sc_service::Error> {
     let justification_stream = builder.justification_stream.clone();
     let shared_authority_set = builder.shared_authority_set.clone();
 

@@ -1,12 +1,12 @@
 #[cfg(feature = "std")]
 use super::rpc_types::serde_text;
 use super::{ItemList, MachineId, RentOrderId};
+use alloc::{vec, vec::Vec};
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
-use alloc::{vec, vec::Vec};
 
 #[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

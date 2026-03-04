@@ -14,10 +14,11 @@ pub mod tracer {
     };
     use parity_scale_codec::Encode;
 
+    use alloc::rc::Rc;
+    use core::cell::RefCell;
     use evm::tracing::{using as evm_using, EventListener as EvmListener};
     use evm_gasometer::tracing::{using as gasometer_using, EventListener as GasometerListener};
     use evm_runtime::tracing::{using as runtime_using, EventListener as RuntimeListener};
-    use core::cell::RefCell; use alloc::rc::Rc;
 
     struct ListenerProxy<T>(pub Rc<RefCell<T>>);
     impl<T: GasometerListener> GasometerListener for ListenerProxy<T> {

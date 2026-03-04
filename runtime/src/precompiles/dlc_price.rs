@@ -5,7 +5,7 @@ use fp_evm::{
 use sp_core::{Get, U256};
 use sp_runtime::RuntimeDebug;
 extern crate alloc;
-use crate::precompiles::{LOG_TARGET, to_ethabi_u256};
+use crate::precompiles::{to_ethabi_u256, LOG_TARGET};
 use alloc::format;
 use core::marker::PhantomData;
 use dbc_support::traits::DlcPrice;
