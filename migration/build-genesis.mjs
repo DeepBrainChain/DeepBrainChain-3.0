@@ -43,7 +43,7 @@ function h160ToSs58(h160Hex){
 }
 const readJSON=p=>JSON.parse(fs.readFileSync(p,'utf8'))
 
-function main(){
+async function main(){
   console.error('[genesis] loading exports ...')
   const bal=readJSON(F.balances)
   const gov=fs.existsSync(F.gov)?readJSON(F.gov):null
@@ -96,16 +96,19 @@ function main(){
   // 6) assemble genesis config on top of the template
   const spec=readJSON(F.template)
   const cfg=spec.genesis.runtimeGenesis.config
-  cfg.balances={ balances:balancesArr }
   if(sudoKey) cfg.sudo={ key:sudoKey }
   cfg.council={ members:councilMembers }
   cfg.technicalCommittee={ members:techMembers }
   cfg.elections={ members:electionsMembers }
   if(sessionKeys.length) cfg.session={ keys:sessionKeys }
-  if(Object.keys(evmAccounts).length) cfg.evm={ accounts:evmAccounts }
   // staking left to template defaults (bonds NOT migrated — validators re-bond;
   // initial authorities come from session.keys). Treasury funds arrive via its
   // pallet account already present in balancesArr.
+  const hasEvm=Object.keys(evmAccounts).length>0
+  // markers for the two huge sections — stream-written below (genesis exceeds
+  // V8's ~512MB max string length, so JSON.stringify on the whole spec fails).
+  cfg.balances='@@BAL@@'
+  if(hasEvm) cfg.evm='@@EVM@@'
 
   spec.name='DBC 3.0'; spec.id='dbc3_mainnet'; spec.chainType='Live'
   spec._migration={ snapshotBlock:bal.block, oldTotalIssuance:oldTI.toString(),
@@ -113,9 +116,26 @@ function main(){
     evmContracts:Object.keys(evmAccounts).length, council:councilMembers.length,
     techComm:techMembers.length, elections:electionsMembers.length, validators:sessionKeys.length } }
 
-  fs.writeFileSync(F.out,JSON.stringify(spec))
+  // stream-write: split the skeleton on the markers and stream the big arrays
+  const skeleton=JSON.stringify(spec)
+  const ws=fs.createWriteStream(F.out)
+  const W=s=>new Promise(res=>{ if(ws.write(s)) res(); else ws.once('drain',res) })
+  const [preB,restB]=skeleton.split('"@@BAL@@"')
+  let mid=restB, post=''
+  if(hasEvm){ const parts=restB.split('"@@EVM@@"'); mid=parts[0]; post=parts[1] }
+  await W(preB)
+  await W('{"balances":[')
+  for(let i=0;i<balancesArr.length;i++) await W((i?',':'')+JSON.stringify(balancesArr[i]))
+  await W(']}')
+  if(hasEvm){
+    await W(mid); await W('{"accounts":{')
+    let f=true
+    for(const h of Object.keys(evmAccounts)){ await W((f?'':',')+JSON.stringify(h)+':'+JSON.stringify(evmAccounts[h])); f=false }
+    await W('}}'); await W(post)
+  } else { await W(mid) }
+  await new Promise(r=>ws.end(r))
   console.error(`\n[genesis] DONE  balances=${balancesArr.length} evmContracts=${Object.keys(evmAccounts).length} council=${councilMembers.length} techComm=${techMembers.length} elections=${electionsMembers.length} validators=${sessionKeys.length}`)
   console.error(`[genesis] RECONCILES=${reconciles}  written ${F.out}`)
   if(!reconciles) console.error('[genesis] ⚠️ Σ mismatch — do NOT use until resolved (missing EVM dump? unclaimed rewards? snapshot mismatch?)')
 }
-main()
+main().catch(e=>{console.error('[genesis] FATAL',e);process.exit(1)})
