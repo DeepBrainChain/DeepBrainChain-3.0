@@ -217,32 +217,32 @@ node-primitives = { git = "https://github.com/paritytech/polkadot-sdk", branch =
 # Frontier (wasm)
 ethereum = { version = "0.18.2", default-features = false, features = ["with-scale"] }
 ethereum-types = { version = "0.15", default-features = false }
-fp-ethereum = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-fp-evm = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-fp-rpc = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-fp-self-contained = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false, features = ["serde"] }
-pallet-base-fee = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-pallet-ethereum = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false, features = ["forbid-evm-reentrancy"] }
+fp-ethereum = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+fp-evm = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+fp-rpc = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+fp-self-contained = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false, features = ["serde"] }
+pallet-base-fee = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+pallet-ethereum = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false, features = ["forbid-evm-reentrancy"] }
 
-pallet-evm = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false, features = ["forbid-evm-reentrancy", "dbc-adaptor"] }
-pallet-evm-chain-id = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-pallet-evm-precompile-blake2 = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-pallet-evm-precompile-bn128 = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-pallet-evm-precompile-dispatch = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-pallet-evm-precompile-modexp = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-pallet-evm-precompile-sha3fips = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
-pallet-evm-precompile-simple = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", default-features = false }
+pallet-evm = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false, features = ["forbid-evm-reentrancy", "dbc-adaptor"] }
+pallet-evm-chain-id = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+pallet-evm-precompile-blake2 = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+pallet-evm-precompile-bn128 = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+pallet-evm-precompile-dispatch = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+pallet-evm-precompile-modexp = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+pallet-evm-precompile-sha3fips = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
+pallet-evm-precompile-simple = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", default-features = false }
 
 # Frontier (client)
-fc-api = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
-fc-consensus = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
-fc-db = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
-fc-mapping-sync = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
-fc-rpc = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603", features = ["rpc-binary-search-estimate"] }
-fc-rpc-core = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
-fc-storage = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
-fp-consensus = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
-fp-storage = { git = "file:///home/ubuntu/dbc-evm-rebase", branch = "stable2603" }
+fc-api = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
+fc-consensus = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
+fc-db = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
+fc-mapping-sync = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
+fc-rpc = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603", features = ["rpc-binary-search-estimate"] }
+fc-rpc-core = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
+fc-storage = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
+fp-consensus = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
+fp-storage = { git = "https://github.com/DeepBrainChain/DBC-EVM", branch = "stable2603" }
 
 # DBC (client)
 dbc-primitives = { path = "primitives", default-features = false }
