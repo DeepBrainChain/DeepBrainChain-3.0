@@ -8,7 +8,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_io::hashing::blake2_128;
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 
 #[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

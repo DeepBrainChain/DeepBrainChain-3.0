@@ -2,7 +2,7 @@
 use dbc_support::rpc_types::{serde_text, RpcText};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 // use generic_func::rpc_types::RpcText;
 use crate::{LiveMachine, MachineId, StakerCustomizeInfo};
 use alloc::vec::Vec;

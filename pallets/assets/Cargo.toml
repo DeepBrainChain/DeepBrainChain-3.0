@@ -15,6 +15,7 @@ scale-info = { workspace = true }
 sp-std = { workspace = true }
 # Needed for various traits. In our case, `OnFinalize`.
 sp-runtime = { workspace = true }
+sp-debug-derive = { workspace = true }
 # Needed for type-safe access to storage DB.
 frame-support = { workspace = true }
 frame-benchmarking = { workspace = true }
@@ -36,6 +37,7 @@ std = [
 	"sp-core/std",
 	"sp-std/std",
 	"sp-runtime/std",
+	"sp-debug-derive/std",
 	"frame-support/std",
 	"frame-system/std",
 	"frame-benchmarking/std"

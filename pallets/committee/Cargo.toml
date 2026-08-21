@@ -13,6 +13,7 @@ dbc-support = { path = "../support", default-features = false }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 sp-runtime = { workspace = true }
+sp-debug-derive = { workspace = true }
 sp-std = { workspace = true }
 
 # Optional imports for benchmarking
@@ -35,6 +36,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "sp-runtime/std",
+	"sp-debug-derive/std",
   "sp-std/std",
   "dbc-support/std",
 ]

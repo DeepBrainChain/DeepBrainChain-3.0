@@ -137,6 +137,7 @@ extern crate alloc;
 
 pub use pallet::*;
 
+use sp_debug_derive::RuntimeDebug;
 use types::*;
 
 use core::convert::TryInto;
@@ -156,7 +157,7 @@ use frame_support::{
 use sp_io::hashing::blake2_256;
 use sp_runtime::{
     traits::{CheckedAdd, CheckedSub, TrailingZeroInput, Zero},
-    ArithmeticError, DispatchResult, Perbill, RuntimeDebug, Saturating,
+    ArithmeticError, DispatchResult, Perbill, Saturating
 };
 use sp_staking::{Agent, Delegator, EraIndex, StakingInterface, StakingUnchecked};
 

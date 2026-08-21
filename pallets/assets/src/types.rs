@@ -17,6 +17,7 @@
 
 //! Various basic types for use in the assets pallet.
 
+use sp_debug_derive::RuntimeDebug;
 use super::*;
 use frame_support::{
     pallet_prelude::*,

@@ -1,3 +1,4 @@
+use sp_debug_derive::RuntimeDebug;
 use crate::{
     report::{MTReportInfoDetail, ReportConfirmStatus},
     ItemList, MachineId, ReportId, TWO_DAYS,
@@ -10,9 +11,8 @@ use core::{
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{
-    traits::{Saturating, Zero},
-    RuntimeDebug,
-};
+    traits::{Saturating, Zero}
+    };
 
 /// 报告的处理结果
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]

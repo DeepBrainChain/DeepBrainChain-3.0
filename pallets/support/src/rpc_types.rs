@@ -3,7 +3,7 @@ use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{de, ser, Deserialize, Serialize};
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 #[cfg(feature = "std")]
 use std::result::Result as StdResult;
 

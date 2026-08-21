@@ -3,6 +3,7 @@ extern crate alloc;
 pub use pallet::*;
 pub mod weights;
 
+use sp_debug_derive::RuntimeDebug;
 use sp_runtime::traits::Saturating;
 
 #[cfg(feature = "runtime-benchmarks")]

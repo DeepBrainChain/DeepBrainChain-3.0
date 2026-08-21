@@ -49,6 +49,7 @@
 //!
 //! Based on research at <https://research.web3.foundation/en/latest/polkadot/slashing/npos.html>
 
+use sp_debug_derive::RuntimeDebug;
 use crate::{
     asset, BalanceOf, Config, Error, Exposure, NegativeImbalanceOf, NominatorSlashInEra,
     OffendingValidators, Pallet, Perbill, SessionInterface, SpanSlash, StakingLedger,
@@ -63,8 +64,7 @@ use frame_support::{
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{Saturating, Zero},
-    DispatchResult, RuntimeDebug,
-};
+    DispatchResult };
 use sp_staking::EraIndex;
 
 /// The proportion of the slashing reward to be paid out on the first slashing detection.

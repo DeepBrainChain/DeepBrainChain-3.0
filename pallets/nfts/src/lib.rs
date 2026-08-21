@@ -46,6 +46,7 @@ mod types;
 pub mod macros;
 pub mod weights;
 
+use sp_debug_derive::RuntimeDebug;
 use alloc::{vec, vec::Vec};
 use codec::{alloc::string::ToString, Decode, DecodeWithMemTracking, Encode};
 use frame_support::traits::{
@@ -54,7 +55,7 @@ use frame_support::traits::{
 use frame_system::Config as SystemConfig;
 use sp_runtime::{
     traits::{IdentifyAccount, Saturating, StaticLookup, Verify, Zero},
-    RuntimeDebug, SaturatedConversion,
+    SaturatedConversion
 };
 
 pub use pallet::*;

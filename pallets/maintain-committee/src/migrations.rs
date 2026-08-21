@@ -1,3 +1,4 @@
+use sp_debug_derive::RuntimeDebug;
 use codec::{Decode, Encode};
 use dbc_support::{
     report::{MCSlashResult, MTReportResultInfo, ReportResultType},

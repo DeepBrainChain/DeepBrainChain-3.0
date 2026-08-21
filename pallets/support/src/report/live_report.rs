@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::cmp::PartialEq;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 
 /// 机器故障的报告列表
 /// 记录该模块中所有活跃的报告, 根据ReportStatus来区分

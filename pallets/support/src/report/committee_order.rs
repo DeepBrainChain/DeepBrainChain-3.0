@@ -4,7 +4,7 @@ use core::cmp::PartialEq;
 use frame_support::ensure;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 
 /// 委员会抢到的报告的列表
 #[derive(

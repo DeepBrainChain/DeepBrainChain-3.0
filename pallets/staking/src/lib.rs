@@ -306,6 +306,7 @@ pub mod weights;
 
 mod pallet;
 
+use sp_debug_derive::RuntimeDebug;
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, HasCompact, MaxEncodedLen};
 use frame_election_provider_support::ElectionProvider;
@@ -321,7 +322,7 @@ use scale_info::TypeInfo;
 use sp_runtime::{
     curve::PiecewiseLinear,
     traits::{AtLeast32BitUnsigned, Convert, StaticLookup, Zero},
-    Perbill, Perquintill, Rounding, RuntimeDebug, Saturating,
+    Perbill, Perquintill, Rounding, Saturating
 };
 use sp_staking::{
     offence::{Offence, OffenceError, ReportOffence},

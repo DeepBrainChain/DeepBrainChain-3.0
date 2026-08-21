@@ -13,6 +13,7 @@ pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
+use sp_debug_derive::RuntimeDebug;
     use alloc::vec::Vec;
     use dbc_support::traits::DbcPrice;
     use frame_support::{

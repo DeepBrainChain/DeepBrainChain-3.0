@@ -1,3 +1,4 @@
+use sp_debug_derive::RuntimeDebug;
 use crate::{
     custom_err::VerifyErr, machine_type::CommitteeUploadInfo, ItemList, MachineId, ONE_HOUR,
 };
@@ -9,9 +10,8 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::{
-    traits::{CheckedAdd, Saturating, Zero},
-    RuntimeDebug,
-};
+    traits::{CheckedAdd, Saturating, Zero}
+    };
 
 /// After order distribution 36 hours, allow committee submit raw info
 pub const SUBMIT_RAW_START: u32 = 36 * ONE_HOUR;

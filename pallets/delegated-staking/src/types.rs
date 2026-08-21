@@ -17,6 +17,7 @@
 
 //! Basic types used in delegated staking.
 
+use sp_debug_derive::RuntimeDebug;
 use super::*;
 use frame_support::traits::DefensiveSaturating;
 

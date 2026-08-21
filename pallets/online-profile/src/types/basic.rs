@@ -5,7 +5,7 @@ use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::{traits::Saturating, RuntimeDebug};
+use sp_runtime::traits::Saturating; use sp_debug_derive::RuntimeDebug;
 
 pub type TelecomName = Vec<u8>;
 

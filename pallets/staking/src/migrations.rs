@@ -16,6 +16,7 @@
 
 //! Storage migrations for the Staking pallet.
 
+use sp_debug_derive::RuntimeDebug;
 use super::*;
 use frame_election_provider_support::SortedListProvider;
 use frame_support::{

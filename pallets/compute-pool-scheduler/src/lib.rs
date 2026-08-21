@@ -3,6 +3,7 @@ extern crate alloc;
 pub use pallet::*;
 pub mod weights;
 
+use sp_debug_derive::RuntimeDebug;
 use dbc_support::traits::TaskCompletionHandler;
 use frame_support::{traits::Currency, weights::Weight};
 
@@ -34,8 +35,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use sp_runtime::{
         traits::{Saturating, UniqueSaturatedInto, Zero},
-        ArithmeticError, RuntimeDebug,
-    };
+        ArithmeticError };
 
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;

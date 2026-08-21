@@ -17,6 +17,7 @@
 
 //! Various basic types for use in the Nfts pallet.
 
+use sp_debug_derive::RuntimeDebug;
 use super::*;
 use crate::macros::*;
 use codec::EncodeLike;

@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::cmp::PartialEq;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Saturating, RuntimeDebug};
+use sp_runtime::traits::Saturating; use sp_debug_derive::RuntimeDebug;
 
 /// 报告人的报告记录
 #[derive(

@@ -15,6 +15,7 @@ serde = { workspace = true, features = ["alloc", "derive"] }
 sp-application-crypto = { workspace = true, features = ["serde"] }
 sp-io = { workspace = true }
 sp-runtime = { workspace = true, features = ["serde"] }
+sp-debug-derive = { workspace = true }
 sp-staking = { workspace = true, features = ["serde"] }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -60,6 +61,7 @@ std = [
 	"sp-application-crypto/std",
 	"sp-io/std",
 	"sp-runtime/std",
+	"sp-debug-derive/std",
 	"sp-staking/std",
 ]
 runtime-benchmarks = [

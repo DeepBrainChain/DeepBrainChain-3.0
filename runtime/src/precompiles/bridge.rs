@@ -3,7 +3,7 @@ use fp_evm::{
     PrecompileResult,
 };
 use sp_core::{Get, U256};
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 extern crate alloc;
 use crate::precompiles::{from_ethabi_h160, from_ethabi_u256, LOG_TARGET};
 use alloc::format;

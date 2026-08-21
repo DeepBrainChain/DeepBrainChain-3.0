@@ -362,7 +362,7 @@ parameter_types! {
     Encode,
     Decode,
     DecodeWithMemTracking,
-    sp_runtime::RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     MaxEncodedLen,
     scale_info::TypeInfo,
 )]
@@ -1552,44 +1552,10 @@ parameter_types! {
     pub const PaymentIntentTTL: BlockNumber = 14400; // ~24 hours at 6s blocks
 }
 
-/// Hash-commitment ZK verifier for matrix multiplication proofs.
-/// Proof format: [version(1)][commitment(32)][nonce(32)][binding_hash(32)] = 97 bytes
-/// binding_hash = blake2_256(version || commitment || nonce || m_le || n_le || k_le)
-pub struct HashCommitmentZkVerifier;
-
-impl pallet_zk_compute::VerifyZkProof for HashCommitmentZkVerifier {
-    fn verify(proof: &[u8], dimensions: (u32, u32, u32)) -> bool {
-        // Minimum proof length: 1 + 32 + 32 + 32 = 97
-        if proof.len() < 97 {
-            return false
-        }
-        // Version check
-        if proof[0] != 0x01 {
-            return false
-        }
-        // Dimension validity
-        let (m, n, k) = dimensions;
-        if m == 0 || n == 0 || k == 0 {
-            return false
-        }
-        // Max dimension guard (prevent overflow)
-        if m > 65536 || n > 65536 || k > 65536 {
-            return false
-        }
-
-        let binding_hash = &proof[65..97];
-
-        // Recompute binding: blake2_256(proof[0..65] || m_le || n_le || k_le)
-        let mut preimage = alloc::vec::Vec::with_capacity(77);
-        preimage.extend_from_slice(&proof[0..65]);
-        preimage.extend_from_slice(&m.to_le_bytes());
-        preimage.extend_from_slice(&n.to_le_bytes());
-        preimage.extend_from_slice(&k.to_le_bytes());
-
-        let expected = sp_io::hashing::blake2_256(&preimage);
-        binding_hash == expected
-    }
-}
+// DBC 3.0 (feng 2026-08-21): ZK verification removed — the HashCommitmentZkVerifier
+// and pallet_zk_compute::Config impl were deleted here. Compute honesty is handled by
+// agent-attestation stake/challenge instead. See also construct_runtime / precompiles /
+// runtime-api removals.
 
 impl pallet_task_mode::Config for Runtime {
     type Currency = Balances;
@@ -1606,27 +1572,7 @@ impl pallet_task_mode::Config for Runtime {
     type ComputeScheduler = ComputePoolScheduler;
 }
 
-impl pallet_zk_compute::Config for Runtime {
-    type Currency = Balances;
-    type TaskId = u64;
-    type MaxProofSize = MaxProofSize;
-    type MaxVerificationKeySize = MaxVerificationKeySize;
-    type MaxPublicInputsSize = MaxPublicInputsSize;
-    type MaxPendingTasks = MaxPendingTasks;
-    type MaxVerifiedTasks = MaxVerifiedTasks;
-    type MaxPendingPerMiner = MaxPendingPerMiner;
-    type BaseReward = BaseReward;
-    type SubmissionDeposit = SubmissionDeposit;
-    type VerificationTimeout = ZkVerificationTimeout;
-    type InitialMinerScore = InitialMinerScore;
-    type MinMinerScoreToSubmit = MinMinerScoreToSubmit;
-    type MaxMinerScore = MaxMinerScore;
-    type ScoreOnSuccess = ScoreOnSuccess;
-    type ScorePenaltyOnFailure = ScorePenaltyOnFailure;
-    type PalletId = ZkPalletId;
-    type WeightInfo = pallet_zk_compute::weights::SubstrateWeight<Runtime>;
-    type ZkVerifier = HashCommitmentZkVerifier;
-}
+// DBC 3.0: pallet_zk_compute::Config impl removed (ZK verification dropped).
 
 impl pallet_compute_pool_scheduler::Config for Runtime {
     type Currency = Balances;
@@ -1748,8 +1694,10 @@ pub const WEIGHT_PER_GAS: u64 = WEIGHT_PER_SECOND / GAS_PER_SECOND;
 const BLOCK_GAS_LIMIT: u64 = 75_000_000;
 const MAX_POV_SIZE: u64 = 5 * 1024 * 1024;
 
-/// We allow for 2000ms of compute with a 6 second average block time.
-pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 2000;
+/// DBC 3.0: 1-second block time → cap block-execution compute at 500ms, leaving
+/// ~500ms of the 1s slot for consensus/propagation/import. (Was 2000ms @ 6s blocks.)
+/// This value is a perf parameter to validate/tune in the migration dry-run (P5).
+pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 500;
 
 parameter_types! {
     pub BlockGasLimit: U256
@@ -1946,7 +1894,6 @@ construct_runtime!(
         EthPrecompileWhitelist: eth_precompile_whitelist = 114,
         DLCPriceOCW: dlc_price_ocw = 115,
         TaskMode: pallet_task_mode = 116,
-        ZkCompute: pallet_zk_compute = 117,
         ComputePoolScheduler: pallet_compute_pool_scheduler = 118,
         AgentAttestation: pallet_agent_attestation = 119,
         X402Settlement: pallet_x402_settlement = 120,
@@ -2036,7 +1983,6 @@ mod benches {
         [pallet_nfts, Nfts]
         [pallet_utility, Utility]
         [pallet_task_mode, TaskMode]
-        [pallet_zk_compute, ZkCompute]
         [pallet_compute_pool_scheduler, ComputePoolScheduler]
         [pallet_agent_attestation, AgentAttestation]
         [pallet_x402_settlement, X402Settlement]
@@ -3060,15 +3006,6 @@ impl_runtime_apis! {
         fn get_settlement_receipt(intent_id: u64) -> Option<Vec<u8>> {
             use parity_scale_codec::Encode;
             pallet_x402_settlement::SettlementReceipts::<Runtime>::get(intent_id).map(|v| v.encode())
-        }
-
-        fn get_zk_task(task_id: u64) -> Option<Vec<u8>> {
-            use parity_scale_codec::Encode;
-            pallet_zk_compute::Tasks::<Runtime>::get(task_id).map(|v| v.encode())
-        }
-
-        fn get_miner_score(miner: AccountId) -> u32 {
-            pallet_zk_compute::MinerScores::<Runtime>::get(&miner).unwrap_or(0)
         }
 
         fn get_delegated_agent(agent: AccountId) -> Option<Vec<u8>> {

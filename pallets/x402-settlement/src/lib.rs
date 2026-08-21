@@ -13,6 +13,7 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
+use sp_debug_derive::RuntimeDebug;
     use crate::weights::WeightInfo;
     use alloc::vec::Vec;
     use frame_support::{

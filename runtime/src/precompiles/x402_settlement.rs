@@ -2,7 +2,7 @@ use fp_evm::{
     ExitRevert, ExitSucceed, Precompile, PrecompileFailure, PrecompileHandle, PrecompileOutput,
     PrecompileResult,
 };
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
 use core::marker::PhantomData;

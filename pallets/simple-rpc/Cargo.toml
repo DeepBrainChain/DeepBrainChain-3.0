@@ -13,6 +13,7 @@ pallet-identity = { workspace = true }
 frame-system = { workspace = true }
 frame-support = { workspace = true }
 sp-runtime = { workspace = true }
+sp-debug-derive = { workspace = true }
 sp-std = { workspace = true }
 
 dbc-support = { path = "../support", default-features = false }
@@ -25,6 +26,7 @@ std = [
   "frame-support/std",
   "serde",
   "sp-runtime/std",
+	"sp-debug-derive/std",
   "sp-std/std",
   "dbc-support/std",
   "online-profile/std",

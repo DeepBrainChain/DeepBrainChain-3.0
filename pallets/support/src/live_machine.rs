@@ -4,7 +4,7 @@ use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 
 /// MachineList in online module
 #[derive(

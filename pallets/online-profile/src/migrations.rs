@@ -15,7 +15,7 @@ use dbc_support::{
 use frame_support::{traits::Get, weights::Weight, IterableStorageMap};
 use frame_system::pallet_prelude::BlockNumberFor;
 use log::info;
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::{

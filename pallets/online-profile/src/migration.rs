@@ -22,7 +22,7 @@ mod v0 {
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
     use sp_core::H256;
-    use sp_runtime::RuntimeDebug;
+    use sp_debug_derive::RuntimeDebug;
 
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

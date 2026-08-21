@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use alloc::{vec, vec::Vec};
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
-use sp_runtime::{Perbill, RuntimeDebug};
+use sp_runtime::Perbill; use sp_debug_derive::RuntimeDebug;
 
 // 处于不同状态的委员会的列表
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]

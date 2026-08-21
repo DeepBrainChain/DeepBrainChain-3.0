@@ -95,13 +95,6 @@ pub trait Dbc3RpcApi<BlockHash, AccountId> {
         at: Option<BlockHash>,
     ) -> RpcResult<Option<Vec<u8>>>;
 
-    // === ZK Compute ===
-    #[method(name = "dbc3_getZkTask")]
-    fn get_zk_task(&self, task_id: u64, at: Option<BlockHash>) -> RpcResult<Option<Vec<u8>>>;
-
-    #[method(name = "dbc3_getMinerScore")]
-    fn get_miner_score(&self, miner: AccountId, at: Option<BlockHash>) -> RpcResult<u32>;
-
     // === Delegated Staking ===
     #[method(name = "dbc3_getDelegatedAgent")]
     fn get_delegated_agent(
@@ -328,18 +321,6 @@ where
         let api = self.client.runtime_api();
         let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
         api.get_settlement_receipt(at_hash, intent_id).map_err(map_err)
-    }
-
-    fn get_zk_task(&self, task_id: u64, at: Option<Block::Hash>) -> RpcResult<Option<Vec<u8>>> {
-        let api = self.client.runtime_api();
-        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
-        api.get_zk_task(at_hash, task_id).map_err(map_err)
-    }
-
-    fn get_miner_score(&self, miner: AccountId, at: Option<Block::Hash>) -> RpcResult<u32> {
-        let api = self.client.runtime_api();
-        let at_hash = at.unwrap_or_else(|| self.client.info().best_hash);
-        api.get_miner_score(at_hash, miner).map_err(map_err)
     }
 
     fn get_delegated_agent(

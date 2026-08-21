@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use core::cmp::PartialEq;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 
 #[derive(PartialEq, Eq, Clone, Copy, Encode, Decode, DecodeWithMemTracking, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

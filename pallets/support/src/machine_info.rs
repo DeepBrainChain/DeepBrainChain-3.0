@@ -1,3 +1,4 @@
+use sp_debug_derive::RuntimeDebug;
 use crate::{
     custom_err::OnlineErr,
     machine_type::{
@@ -13,9 +14,8 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::{
-    traits::{Saturating, Zero},
-    RuntimeDebug,
-};
+    traits::{Saturating, Zero}
+    };
 
 /// All details of a machine
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]

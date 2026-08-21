@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
 use sp_core::H160;
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 
 pub trait PhaseReward {
     type Balance;

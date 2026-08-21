@@ -4,7 +4,7 @@ use fp_evm::{
     PrecompileResult,
 };
 use sp_core::U256;
-use sp_runtime::RuntimeDebug;
+use sp_debug_derive::RuntimeDebug;
 extern crate alloc;
 use alloc::format;
 use core::marker::PhantomData;

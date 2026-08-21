@@ -14,6 +14,7 @@ frame-system = { workspace = true }
 sp-core = { workspace = true }
 sp-std = { workspace = true }
 sp-runtime = { workspace = true }
+sp-debug-derive = { workspace = true }
 
 log = { workspace = true }
 
@@ -41,6 +42,7 @@ std = [
   "sp-core/std",
   "sp-std/std",
   "sp-runtime/std",
+	"sp-debug-derive/std",
   "log/std",
   "committee/std",
   "dbc-support/std",
