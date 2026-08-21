@@ -55,7 +55,11 @@ pub mod time {
     /// `SLOT_DURATION` should have the same value.
     ///
     /// <https://research.web3.foundation/en/latest/polkadot/block-production/Babe.html#-6.-practical-results>
-    pub const MILLISECS_PER_BLOCK: Moment = 6_000;
+    // DBC 3.0: 1-second block time (set at genesis of the fresh relaunch chain).
+    // All time-derived units below (MINUTES/HOURS/DAYS, epoch/era) recompute from this
+    // and stay wall-clock-preserving. NOTE: block-execution weight budget is capped
+    // separately at WEIGHT_MILLISECS_PER_BLOCK in lib.rs (must be < block time).
+    pub const MILLISECS_PER_BLOCK: Moment = 1_000;
     pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 
     // NOTE: Currently it is not possible to change the slot duration after the chain has started.

@@ -43,7 +43,6 @@ members = [
   "pallets/terminating-rental/rpc/runtime-api",
   "pallets/council-reward",
   "pallets/task-mode",
-  "pallets/zk-compute",
   "pallets/compute-pool-scheduler",
   "pallets/nfts",
   "pallets/delegated-staking",

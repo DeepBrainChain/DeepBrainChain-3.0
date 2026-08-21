@@ -82,14 +82,6 @@ sp_api::decl_runtime_apis! {
         /// Get a settlement receipt by intent ID (SCALE-encoded `SettlementReceipt`).
         fn get_settlement_receipt(intent_id: u64) -> Option<Vec<u8>>;
 
-        // ─── ZK Compute ─────────────────────────────────────────────
-
-        /// Get a ZK task by ID (SCALE-encoded `ZkTask`).
-        fn get_zk_task(task_id: u64) -> Option<Vec<u8>>;
-
-        /// Get miner score (0-based).
-        fn get_miner_score(miner: AccountId) -> u32;
-
         // ─── Delegated Staking ─────────────────────────────────────
 
         /// Get delegated-staking agent ledger by agent account (SCALE-encoded `AgentLedger`).

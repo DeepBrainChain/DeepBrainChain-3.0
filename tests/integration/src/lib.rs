@@ -34,7 +34,6 @@ mod tests {
             ComputePoolScheduler: pallet_compute_pool_scheduler,
             AgentAttestation: pallet_agent_attestation,
             X402Settlement: pallet_x402_settlement,
-            ZkCompute: pallet_zk_compute,
         }
     );
 
@@ -79,23 +78,6 @@ mod tests {
         pub const MaxSignatureLen: u32 = 256;
         pub const SettlementDelay: BlockNumber = 10;
         pub const PaymentIntentTTL: BlockNumber = 100;
-
-        // ZkCompute parameters
-        pub const MaxProofSize: u32 = 4096;
-        pub const MaxVerificationKeySize: u32 = 2048;
-        pub const MaxPublicInputsSize: u32 = 1024;
-        pub const MaxPendingTasks: u32 = 1000;
-        pub const MaxVerifiedTasks: u32 = 10000;
-        pub const MaxPendingPerMiner: u32 = 10;
-        pub const BaseReward: Balance = 1_000;
-        pub const SubmissionDeposit: Balance = 500;
-        pub const VerificationTimeout: BlockNumber = 100;
-        pub const InitialMinerScore: u32 = 100;
-        pub const MinMinerScoreToSubmit: u32 = 10;
-        pub const MaxMinerScore: u32 = 1000;
-        pub const ScoreOnSuccess: u32 = 5;
-        pub const ScorePenaltyOnFailure: u32 = 10;
-        pub const ZkPalletId: frame_support::PalletId = frame_support::PalletId(*b"zkcomput");
 
         // P1 additions
         pub const MaxModelsPerAgent: u32 = 10;
@@ -155,27 +137,6 @@ mod tests {
 
         fn get_dlc_amount_by_value(_value: u64) -> Option<Self::Balance> {
             None
-        }
-    }
-
-    // ================================================================
-    // Mock ZK Verifier (always returns true for testing)
-    // ================================================================
-    pub struct MockZkVerifier;
-    impl pallet_zk_compute::VerifyZkProof for MockZkVerifier {
-        fn verify(_proof: &[u8], _dims: (u32, u32, u32)) -> bool {
-            true
-        }
-    }
-
-    impl frame_system::offchain::CreateTransactionBase<pallet_zk_compute::Call<Test>> for Test {
-        type Extrinsic = UncheckedExtrinsic;
-        type RuntimeCall = RuntimeCall;
-    }
-
-    impl frame_system::offchain::CreateBare<pallet_zk_compute::Call<Test>> for Test {
-        fn create_bare(call: Self::RuntimeCall) -> Self::Extrinsic {
-            sp_runtime::generic::UncheckedExtrinsic::new_bare(call)
         }
     }
 
@@ -291,27 +252,6 @@ mod tests {
         type OnAttestationConfirmed = X402Settlement;
     }
 
-    impl pallet_zk_compute::Config for Test {
-        type Currency = Balances;
-        type TaskId = u64;
-        type ZkVerifier = MockZkVerifier;
-        type MaxProofSize = MaxProofSize;
-        type MaxVerificationKeySize = MaxVerificationKeySize;
-        type MaxPublicInputsSize = MaxPublicInputsSize;
-        type MaxPendingTasks = MaxPendingTasks;
-        type MaxVerifiedTasks = MaxVerifiedTasks;
-        type MaxPendingPerMiner = MaxPendingPerMiner;
-        type BaseReward = BaseReward;
-        type SubmissionDeposit = SubmissionDeposit;
-        type VerificationTimeout = VerificationTimeout;
-        type InitialMinerScore = InitialMinerScore;
-        type MinMinerScoreToSubmit = MinMinerScoreToSubmit;
-        type MaxMinerScore = MaxMinerScore;
-        type ScoreOnSuccess = ScoreOnSuccess;
-        type ScorePenaltyOnFailure = ScorePenaltyOnFailure;
-        type PalletId = ZkPalletId;
-        type WeightInfo = ();
-    }
 
     impl pallet_x402_settlement::Config for Test {
         type Currency = Balances;
@@ -352,13 +292,6 @@ mod tests {
             System::set_block_number(1);
             MockDbcPriceProvider::set_price(Some(2_000_000));
             MockDbcPriceProvider::set_multiplier(Some(10));
-            // Fund ZK pallet account
-            use sp_runtime::traits::AccountIdConversion;
-            let zk_account: AccountId = ZkPalletId::get().into_account_truncating();
-            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(
-                &zk_account,
-                1_000_000,
-            );
         });
         ext
     }
@@ -1097,94 +1030,6 @@ mod tests {
             .is_err());
 
             println!("PASS: x402_full_settlement_with_signature");
-        });
-    }
-
-    // ================================================================
-    // Test 8: OCW verification unsigned (P1-1)
-    // ================================================================
-    #[test]
-    fn ocw_unsigned_verification() {
-        new_test_ext().execute_with(|| {
-            let miner: AccountId = 2;
-
-            // Fund the pallet account for slash operations
-            let pallet_account = pallet_zk_compute::Pallet::<Test>::account_id();
-            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(
-                &pallet_account,
-                1_000_000,
-            );
-
-            // Submit a ZK proof
-            assert!(pallet_zk_compute::Pallet::<Test>::submit_proof(
-                RuntimeOrigin::signed(miner),
-                b"test-proof".to_vec(),
-                (8, 8, 8), // dimensions
-                120,       // execution_time
-                42,        // request_id
-            )
-            .is_ok());
-
-            // Verify task is pending
-            let task_id = pallet_zk_compute::pallet::NextTaskId::<Test>::get() - 1u64;
-            let task = pallet_zk_compute::Tasks::<Test>::get(task_id).unwrap();
-            assert!(matches!(
-                task.status,
-                pallet_zk_compute::pallet::ZkVerificationStatus::Pending
-            ));
-
-            // Submit unsigned verification (simulating OCW)
-            assert!(pallet_zk_compute::Pallet::<Test>::submit_verification_unsigned(
-                RuntimeOrigin::none(),
-                task_id,
-                true, // verified
-            )
-            .is_ok());
-
-            // Task should now be Verified
-            let verified_task = pallet_zk_compute::Tasks::<Test>::get(task_id).unwrap();
-            assert!(matches!(
-                verified_task.status,
-                pallet_zk_compute::pallet::ZkVerificationStatus::Verified
-            ));
-
-            // Score should be increased
-            let score = pallet_zk_compute::MinerScores::<Test>::get(miner);
-            assert!(
-                score.unwrap_or(0) > 0,
-                "Score should be positive after successful verification"
-            );
-
-            // Give miner more funds for second submission
-            let _ = <Balances as frame_support::traits::Currency<AccountId>>::deposit_creating(
-                &miner, 1_000_000,
-            );
-            // Submit another proof and fail verification
-            assert!(pallet_zk_compute::Pallet::<Test>::submit_proof(
-                RuntimeOrigin::signed(miner),
-                b"bad-proof".to_vec(),
-                (4, 4, 4),
-                120,
-                43,
-            )
-            .is_ok());
-
-            let task_id2 = pallet_zk_compute::pallet::NextTaskId::<Test>::get() - 1u64;
-
-            assert!(pallet_zk_compute::Pallet::<Test>::submit_verification_unsigned(
-                RuntimeOrigin::none(),
-                task_id2,
-                false, // failed verification
-            )
-            .is_ok());
-
-            let failed_task = pallet_zk_compute::Tasks::<Test>::get(task_id2).unwrap();
-            assert!(matches!(
-                failed_task.status,
-                pallet_zk_compute::pallet::ZkVerificationStatus::Failed
-            ));
-
-            println!("PASS: ocw_unsigned_verification");
         });
     }
 }

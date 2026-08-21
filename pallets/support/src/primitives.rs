@@ -1,6 +1,10 @@
 use alloc::vec::Vec;
 
-pub const ONE_MINUTE: u32 = 10;
+// DBC 3.0: 1-second block time → 60 blocks per minute (was 10 @ 6s blocks).
+// All the *_MINUTES/HOURS/DAYS block-count constants below derive from this,
+// so they stay wall-clock-correct at the new block time. (Guarded by the
+// runtime `check_block_time` test: DAYS must equal ONE_DAY.)
+pub const ONE_MINUTE: u32 = 60;
 pub const FIVE_MINUTES: u32 = 5 * ONE_MINUTE;
 pub const SEVEN_MINUTES: u32 = 7 * ONE_MINUTE;
 
