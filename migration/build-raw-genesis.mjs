@@ -26,6 +26,7 @@ import { u8aConcat, hexToU8a, u8aToHex } from '@polkadot/util'
 function arg(n,d){const i=process.argv.indexOf(`--${n}`);return i>-1&&process.argv[i+1]?process.argv[i+1]:d}
 const F={base:arg('base','dev-raw.json'),balances:arg('balances','dbc-balances-snapshot.json'),
   evm:arg('evm','dbc-evm-state.json'),gov:arg('gov','dbc-governance.json'),basic:arg('basic','dbc-basic-data.json'),
+  assets:arg('assets','dbc-assets.json'),nfts:arg('nfts','dbc-nfts.json'),
   rpc:arg('rpc','ws://127.0.0.1:9955'),out:arg('out','dbc3-raw-genesis.json')}
 const KEEP_DEV_AUTH=process.argv.includes('--keep-dev-authorities')
 const readJSON=p=>JSON.parse(fs.readFileSync(p,'utf8'))
@@ -67,6 +68,48 @@ async function main(){
   }
   if(basic?.sudo?.key) govKV.push([P.sudo, api.createType('Option<AccountId32>',basic.sudo.key).toHex()])
 
+  // --- Assets (incl. DLC 1.78M holders) + NFTs (feng due-diligence msg 1910) ---
+  const Pa={asset:api.query.assets.asset.keyPrefix(),meta:api.query.assets.metadata.keyPrefix(),
+    acc:api.query.assets.account.keyPrefix(),appr:api.query.assets.approvals.keyPrefix()}
+  // AssetAccount hand-encoder (validated == PalletAssetsAssetAccount)
+  const encAssetAcc=o=>{
+    const p=[u128le(BigInt(o.balance||0)), Buffer.from([o.status==='Frozen'?1:o.status==='Blocked'?2:0])]
+    const r=o.reason||{consumer:null}; const rk=(Object.keys(r)[0]||'consumer').toLowerCase()
+    if(rk==='consumer')p.push(Buffer.from([0])); else if(rk==='sufficient')p.push(Buffer.from([1]))
+    else if(rk==='depositheld'){p.push(Buffer.from([2]),u128le(BigInt(r[Object.keys(r)[0]])))}
+    else if(rk==='depositrefunded')p.push(Buffer.from([3]))
+    else if(rk==='depositfrom'){const dv=r[Object.keys(r)[0]];p.push(Buffer.from([4]),Buffer.from(decodeAddress(dv[0])),u128le(BigInt(dv[1])))}
+    else p.push(Buffer.from([0]))
+    return '0x'+Buffer.concat(p).toString('hex')
+  }
+  if(api.createType('PalletAssetsAssetAccount',{balance:1000000000,status:'Liquid',reason:{Consumer:null},extra:null}).toHex()
+     !==encAssetAcc({balance:1000000000,status:'Liquid',reason:{consumer:null}})){ console.error('[raw] FATAL AssetAccount mismatch'); process.exit(1) }
+  console.error('[raw] AssetAccount hand-encoding matches runtime ✓')
+  const u32scale=id=>{const b=Buffer.alloc(4);b.writeUInt32LE(id>>>0);return new Uint8Array(b)}
+  const assetAccKey=(id,addr)=>Pa.acc+b128c(u32scale(id))+b128c(decodeAddress(addr))
+  // generic re-encode for the small items (key via .key(), value via runtime type)
+  const reenc=(q,args,valJSON)=>{const t=q.creator.meta.type;const vt=t.isMap?t.asMap.value:t.asPlain
+    return [q.key(...args), api.createType(api.registry.createLookupType(vt),valJSON).toHex()]}
+  const smallKV=[]
+  const assetsData=fs.existsSync(F.assets)?readJSON(F.assets):null
+  if(assetsData){
+    // validate assets.account key derivation vs api once
+    const s=assetsData.account[0][0]
+    if(assetAccKey(s[0],s[1])!==api.query.assets.account.key(s[0],s[1])){console.error('[raw] FATAL assets.account key mismatch');process.exit(1)}
+    console.error('[raw] assets.account key derivation ✓')
+    for(const [a,v] of assetsData.asset) smallKV.push(reenc(api.query.assets.asset,a,v))
+    for(const [a,v] of assetsData.metadata) smallKV.push(reenc(api.query.assets.metadata,a,v))
+    for(const [a,v] of (assetsData.approvals||[])) smallKV.push(reenc(api.query.assets.approvals,a,v))
+    console.error(`[raw] assets small items encoded: ${smallKV.length}; holders to encode offline: ${assetsData.account.length}`)
+  }
+  const nftsData=fs.existsSync(F.nfts)?readJSON(F.nfts):null
+  const nftsItems=['collection','item','collectionMetadataOf','itemMetadataOf','collectionConfigOf','itemConfigOf','attribute','collectionRoleOf','collectionAccount','account']
+  if(nftsData){ let nn=0
+    for(const it of nftsItems){ for(const [a,v] of (nftsData[it]||[])){ try{ smallKV.push(reenc(api.query.nfts[it],a,v)); nn++ }catch(e){ console.error(`[raw] nfts.${it} skip ${e.message}`) } } }
+    console.error(`[raw] nfts items encoded: ${nn}`)
+  }
+  const nftsPrefixes=nftsData?nftsItems.filter(it=>api.query.nfts[it]).map(it=>api.query.nfts[it].keyPrefix()):[]
+
   console.error('[raw] disconnecting api; heavy loop runs offline')
   await api.disconnect()
 
@@ -74,7 +117,8 @@ async function main(){
   const base=readJSON(F.base); const top=base.genesis.raw.top
   const bal=readJSON(F.balances)
   const evm=fs.existsSync(F.evm)?readJSON(F.evm):null
-  const stripPrefixes=[...(KEEP_DEV_AUTH?[]:[P.sysAcc]),P.ti,P.evmCodes,P.evmStore,P.council,P.tech,P.elections,P.sudo]
+  const stripPrefixes=[...(KEEP_DEV_AUTH?[]:[P.sysAcc]),P.ti,P.evmCodes,P.evmStore,P.council,P.tech,P.elections,P.sudo,
+    Pa.asset,Pa.meta,Pa.acc,Pa.appr,...nftsPrefixes]
   let removed=0
   for(const k of Object.keys(top)){ if(stripPrefixes.some(p=>k.startsWith(p))){delete top[k];removed++} }
   console.error(`[raw] stripped ${removed} base entries`)
@@ -101,6 +145,15 @@ async function main(){
   await emit(P.ti,'0x'+u128le(BigInt(bal.onchainTotalIssuance)).toString('hex'))
   // gov/sudo
   for(const [k,v] of govKV) await emit(k,v)
+  // assets small items + nfts
+  for(const [k,v] of smallKV) await emit(k,v)
+  // assets.account holders (incl. DLC ~1.78M) — hand-encoded offline
+  let ac=0
+  if(assetsData){
+    for(const [args,val] of assetsData.account){ await emit(assetAccKey(args[0],args[1]), encAssetAcc(val)); ac++
+      if(ac%400000===0) console.error(`[raw]   asset holders ${ac}`) }
+    console.error(`[raw] asset holders encoded: ${ac}`)
+  }
   // EVM code + storage
   let ec=0,es=0
   if(evm?.contracts){
