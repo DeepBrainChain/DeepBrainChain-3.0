@@ -19,7 +19,7 @@ use std::result::Result as StdResult;
     Copy,
     Serialize,
     Deserialize,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
 )]
 pub struct RpcBalance<T: std::fmt::Display + std::str::FromStr>(
@@ -63,7 +63,7 @@ mod serde_balance {
     Clone,
     Serialize,
     Deserialize,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
 )]
 pub struct RpcText(#[serde(with = "self::serde_text")] Vec<u8>);

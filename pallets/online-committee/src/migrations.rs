@@ -10,7 +10,7 @@ use sp_debug_derive::RuntimeDebug;
 
 // TODO: 1. 迁移这个存储
 // TODO: 2. 迁移 terminating_rental 存储
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo)]
 struct OldOCPendingSlashInfo<AccountId, BlockNumber, Balance> {
     pub machine_id: MachineId,
     pub machine_stash: AccountId, // Changed to Option<AccountId>

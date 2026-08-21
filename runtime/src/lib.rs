@@ -1138,6 +1138,7 @@ parameter_types! {
 
 impl pallet_bounties::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    type TransferAllAssets = ();
     type BountyDepositBase = BountyDepositBase;
     type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
     type BountyUpdatePeriod = BountyUpdatePeriod;
@@ -1754,6 +1755,10 @@ where
 static DBC_EVM_CONFIG: EvmConfig =
     EvmConfig { create_contract_limit: Some(0x12000), ..EvmConfig::shanghai() };
 
+parameter_types! {
+    pub TransactionGasLimit: Option<U256> = None;
+}
+
 impl pallet_evm::Config for Runtime {
     type AccountProvider = pallet_evm::FrameSystemAccountProvider<Self>;
     type FeeCalculator = BaseFee;
@@ -1778,6 +1783,7 @@ impl pallet_evm::Config for Runtime {
     type GasLimitStorageGrowthRatio = ConstU64<0>;
     type Timestamp = Timestamp;
     type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+    type TransactionGasLimit = TransactionGasLimit;
 
     fn config() -> &'static EvmConfig {
         &DBC_EVM_CONFIG
@@ -1790,6 +1796,7 @@ parameter_types! {
 
 impl pallet_ethereum::Config for Runtime {
     type StateRoot = pallet_ethereum::IntermediateStateRoot<Version>;
+    type AllowUnprotectedTxs = ConstBool<false>;
     type PostLogContent = PostBlockAndTxnHashes;
     type ExtraDataLength = ConstU32<30>;
 }
@@ -2311,8 +2318,8 @@ impl_runtime_apis! {
     }
 
     impl sp_session::SessionKeys<Block> for Runtime {
-        fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-            opaque::SessionKeys::generate(seed)
+        fn generate_session_keys(owner: Vec<u8>, seed: Option<Vec<u8>>) -> sp_session::OpaqueGeneratedSessionKeys {
+            opaque::SessionKeys::generate(&owner, seed).into()
         }
 
         fn decode_session_keys(
@@ -2465,6 +2472,7 @@ impl_runtime_apis! {
             estimate: bool,
             access_list: Option<Vec<(H160, Vec<H256>)>>,
             authorization_list: Option<ethereum::AuthorizationList>,
+            state_override: Option<Vec<(H160, Vec<(H256, H256)>)>>,
         ) -> Result<pallet_evm::CallInfo, sp_runtime::DispatchError> {
             let config = if estimate {
                 let mut config = <Runtime as pallet_evm::Config>::config().clone();
@@ -2525,6 +2533,7 @@ impl_runtime_apis! {
                 validate,
                 weight_limit,
                 proof_size_base_cost,
+                state_override,
                 config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
             ).map_err(|err| err.error.into())
         }

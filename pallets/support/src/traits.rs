@@ -196,7 +196,7 @@ pub trait MachineInfoTrait {
         rent_gpu_num: u32,
     ) -> Result<u64, &'static str>;
 }
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub enum PhaseLevel {
     PhaseOne,
     PhaseTwo,

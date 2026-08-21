@@ -24,7 +24,7 @@ mod v0 {
     use sp_core::H256;
     use sp_debug_derive::RuntimeDebug;
 
-    #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+    #[derive(PartialEq, Eq, Clone, Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo)]
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
     pub struct MachineInfo<AccountId: Ord, BlockNumber, Balance> {

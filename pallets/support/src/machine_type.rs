@@ -130,7 +130,7 @@ pub struct StakerCustomizeInfo {
 
 /// Standard GPU rent price Per Era
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct StandardGpuPointPrice {
     /// Standard GPU calc points
@@ -140,7 +140,7 @@ pub struct StandardGpuPointPrice {
 }
 
 /// All kind of status of a machine
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum MachineStatus<BlockNumber, AccountId> {

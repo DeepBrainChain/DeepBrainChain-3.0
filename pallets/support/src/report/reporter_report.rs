@@ -7,7 +7,7 @@ use sp_runtime::traits::Saturating; use sp_debug_derive::RuntimeDebug;
 
 /// 报告人的报告记录
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct ReporterReportList {
     pub processing_report: Vec<ReportId>,
@@ -37,7 +37,7 @@ impl ReporterReportList {
 }
 
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct ReporterStakeInfo<Balance> {
     pub staked_amount: Balance,

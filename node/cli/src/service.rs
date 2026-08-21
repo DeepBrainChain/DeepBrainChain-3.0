@@ -183,6 +183,7 @@ pub fn new_partial(
             config,
             telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
             executor,
+            Vec::new(),
         )?;
     let client = Arc::new(client);
 
@@ -327,6 +328,7 @@ pub fn new_full_base(
             client: client.clone(),
             transaction_pool: transaction_pool.clone(),
             spawn_handle: task_manager.spawn_handle(),
+            spawn_essential_handle: task_manager.spawn_essential_handle(),
             import_queue,
             block_announce_validator_builder: None,
             warp_sync_config: Some(WarpSyncConfig::WithProvider(warp_sync)),
@@ -418,6 +420,7 @@ pub fn new_full_base(
                         sp_transaction_storage_proof::registration::new_data_provider(
                             &*client_clone,
                             &parent,
+                            100_800u32,
                         )?;
 
                     Ok((slot, timestamp, storage_proof))
@@ -609,6 +612,7 @@ pub fn build_rpc_extensions_builder(
                     b,
                     3,
                     0,
+                    None,
                     SyncStrategy::Normal,
                     sync_service.clone(),
                     pubsub_notification_sinks.clone(),

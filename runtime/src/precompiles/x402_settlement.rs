@@ -13,7 +13,7 @@ use pallet_evm::GasWeightMapping;
 pub struct X402SettlementPrecompile<T>(PhantomData<T>);
 
 #[evm_macro::generate_function_selector]
-#[derive(RuntimeDebug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(sp_debug_derive::RuntimeDebug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u32)]
 pub enum Selector {
     QueryPaymentIntent = "queryPaymentIntent(uint64)",

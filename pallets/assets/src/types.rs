@@ -39,7 +39,7 @@ pub(super) type ExistenceReasonOf<T, I> =
 
 /// AssetStatus holds the current state of the asset. It could either be Live and available for use,
 /// or in a Destroying state.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub(super) enum AssetStatus {
     /// The asset is active and able to be used.
     Live,
@@ -50,7 +50,7 @@ pub(super) enum AssetStatus {
     Destroying,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct AssetDetails<Balance, AccountId, DepositBalance> {
     /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
     pub(super) owner: AccountId,
@@ -80,7 +80,7 @@ pub struct AssetDetails<Balance, AccountId, DepositBalance> {
 }
 
 /// Data concerning an approval.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, Default, MaxEncodedLen, TypeInfo)]
 pub struct Approval<Balance, DepositBalance> {
     /// The amount of funds approved for the balance transfer from the owner to some delegated
     /// target.
@@ -96,7 +96,7 @@ fn ensure_bool_decodes_to_consumer_or_sufficient() {
 }
 
 /// The reason for an account's existence within an asset class.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub enum ExistenceReason<Balance, AccountId> {
     /// A consumer reference was used to create this account.
     #[codec(index = 0)]
@@ -154,7 +154,7 @@ fn ensure_bool_decodes_to_liquid_or_frozen() {
 }
 
 /// The status of an asset account.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub enum AccountStatus {
     /// Asset account can receive and transfer the assets.
     Liquid,
@@ -174,7 +174,7 @@ impl AccountStatus {
     }
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct AssetAccount<Balance, DepositBalance, Extra, AccountId> {
     /// The balance.
     pub balance: Balance,
@@ -186,7 +186,7 @@ pub struct AssetAccount<Balance, DepositBalance, Extra, AccountId> {
     pub extra: Extra,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Default, sp_debug_derive::RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct AssetMetadata<DepositBalance, BoundedString> {
     /// The balance deposited for this metadata.
     ///
@@ -266,7 +266,7 @@ impl From<TransferFlags> for DebitFlags {
 }
 
 /// Possible errors when converting between external and asset balances.
-#[derive(Eq, PartialEq, Copy, Clone, RuntimeDebug, Encode, Decode)]
+#[derive(Eq, PartialEq, Copy, Clone, sp_debug_derive::RuntimeDebug, Encode, Decode)]
 pub enum ConversionError {
     /// The external minimum balance must not be zero.
     MinBalanceZero,
@@ -329,7 +329,7 @@ pub(super) type ApprovalsOf<T, I = ()> = BoundedBTreeMap<
     AssetLockLimit,
 >;
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, MaxEncodedLen, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, Default, MaxEncodedLen, TypeInfo)]
 pub struct AssetLock<
     AccountId: Encode + Decode + Clone + Eq + PartialEq,
     Balance: Encode + Decode + Clone + Eq + PartialEq,

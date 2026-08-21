@@ -33,7 +33,7 @@ pub struct RentOrderDetail<AccountId, BlockNumber, Balance> {
     pub gpu_index: Vec<u32>,
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum RentStatus {

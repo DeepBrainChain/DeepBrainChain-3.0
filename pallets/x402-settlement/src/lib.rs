@@ -26,7 +26,7 @@ use sp_debug_derive::RuntimeDebug;
     use sp_core::H256;
     use sp_runtime::traits::{SaturatedConversion, Saturating};
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum PaymentIntentStatus {
         Pending,
         Verified,
@@ -34,7 +34,7 @@ use sp_debug_derive::RuntimeDebug;
         Failed,
     }
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct PaymentIntent<T: Config> {
         pub intent_id: u64,
@@ -51,7 +51,7 @@ use sp_debug_derive::RuntimeDebug;
         pub expires_at: BlockNumberFor<T>,
     }
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct SettlementReceipt<AccountId, Balance> {
         pub intent_id: u64,
         pub merchant: AccountId,

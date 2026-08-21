@@ -21,7 +21,7 @@ impl<T: Config> From<VerifyErr> for Error<T> {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct OCPendingSlashReviewInfo<AccountId, Balance, BlockNumber> {
     pub applicant: AccountId,
     pub staked_amount: Balance,

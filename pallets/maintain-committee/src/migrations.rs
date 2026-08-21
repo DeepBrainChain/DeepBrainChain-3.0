@@ -17,7 +17,7 @@ use crate::Config;
 //     );
 // }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct OldMTReportResultInfo<AccountId, BlockNumber, Balance> {
     pub report_id: ReportId,
     // 变更为Option<AccountId>

@@ -7,7 +7,7 @@ use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use sp_runtime::Perbill; use sp_debug_derive::RuntimeDebug;
 
 // 处于不同状态的委员会的列表
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct CommitteeList<AccountId: Ord> {
@@ -55,7 +55,7 @@ impl<AccountId: Ord> CommitteeList<AccountId> {
 
 /// 与委员会质押基本参数
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct CommitteeStakeParamsInfo<Balance> {
     /// 第一次委员会质押的基准数值
@@ -67,7 +67,7 @@ pub struct CommitteeStakeParamsInfo<Balance> {
 }
 
 /// 委员会质押的状况
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct CommitteeStakeInfo<Balance> {
     pub box_pubkey: [u8; 32],
     pub staked_amount: Balance,

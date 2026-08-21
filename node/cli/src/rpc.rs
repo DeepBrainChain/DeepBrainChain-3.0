@@ -151,6 +151,12 @@ where
     io.merge(IrStorage::new(client.clone()).into_rpc()).ok();
     io.merge(Dbc3Storage::<_, Block>::new(client.clone()).into_rpc()).ok();
     io.merge(X402Settlement::<_, Block>::new(client.clone()).into_rpc()).ok();
+
+    let logs_journal = std::sync::Arc::new(fc_rpc::LogsJournal::new::<Block>(
+        subscription_executor.clone(),
+        overrides.clone(),
+        pubsub_notification_sinks.clone(),
+    ));
     io.merge(
         EthFilter::new(
             client.clone(),
@@ -161,6 +167,7 @@ where
             max_past_logs,
             10_000, // max_block_range
             block_data_cache.clone(),
+            logs_journal.clone(),
         )
         .into_rpc(),
     )
@@ -187,6 +194,7 @@ where
             Arc::clone(&subscription_executor),
             Arc::clone(&overrides),
             pubsub_notification_sinks.clone(),
+            logs_journal,
         )
         .into_rpc(),
     )
@@ -224,6 +232,7 @@ where
             fee_history_cache,
             fee_history_limit,
             10,
+            false, // rpc_allow_unprotected_txs
             forced_parent_hashes,
             // pending_create_inherent_data_providers
             move |_, ()| async move {

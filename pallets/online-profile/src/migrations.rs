@@ -30,7 +30,7 @@ use alloc::{vec, vec::Vec};
 //    .last_machine_renter: Option<AccountId> -> .renters: Vec<AccountId>,
 
 /// All details of a machine
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct OldMachineInfo<AccountId: Ord, BlockNumber, Balance> {
@@ -97,7 +97,7 @@ where
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug)]
 pub struct OldOPPendingSlashInfo<AccountId, BlockNumber, Balance> {
     pub slash_who: AccountId,
     pub machine_id: MachineId,

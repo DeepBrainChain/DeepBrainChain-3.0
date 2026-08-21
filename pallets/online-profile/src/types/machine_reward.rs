@@ -8,7 +8,7 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::Perbill; use sp_debug_derive::RuntimeDebug;
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct MachineRecentRewardInfo<AccountId, Balance> {
     // machine total reward(committee reward included)
     pub machine_stash: AccountId,
@@ -47,7 +47,7 @@ where
 
 /// 记录每个Era的机器的总分
 /// NOTE: 这个账户应该是stash账户，而不是controller账户
-#[derive(PartialEq, Encode, Decode, RuntimeDebug, Clone, TypeInfo)]
+#[derive(PartialEq, Encode, Decode, sp_debug_derive::RuntimeDebug, Clone, TypeInfo)]
 pub struct EraStashPoints<AccountId: Ord> {
     /// Total grade of the system (inflation grades from onlineStatus or multipGPU is counted)
     pub total: u64,
@@ -62,7 +62,7 @@ impl<AccountId: Ord> Default for EraStashPoints<AccountId> {
 }
 
 /// Stash账户的统计
-#[derive(PartialEq, Encode, Decode, Default, RuntimeDebug, Clone, TypeInfo)]
+#[derive(PartialEq, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, Clone, TypeInfo)]
 pub struct StashMachineStatistics {
     /// 用户在线的GPU数量
     pub online_gpu_num: u64,
@@ -75,7 +75,7 @@ pub struct StashMachineStatistics {
 }
 
 // 每台机器的基础得分与租用情况
-#[derive(PartialEq, Encode, Decode, Default, RuntimeDebug, Clone, TypeInfo)]
+#[derive(PartialEq, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, Clone, TypeInfo)]
 pub struct MachineGradeStatus {
     /// 机器的基础得分
     pub basic_grade: u64,
@@ -183,7 +183,7 @@ impl MachineGradeStatus {
 }
 
 // 奖励发放前，对所有machine_id进行备份
-#[derive(PartialEq, Encode, Decode, Default, RuntimeDebug, Clone, TypeInfo)]
+#[derive(PartialEq, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, Clone, TypeInfo)]
 pub struct AllMachineIdSnapDetail {
     pub all_machine_id: VecDeque<MachineId>,
     pub snap_len: u64,

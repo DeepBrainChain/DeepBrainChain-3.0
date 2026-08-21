@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use sp_debug_derive::RuntimeDebug;
 
 // for RPC
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct RpcOCCommitteeOps<BlockNumber, Balance> {

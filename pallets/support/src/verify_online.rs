@@ -20,7 +20,7 @@ pub const SUBMIT_RAW_END: u32 = 48 * ONE_HOUR;
 /// After order distribution 36 hours, allow committee submit raw info
 pub const SUBMIT_HASH_END: u32 = 36 * ONE_HOUR;
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug)]
 pub struct Summary<AccountId> {
     pub valid_vote: Vec<AccountId>,
     /// Those committee cannot get reward.
@@ -47,7 +47,7 @@ impl<AccountId> Default for Summary<AccountId> {
 }
 
 /// What will happen after all committee submit raw machine info
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug)]
 pub enum VerifyResult {
     /// Machine is confirmed by committee, so can be online later
     Confirmed,
@@ -87,7 +87,7 @@ impl<AccountId: Clone + Ord> Summary<AccountId> {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub enum OCBookResultType {
     OnlineSucceed,
     OnlineRefused,
@@ -101,7 +101,7 @@ impl Default for OCBookResultType {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum OCVerifyStatus {
@@ -117,7 +117,7 @@ impl Default for OCVerifyStatus {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum OCMachineStatus {
@@ -134,7 +134,7 @@ impl Default for OCMachineStatus {
 
 /// A record of committee’s operations when verifying machine info
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct OCCommitteeOps<BlockNumber, Balance> {
     pub staked_dbc: Balance,
@@ -166,7 +166,7 @@ impl<BlockNumber, Balance> OCCommitteeOps<BlockNumber, Balance> {
 
 /// Query distributed machines by committee address
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
@@ -216,7 +216,7 @@ impl OCCommitteeMachineList {
 }
 
 /// Machines' verifying committee
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct OCMachineCommitteeList<AccountId, BlockNumber> {
@@ -342,7 +342,7 @@ pub struct VerifySequence<AccountId> {
 
 /// stash account overview self-status
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]

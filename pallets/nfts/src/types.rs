@@ -80,7 +80,7 @@ pub trait Incrementable {
 impl_incrementable!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
 
 /// Information about a collection.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct CollectionDetails<AccountId, DepositBalance> {
     /// Collection's owner.
     pub(super) owner: AccountId,
@@ -106,7 +106,7 @@ pub struct CollectionDetails<AccountId, DepositBalance> {
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -133,14 +133,14 @@ impl<AccountId, DepositBalance> CollectionDetails<AccountId, DepositBalance> {
 }
 
 /// Witness data for items mint transactions.
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct MintWitness<ItemId> {
     /// Provide the id of the item in a required collection.
     pub owned_item: ItemId,
 }
 
 /// Information concerning the ownership of a single unique item.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 pub struct ItemDetails<AccountId, Deposit, Approvals> {
     /// The owner of this item.
     pub(super) owner: AccountId,
@@ -152,7 +152,7 @@ pub struct ItemDetails<AccountId, Deposit, Approvals> {
 }
 
 /// Information about the reserved item deposit.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct ItemDeposit<DepositBalance, AccountId> {
     /// A depositor account.
     pub(super) account: AccountId,
@@ -161,7 +161,7 @@ pub struct ItemDeposit<DepositBalance, AccountId> {
 }
 
 /// Information about the collection's metadata.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(StringLimit))]
 #[codec(mel_bound(Deposit: MaxEncodedLen))]
 pub struct CollectionMetadata<Deposit, StringLimit: Get<u32>> {
@@ -176,7 +176,7 @@ pub struct CollectionMetadata<Deposit, StringLimit: Get<u32>> {
 }
 
 /// Information about the item's metadata.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(StringLimit))]
 pub struct ItemMetadata<Deposit, StringLimit: Get<u32>> {
     /// The balance deposited for this metadata.
@@ -197,7 +197,7 @@ pub struct ItemMetadata<Deposit, StringLimit: Get<u32>> {
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -213,7 +213,7 @@ pub struct ItemTip<CollectionId, ItemId, AccountId, Amount> {
 }
 
 /// Information about the pending swap.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 pub struct PendingSwap<CollectionId, ItemId, ItemPriceWithDirection, Deadline> {
     /// The collection that contains the item that the user wants to receive.
     pub(super) desired_collection: CollectionId,
@@ -226,7 +226,7 @@ pub struct PendingSwap<CollectionId, ItemId, ItemPriceWithDirection, Deadline> {
 }
 
 /// Information about the reserved attribute deposit.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct AttributeDeposit<DepositBalance, AccountId> {
     /// A depositor account.
     pub(super) account: Option<AccountId>,
@@ -235,7 +235,7 @@ pub struct AttributeDeposit<DepositBalance, AccountId> {
 }
 
 /// Information about the reserved item's metadata deposit.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct ItemMetadataDeposit<DepositBalance, AccountId> {
     /// A depositor account, None means the deposit is collection's owner.
     pub(super) account: Option<AccountId>,
@@ -251,7 +251,7 @@ pub struct ItemMetadataDeposit<DepositBalance, AccountId> {
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -270,7 +270,7 @@ pub enum PriceDirection {
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -284,7 +284,7 @@ pub struct PriceWithDirection<Amount> {
 /// Support for up to 64 user-enabled features on a collection.
 #[bitflags]
 #[repr(u64)]
-#[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(Copy, Clone, sp_debug_derive::RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum CollectionSetting {
     /// Items in this collection are transferable.
     TransferableItems,
@@ -299,7 +299,7 @@ pub enum CollectionSetting {
 }
 
 /// Wrapper type for `BitFlags<CollectionSetting>` that implements `Codec`.
-#[derive(Clone, Copy, PartialEq, Eq, Default, RuntimeDebug)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, sp_debug_derive::RuntimeDebug)]
 pub struct CollectionSettings(pub BitFlags<CollectionSetting>);
 
 impl CollectionSettings {
@@ -330,7 +330,7 @@ impl_codec_bitflags!(CollectionSettings, u64, CollectionSetting);
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -352,7 +352,7 @@ pub enum MintType<CollectionId> {
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -389,7 +389,7 @@ impl<Price, BlockNumber, CollectionId> Default for MintSettings<Price, BlockNumb
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     scale_info::TypeInfo,
     MaxEncodedLen,
 )]
@@ -405,7 +405,7 @@ pub enum AttributeNamespace<AccountId> {
 }
 
 /// A witness data to cancel attributes approval operation.
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct CancelAttributesApprovalWitness {
     /// An amount of attributes previously created by account.
     pub account_attributes: u32,
@@ -419,7 +419,7 @@ pub struct CancelAttributesApprovalWitness {
     DecodeWithMemTracking,
     Eq,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -440,7 +440,7 @@ pub enum PalletAttributes<CollectionId> {
     Encode,
     MaxEncodedLen,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
 )]
 pub struct CollectionConfig<Price, BlockNumber, CollectionId> {
@@ -470,7 +470,7 @@ impl<Price, BlockNumber, CollectionId> CollectionConfig<Price, BlockNumber, Coll
 /// Support for up to 64 user-enabled features on an item.
 #[bitflags]
 #[repr(u64)]
-#[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(Copy, Clone, sp_debug_derive::RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum ItemSetting {
     /// This item is transferable.
     Transferable,
@@ -481,7 +481,7 @@ pub enum ItemSetting {
 }
 
 /// Wrapper type for `BitFlags<ItemSetting>` that implements `Codec`.
-#[derive(Clone, Copy, PartialEq, Eq, Default, RuntimeDebug)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, sp_debug_derive::RuntimeDebug)]
 pub struct ItemSettings(pub BitFlags<ItemSetting>);
 
 impl ItemSettings {
@@ -508,7 +508,7 @@ impl_codec_bitflags!(ItemSettings, u64, ItemSetting);
     DecodeWithMemTracking,
     Default,
     PartialEq,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     Clone,
     Copy,
     MaxEncodedLen,
@@ -540,7 +540,7 @@ impl ItemConfig {
 /// Support for up to 64 system-enabled features on a collection.
 #[bitflags]
 #[repr(u64)]
-#[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(Copy, Clone, sp_debug_derive::RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum PalletFeature {
     /// Enable/disable trading operations.
     Trading,
@@ -553,7 +553,7 @@ pub enum PalletFeature {
 }
 
 /// Wrapper type for `BitFlags<PalletFeature>` that implements `Codec`.
-#[derive(Default, RuntimeDebug)]
+#[derive(Default, sp_debug_derive::RuntimeDebug)]
 pub struct PalletFeatures(pub BitFlags<PalletFeature>);
 
 impl PalletFeatures {
@@ -572,7 +572,7 @@ impl_codec_bitflags!(PalletFeatures, u64, PalletFeature);
 /// Support for up to 8 different roles for collections.
 #[bitflags]
 #[repr(u8)]
-#[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(Copy, Clone, sp_debug_derive::RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum CollectionRole {
     /// Can mint items.
     Issuer,
@@ -583,7 +583,7 @@ pub enum CollectionRole {
 }
 
 /// A wrapper type that implements `Codec`.
-#[derive(Clone, Copy, PartialEq, Eq, Default, RuntimeDebug)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, sp_debug_derive::RuntimeDebug)]
 pub struct CollectionRoles(pub BitFlags<CollectionRole>);
 
 impl CollectionRoles {
@@ -603,7 +603,7 @@ impl CollectionRoles {
 }
 impl_codec_bitflags!(CollectionRoles, u8, CollectionRole);
 
-#[derive(Clone, Eq, PartialEq, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline> {
     /// A collection of the item to be minted.
     pub(super) collection: CollectionId,
@@ -619,7 +619,7 @@ pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline> {
     pub(super) deadline: Deadline,
 }
 
-#[derive(Clone, Eq, PartialEq, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct PreSignedAttributes<CollectionId, ItemId, AccountId, Deadline> {
     /// Collection's ID.
     pub(super) collection: CollectionId,

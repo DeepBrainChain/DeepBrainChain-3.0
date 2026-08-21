@@ -5,7 +5,7 @@ use core::cmp::PartialEq;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode};
 use sp_debug_derive::RuntimeDebug;
 
-#[derive(PartialEq, Eq, Clone, Copy, Encode, Decode, DecodeWithMemTracking, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Copy, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum VerifyErr {
     NotInBookList,
@@ -16,7 +16,7 @@ pub enum VerifyErr {
     Overflow,
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Encode, Decode, DecodeWithMemTracking, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Copy, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum OnlineErr {
     ClaimRewardFailed,
@@ -26,7 +26,7 @@ pub enum OnlineErr {
     TelecomIsNull,
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Encode, Decode, DecodeWithMemTracking, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Copy, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum ReportErr {
     OrderNotAllowBook,

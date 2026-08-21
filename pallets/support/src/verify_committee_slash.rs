@@ -8,7 +8,7 @@ use sp_debug_derive::RuntimeDebug;
 // NOTE: If slash is from maintain committee, and reporter is slashed, but when
 // committee support the reporter's slash is canceled, reporter's slash is not canceled at the same
 // time. Mainwhile, if reporter's slash is canceled..
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct OCPendingSlashInfo<AccountId, BlockNumber, Balance> {
     pub machine_id: MachineId,
     pub machine_stash: Option<AccountId>,
@@ -42,7 +42,7 @@ impl<AccountId: PartialEq + cmp::Ord, BlockNumber, Balance>
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub enum OCSlashResult {
     Pending,
     Canceled,

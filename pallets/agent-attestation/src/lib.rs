@@ -32,7 +32,7 @@ pub mod pallet {
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
     /// Status of an attestation
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum AttestationStatus {
         /// Attestation submitted, within challenge window
         Pending,
@@ -45,7 +45,7 @@ pub mod pallet {
     }
 
     /// A task result attestation submitted by a miner/agent
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct Attestation<T: Config> {
         pub id: u64,
@@ -63,7 +63,7 @@ pub mod pallet {
     }
 
     /// Hardware info registered by a node
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct NodeRegistration<T: Config> {
         pub owner: T::AccountId,
@@ -74,7 +74,7 @@ pub mod pallet {
         pub is_active: bool,
     }
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct AgentCapability<T: Config> {
         pub owner: T::AccountId,
@@ -86,7 +86,7 @@ pub mod pallet {
     }
 
     /// Benchmark claim status
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum BenchmarkClaimStatus {
         Active,
         Challenged,
@@ -95,7 +95,7 @@ pub mod pallet {
     }
 
     /// A benchmark score claim by a miner for a specific model
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct BenchmarkClaim<T: Config> {
         pub claimer: T::AccountId,

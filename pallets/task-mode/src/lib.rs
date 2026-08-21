@@ -33,7 +33,7 @@ use sp_debug_derive::RuntimeDebug;
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum TaskOrderStatus {
         Pending,
         InProgress,
@@ -41,7 +41,7 @@ use sp_debug_derive::RuntimeDebug;
         Settled,
     }
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct TaskDefinition<T: Config> {
         pub model_id: BoundedVec<u8, T::MaxModelIdLen>,
@@ -54,7 +54,7 @@ use sp_debug_derive::RuntimeDebug;
         pub is_active: bool,
     }
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct TaskOrder<AccountId, BlockNumber, Balance> {
         pub order_id: u64,
         pub task_id: u64,
@@ -72,7 +72,7 @@ use sp_debug_derive::RuntimeDebug;
     }
 
     #[derive(
-        Default, Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
+        Default, Clone, Encode, Decode, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen,
     )]
     pub struct EraTaskStats<Balance> {
         pub total_charged: Balance,

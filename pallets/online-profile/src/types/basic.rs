@@ -30,7 +30,7 @@ impl<T: Config> From<OnlineErr> for Error<T> {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct UserMutHardwareStakeInfo<Balance, BlockNumber> {
     pub verify_fee: Balance,    // 支付给审核人
     pub offline_slash: Balance, // 下线惩罚
@@ -43,7 +43,7 @@ pub struct UserMutHardwareStakeInfo<Balance, BlockNumber> {
 // If galxy is on, Reward is double in 60 eras. So, phase 1 should end in 2024-05-18 (365*3-60)
 // So, **first_phase_duration** should equal: 365 * 3 - 60 - (online_day - 2021-0718)
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct PhaseRewardInfoDetail<Balance> {
     pub online_reward_start_era: EraIndex, // When online reward will start
@@ -55,7 +55,7 @@ pub struct PhaseRewardInfoDetail<Balance> {
 }
 
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct OnlineStakeParamsInfo<Balance> {
     /// How much a GPU should stake(DBC).eg. 100_000 DBC
@@ -69,7 +69,7 @@ pub struct OnlineStakeParamsInfo<Balance> {
 }
 
 /// SysInfo of onlineProfile pallet
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct SysInfoDetail<Balance> {
@@ -110,7 +110,7 @@ impl<Balance: Saturating + Copy> SysInfoDetail<Balance> {
 }
 
 /// Statistics of gpus based on position(latitude and longitude)
-#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Default, sp_debug_derive::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct PosInfo {

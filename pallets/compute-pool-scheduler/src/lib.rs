@@ -40,7 +40,7 @@ pub mod pallet {
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum PoolStatus {
         Active,
         Inactive,
@@ -54,7 +54,7 @@ pub mod pallet {
         Clone,
         Eq,
         PartialEq,
-        RuntimeDebug,
+        sp_debug_derive::RuntimeDebug,
         TypeInfo,
         MaxEncodedLen,
     )]
@@ -72,7 +72,7 @@ pub mod pallet {
         Clone,
         Eq,
         PartialEq,
-        RuntimeDebug,
+        sp_debug_derive::RuntimeDebug,
         TypeInfo,
         MaxEncodedLen,
     )]
@@ -93,7 +93,7 @@ pub mod pallet {
         Clone,
         Eq,
         PartialEq,
-        RuntimeDebug,
+        sp_debug_derive::RuntimeDebug,
         TypeInfo,
         MaxEncodedLen,
     )]
@@ -104,7 +104,7 @@ pub mod pallet {
     }
 
     #[derive(
-        Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default,
+        Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen, Default,
     )]
     pub struct PoolScore {
         pub reputation_score: u32,
@@ -114,7 +114,7 @@ pub mod pallet {
         pub final_score: u32,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(MaxGpuModelLen))]
     pub struct ComputePool<AccountId, Balance, MaxGpuModelLen: Get<u32>> {
         pub pool_id: PoolId,
@@ -134,7 +134,7 @@ pub mod pallet {
         pub score: PoolScore,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct ComputeTask<AccountId, BlockNumber, Balance> {
         pub task_id: TaskId,
         pub user: AccountId,
@@ -150,7 +150,7 @@ pub mod pallet {
         pub disputed: bool,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct ReputationInfo {
         pub reputation: u32,
         pub total_tasks: u32,
@@ -164,7 +164,7 @@ pub mod pallet {
         }
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub struct TaskEscrow<AccountId, Balance> {
         pub user: AccountId,
         pub pool_owner: AccountId,
@@ -173,7 +173,7 @@ pub mod pallet {
         pub claimed: bool,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     pub enum ComplaintStatus {
         Open,
         ResolvedValid,
@@ -183,7 +183,7 @@ pub mod pallet {
         Cancelled,
     }
 
-    #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[derive(Encode, Decode, Clone, Eq, PartialEq, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
     #[scale_info(skip_type_params(T))]
     pub struct Complaint<T: Config> {
         pub complainant: T::AccountId,

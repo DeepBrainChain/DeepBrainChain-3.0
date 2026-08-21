@@ -15,7 +15,7 @@ use sp_runtime::{
     };
 
 /// 报告的处理结果
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct MTReportResultInfo<AccountId, BlockNumber, Balance> {
     pub report_id: ReportId,
     pub reporter: AccountId,
@@ -35,7 +35,7 @@ pub struct MTReportResultInfo<AccountId, BlockNumber, Balance> {
     pub slash_result: MCSlashResult,
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub enum MCSlashResult {
     Pending,
     Canceled,
@@ -48,7 +48,7 @@ impl Default for MCSlashResult {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub enum ReportResultType {
     ReportSucceed,
     ReportRefused,

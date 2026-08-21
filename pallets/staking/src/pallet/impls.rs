@@ -1671,6 +1671,13 @@ impl<T: Config> StakingInterface for Pallet<T> {
     type Balance = BalanceOf<T>;
     type CurrencyToVote = T::CurrencyToVote;
 
+
+    sp_staking::std_or_benchmarks_enabled! {
+        fn set_era(era: EraIndex) {
+            ActiveEra::<T>::put(ActiveEraInfo { index: era, start: None });
+            CurrentEra::<T>::put(era);
+        }
+    }
     fn minimum_nominator_bond() -> Self::Balance {
         MinNominatorBond::<T>::get()
     }

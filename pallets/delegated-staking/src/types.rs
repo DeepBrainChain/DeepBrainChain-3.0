@@ -31,7 +31,7 @@ pub(crate) enum AccountType {
 }
 
 /// Information about delegation of a `delegator`.
-#[derive(Default, Encode, Clone, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Default, Encode, Clone, Decode, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub struct Delegation<T: Config> {
     /// The target of delegation.
@@ -91,7 +91,7 @@ impl<T: Config> Delegation<T> {
 /// This keeps track of the active balance of the `Agent` that is made up from the funds that
 /// are currently delegated to this `Agent`. It also tracks the pending slashes yet to be
 /// applied among other things.
-#[derive(Default, Clone, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Default, Clone, Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub struct AgentLedger<T: Config> {
     /// Where the reward should be paid out.

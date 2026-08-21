@@ -8,7 +8,7 @@ use sp_debug_derive::RuntimeDebug;
 /// 机器故障的报告列表
 /// 记录该模块中所有活跃的报告, 根据ReportStatus来区分
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct MTLiveReportList {
     /// 委员会可以抢单的报告

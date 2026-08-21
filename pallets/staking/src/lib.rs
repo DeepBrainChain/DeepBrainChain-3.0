@@ -316,7 +316,7 @@ use frame_support::{
         ConstU32, Defensive, DefensiveSaturating, Get,
     },
     weights::Weight,
-    BoundedVec, CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+    BoundedVec, CloneNoBound, EqNoBound, PartialEqNoBound, DebugNoBound,
 };
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -402,7 +402,7 @@ type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup
     Decode,
     DecodeWithMemTracking,
     Clone,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
     PartialEq,
@@ -421,7 +421,7 @@ pub struct ActiveEraInfo {
 /// Reward points of an era. Used to split era total payout between validators.
 ///
 /// This points will be used to reward validators and their respective nominators.
-#[derive(Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, DecodeWithMemTracking, sp_debug_derive::RuntimeDebug, TypeInfo, Clone, PartialEq, Eq)]
 pub struct EraRewardPoints<AccountId: Ord> {
     /// Total number of points. Equals the sum of reward points for each validator.
     pub total: RewardPoint,
@@ -444,7 +444,7 @@ impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
     Encode,
     Decode,
     DecodeWithMemTracking,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -475,7 +475,7 @@ impl<AccountId> Default for RewardDestination<AccountId> {
     Encode,
     Decode,
     codec::DecodeWithMemTracking,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     Default,
     MaxEncodedLen,
@@ -499,7 +499,7 @@ pub struct ValidatorPrefs {
     Encode,
     Decode,
     DecodeWithMemTracking,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -524,7 +524,7 @@ pub struct UnlockChunk<Balance: HasCompact + MaxEncodedLen> {
     Encode,
     Decode,
     DecodeWithMemTracking,
-    RuntimeDebugNoBound,
+    DebugNoBound,
     TypeInfo,
     MaxEncodedLen,
 )]
@@ -749,7 +749,7 @@ impl<T: Config> StakingLedger<T> {
 
 /// A record of the nominations made by a specific account.
 #[derive(
-    PartialEqNoBound, EqNoBound, Clone, Encode, Decode, RuntimeDebugNoBound, TypeInfo, MaxEncodedLen,
+    PartialEqNoBound, EqNoBound, Clone, Encode, Decode, DebugNoBound, TypeInfo, MaxEncodedLen,
 )]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
@@ -769,7 +769,7 @@ pub struct Nominations<T: Config> {
 
 /// A pending slash record. The value of the slash has been computed but not applied yet,
 /// rather deferred for several eras.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, sp_debug_derive::RuntimeDebug, TypeInfo)]
 pub struct UnappliedSlash<AccountId, Balance: HasCompact> {
     /// The stash ID of the offending validator.
     validator: AccountId,
@@ -902,7 +902,7 @@ impl<Balance: AtLeast32BitUnsigned + Clone, T: Get<&'static PiecewiseLinear<'sta
     Encode,
     Decode,
     codec::DecodeWithMemTracking,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     TypeInfo,
     MaxEncodedLen,
     serde::Serialize,
@@ -1007,7 +1007,7 @@ impl BenchmarkingConfig for TestBenchmarkingConfig {
 
 // foundation reward params
 #[derive(
-    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, RuntimeDebug, TypeInfo,
+    PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Default, sp_debug_derive::RuntimeDebug, TypeInfo,
 )]
 pub struct FoundationIssueRewards<AccountId: Ord, Balance> {
     pub who: Vec<AccountId>,
@@ -1026,7 +1026,7 @@ pub struct FoundationIssueRewards<AccountId: Ord, Balance> {
     Decode,
     DecodeWithMemTracking,
     Default,
-    RuntimeDebug,
+    sp_debug_derive::RuntimeDebug,
     MaxEncodedLen,
     TypeInfo,
 )]
