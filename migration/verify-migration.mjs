@@ -18,7 +18,7 @@ async function main(){
   // wait for node RPC
   let api
   for(let i=0;i<120;i++){
-    try{ api=await ApiPromise.create({provider:new WsProvider(RPC,false)}); await api.isReadyOrError; break }
+    try{ api=await ApiPromise.create({provider:new WsProvider(RPC)}); await api.isReadyOrError; break }
     catch(e){ if(api){try{await api.disconnect()}catch{}} console.error(`[verify] waiting for node... (${i})`); await sleep(5000) }
   }
   if(!api){ console.error('[verify] node never came up'); process.exit(1) }
